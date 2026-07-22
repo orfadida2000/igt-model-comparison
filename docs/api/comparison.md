@@ -1,0 +1,3 @@
+# Comparison API
+
+::: igt.comparison

@@ -1,0 +1,3 @@
+# Initialization API
+
+::: igt.initialization
