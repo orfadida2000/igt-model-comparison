@@ -1,7 +1,5 @@
 """Prospect Valence Learning model with the delta update rule."""
 
-from __future__ import annotations
-
 import numpy as np
 from scipy.special import logsumexp
 

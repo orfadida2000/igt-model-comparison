@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pyreadr
 
-from . import IGT_DATA_DIR
+from igt.constants.path import DATA_DIR
 
 DECK_LABELS: Mapping[int, str] = {
     1: "A",
@@ -310,6 +310,7 @@ def save_igt_long_table(
 
 def iter_subject_trials(
     data: pd.DataFrame,
+    n_subjects: int | None = None,
 ) -> Iterator[tuple[tuple[int, int], pd.DataFrame]]:
     """Yield each subject's trials in chronological order."""
 
@@ -324,6 +325,12 @@ def iter_subject_trials(
         ["n_trials", "subject_id"],
         sort=True,
     )
+
+    if n_subjects is not None:
+        if n_subjects <= 0:
+            raise ValueError("n_subjects must be greater than zero")
+
+    i_subject = 1
 
     for raw_key, subject_trials in grouped:
         n_trials_raw, subject_id_raw = cast(
@@ -344,12 +351,16 @@ def iter_subject_trials(
 
         yield subject_key, ordered_trials
 
+        if n_subjects is not None and i_subject >= n_subjects:
+            break
+        i_subject += 1
+
 
 def main() -> None:
     """Run preprocessing with the default project paths."""
 
-    rdata_path = IGT_DATA_DIR / "IGTdata.rdata"
-    output_csv = IGT_DATA_DIR / "processed" / "igt_long.csv"
+    rdata_path = DATA_DIR / "IGTdata.rdata"
+    output_csv = DATA_DIR / "processed" / "igt_long.csv"
 
     data = save_igt_long_table(
         rdata_path=rdata_path,

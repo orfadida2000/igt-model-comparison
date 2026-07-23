@@ -1,3 +1,13 @@
 {
-  "cSpell.words": ["flatnonzero", "Fridberg", "fromiter", "pyreadr", "rdata", "Steingroever"]
+  "cSpell.words": [
+    "BFGS",
+    "flatnonzero",
+    "Fridberg",
+    "fromiter",
+    "initargs",
+    "maxiter",
+    "pyreadr",
+    "rdata",
+    "Steingroever"
+  ]
 }
