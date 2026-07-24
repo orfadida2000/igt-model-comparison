@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser = get_parser(
         default_rdata_path=IGT_DATASET_PATH,
         default_output_dir=RESULTS_DIR,
-        default_n_q_starts=1,
+        default_n_q_starts=5,
         default_n_pvl_starts=32,
         default_rng=None,
         default_max_iterations=1_000,
@@ -37,12 +37,6 @@ def main() -> None:
     """Load the dataset, fit both models, compare them, and save CSV outputs."""
 
     args = parse_args()
-
-    if args.max_iterations <= 0:
-        raise ValueError("--max-iterations must be greater than zero.")
-
-    if args.workers <= 0:
-        raise ValueError("--workers must be greater than zero.")
 
     data = load_igt_long_table(args.rdata_path)
 

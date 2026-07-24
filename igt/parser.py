@@ -2,108 +2,212 @@ import argparse
 from pathlib import Path
 
 
-def _n_q_starts_type(value: str) -> int:
-    """Parse and validate the number of Q-learning grid starts."""
+def _validate_n_q_starts(value: str | int, is_default: bool, err_class: type[BaseException]) -> int:
+    """Parse and validate the maximum number of Q-learning grid-local-minimum starts."""
 
-    try:
-        n_starts = int(value)
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError(
-            f"Invalid number of Q-learning grid starts: {value}"
-        ) from exc
+    if is_default:
+        invalid_msg_prefix = "Invalid default number of Q-learning grid starts"
+    else:
+        invalid_msg_prefix = "Invalid number of Q-learning grid starts"
 
-    return max(1, n_starts)
+    if isinstance(value, int):
+        if isinstance(value, bool):
+            raise err_class(
+                f"{invalid_msg_prefix}: expected a string or integer, got {type(value).__name__}"
+            )
 
+        n_starts = value
+    else:
+        if not isinstance(value, str):
+            raise err_class(
+                f"{invalid_msg_prefix}: expected a string or integer, got {type(value).__name__}"
+            )
 
-def _n_pvl_starts_type(value: str) -> int:
-    def closest_power_of_2(n: int) -> int:
-        if n <= 0:
-            return 1
+        try:
+            n_starts = int(value)
+        except ValueError as exc:
+            raise err_class(
+                f"{invalid_msg_prefix}: the string '{value}' is not a valid integer"
+            ) from exc
 
-        prev_pow = 1 << (n.bit_length() - 1)
-
-        # If it's already a perfect power of 2, just return it
-        if n == prev_pow:
-            return n
-
-        next_pow = prev_pow << 1
-
-        # Compare the distances
-        return prev_pow if (n - prev_pow) < (next_pow - n) else next_pow
-
-    """Parse and validate the number of PVL-Delta Sobol starts."""
-
-    try:
-        n_starts = int(value)
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError(
-            f"Invalid number of PVL-Delta Sobol starts: {value}"
-        ) from exc
-
-    n_starts = closest_power_of_2(n_starts)
+    if n_starts < 1:
+        raise err_class(f"{invalid_msg_prefix}: must be at least 1, got {n_starts}")
 
     return n_starts
 
 
-def _non_negative_int_type(value: str) -> int:
+def _n_q_starts_type(value: str) -> int:
+    """Parse the maximum number of Q-learning grid-local-minimum starts for the argument parser."""
+
+    return _validate_n_q_starts(value, is_default=False, err_class=argparse.ArgumentTypeError)
+
+
+def _validate_n_pvl_starts(
+    value: str | int, is_default: bool, err_class: type[BaseException]
+) -> int:
+    """Parse and validate the number of PVL-Delta Sobol starts."""
+
+    if is_default:
+        invalid_msg_prefix = "Invalid default number of PVL-Delta Sobol starts"
+    else:
+        invalid_msg_prefix = "Invalid number of PVL-Delta Sobol starts"
+
+    if isinstance(value, int):
+        if isinstance(value, bool):
+            raise err_class(
+                f"{invalid_msg_prefix}: expected a string or integer, got {type(value).__name__}"
+            )
+
+        n_starts = value
+    else:
+        if not isinstance(value, str):
+            raise err_class(
+                f"{invalid_msg_prefix}: expected a string or integer, got {type(value).__name__}"
+            )
+
+        try:
+            n_starts = int(value)
+        except ValueError as exc:
+            raise err_class(
+                f"{invalid_msg_prefix}: the string '{value}' is not a valid integer"
+            ) from exc
+
+    if n_starts < 1:
+        raise err_class(f"{invalid_msg_prefix}: must be at least 1, got {n_starts}")
+
+    if (n_starts & (n_starts - 1)) != 0:
+        raise err_class(f"{invalid_msg_prefix}: must be a power of two, got {n_starts}")
+
+    return n_starts
+
+
+def _n_pvl_starts_type(value: str) -> int:
+    """Parse and validate the number of PVL-Delta Sobol starts for the argument parser."""
+
+    return _validate_n_pvl_starts(value, is_default=False, err_class=argparse.ArgumentTypeError)
+
+
+def _validate_non_negative_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
     """Parse and validate a non-negative integer."""
 
-    try:
-        n = int(value)
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError(f"Invalid non-negative integer: {value}") from exc
+    if isinstance(value, int):
+        if isinstance(value, bool):
+            raise err_class(
+                f"Invalid {label.lower()}: expected a string or integer, got {type(value).__name__}"
+            )
+
+        n = value
+    else:
+        if not isinstance(value, str):
+            raise err_class(
+                f"Invalid {label.lower()}: expected a string or integer, got {type(value).__name__}"
+            )
+        try:
+            n = int(value)
+        except ValueError as exc:
+            raise err_class(f"Invalid {label.lower()}: {value}") from exc
 
     if n < 0:
-        raise argparse.ArgumentTypeError(
-            f"Non-negative integer must be greater than or equal to zero: {value}"
-        )
+        raise err_class(f"{label} must be greater than or equal to zero: {value}")
+
+    return n
+
+
+def _non_negative_int_type(value: str) -> int:
+    """Parse and validate a non-negative integer for the argument parser."""
+
+    return _validate_non_negative_int(
+        value, label="Non-negative integer", err_class=argparse.ArgumentTypeError
+    )
+
+
+def _validate_positive_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
+    """Parse and validate a positive integer."""
+
+    n = _validate_non_negative_int(value, label=label, err_class=err_class)
+
+    if n == 0:
+        raise err_class(f"{label} must be greater than zero, got {value}")
 
     return n
 
 
 def _positive_int_type(value: str) -> int:
-    """Parse and validate a positive integer."""
+    """Parse and validate a positive integer for the argument parser."""
 
-    n = _non_negative_int_type(value)
-
-    if n == 0:
-        raise argparse.ArgumentTypeError(f"Positive integer must be greater than zero: {value}")
-
-    return n
+    return _validate_positive_int(
+        value, label="Positive integer", err_class=argparse.ArgumentTypeError
+    )
 
 
-def _rdata_path_type(value: str) -> Path:
+def _validate_rdata_path(
+    value: str | Path, is_default: bool, err_class: type[BaseException]
+) -> Path:
     """Parse and validate the RData file path."""
+
+    if is_default:
+        invalid_msg_prefix = "Invalid default RData file path"
+    else:
+        invalid_msg_prefix = "Invalid RData file path"
+
+    if not isinstance(value, (str, Path)):
+        raise err_class(
+            f"{invalid_msg_prefix}: expected a string or Path, got {type(value).__name__}"
+        )
 
     path = Path(value)
 
     if not path.is_file():
-        raise argparse.ArgumentTypeError(f"RData file does not exist: {value}")
+        raise err_class(f"{invalid_msg_prefix}: RData file does not exist: {value}")
 
     ext = path.suffix.lower()
 
     if ext not in {".rdata", ".rda"}:
-        raise argparse.ArgumentTypeError(
-            f"RData file must have a .rdata or .rda extension: {value}"
+        raise err_class(
+            f"{invalid_msg_prefix}: RData file must have a .rdata or .rda extension, got {ext}"
         )
 
     return path
 
 
-def _output_dir_type(value: str) -> Path:
+def _rdata_path_type(value: str) -> Path:
+    """Parse and validate the RData file path for the argument parser."""
+
+    return _validate_rdata_path(value, is_default=False, err_class=argparse.ArgumentTypeError)
+
+
+def _validate_output_dir(
+    value: str | Path, is_default: bool, err_class: type[BaseException]
+) -> Path:
     """Parse and validate the output directory path."""
+
+    if is_default:
+        invalid_msg_prefix = "Invalid default output directory path"
+    else:
+        invalid_msg_prefix = "Invalid output directory path"
+
+    if not isinstance(value, (str, Path)):
+        raise err_class(
+            f"{invalid_msg_prefix}: expected a string or Path, got {type(value).__name__}"
+        )
 
     path = Path(value)
 
     if path.exists() and not path.is_dir():
-        raise argparse.ArgumentTypeError(f"Output path exists but is not a directory: {value}")
+        raise err_class(f"{invalid_msg_prefix}: Output path exists but is not a directory: {value}")
 
     return path
 
 
+def _output_dir_type(value: str) -> Path:
+    """Parse and validate the output directory path for the argument parser."""
+
+    return _validate_output_dir(value, is_default=False, err_class=argparse.ArgumentTypeError)
+
+
 def get_parser(
-    default_rdata_path: Path,
-    default_output_dir: Path,
+    default_rdata_path: str | Path,
+    default_output_dir: str | Path,
     default_n_q_starts: int,
     default_n_pvl_starts: int,
     default_rng: int | None,
@@ -113,41 +217,29 @@ def get_parser(
 ) -> argparse.ArgumentParser:
     """Get the argument parser."""
 
-    def validate_default_args():
-        if not default_rdata_path.is_file():
-            raise ValueError(f"default_rdata_path does not exist: {default_rdata_path}")
-        if default_rdata_path.suffix.lower() not in {".rdata", ".rda"}:
-            raise ValueError(
-                f"default_rdata_path must have a .rdata or .rda extension: {default_rdata_path}"
-            )
+    def validate_default_args() -> None:
+        _validate_rdata_path(default_rdata_path, is_default=True, err_class=ValueError)
 
-        if default_output_dir.exists() and not default_output_dir.is_dir():
-            raise ValueError(
-                f"default_output_dir exists but is not a directory: {default_output_dir}"
-            )
+        _validate_output_dir(default_output_dir, is_default=True, err_class=ValueError)
 
-        if default_n_q_starts < 1:
-            raise ValueError(f"default_n_q_starts must be at least 1: {default_n_q_starts}")
+        _validate_n_q_starts(default_n_q_starts, is_default=True, err_class=ValueError)
 
-        if default_n_pvl_starts < 1:
-            raise ValueError(f"default_n_pvl_starts must be at least 1: {default_n_pvl_starts}")
-        if (default_n_pvl_starts & (default_n_pvl_starts - 1)) != 0:
-            raise ValueError(f"default_n_pvl_starts must be a power of two: {default_n_pvl_starts}")
+        _validate_n_pvl_starts(default_n_pvl_starts, is_default=True, err_class=ValueError)
 
-        if default_rng is not None and default_rng < 0:
-            raise ValueError(f"default_rng must be non-negative or None: {default_rng}")
+        if default_rng is not None:
+            _validate_non_negative_int(default_rng, label="Default RNG seed", err_class=ValueError)
 
-        if default_max_iterations <= 0:
-            raise ValueError(
-                f"default_max_iterations must be greater than zero: {default_max_iterations}"
-            )
+        _validate_positive_int(
+            default_max_iterations, label="Default maximum iterations", err_class=ValueError
+        )
 
-        if default_n_workers <= 0:
-            raise ValueError(f"default_n_workers must be greater than zero: {default_n_workers}")
+        _validate_positive_int(
+            default_n_workers, label="Default number of workers", err_class=ValueError
+        )
 
-        if default_n_subjects is not None and default_n_subjects <= 0:
-            raise ValueError(
-                f"default_n_subjects must be greater than zero or None: {default_n_subjects}"
+        if default_n_subjects is not None:
+            _validate_positive_int(
+                default_n_subjects, label="Default number of subjects", err_class=ValueError
             )
 
     validate_default_args()
@@ -172,7 +264,10 @@ def get_parser(
         "--q-starts",
         type=_n_q_starts_type,
         default=default_n_q_starts,
-        help="Number of grid starts for Q-learning; must be at least 1.",
+        help=(
+            "Maximum number of distinct grid-local-minimum starts for "
+            "Q-learning; must be at least 1."
+        ),
     )
     parser.add_argument(
         "--pvl-starts",

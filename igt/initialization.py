@@ -5,17 +5,19 @@ decide which method a model should use.
 
 Current usage:
 
-- Q-learning uses a Cartesian grid of candidate starting points.
+- Q-learning evaluates a Cartesian grid and selects distinct local minima.
 - PVL-Delta uses Sobol starting points distributed across its parameter bounds.
 """
 
 from collections.abc import Sequence
 from itertools import product
+from typing import cast
 
 import numpy as np
+from scipy.ndimage import label, minimum_filter
 from scipy.stats import qmc
 
-from igt.typing import FloatArray, ParameterBounds
+from igt.typing import FloatArray, IntArray, IntegerArray, ParameterBounds
 
 
 def bounds_to_arrays(
@@ -140,6 +142,128 @@ def generate_grid_starts(
         list(combinations),
         dtype=np.float64,
     )
+
+
+def select_grid_local_minimum_indices(
+    objective_values: FloatArray,
+    *,
+    grid_shape: Sequence[int],
+    max_starts: int,
+) -> IntArray:
+    """Select distinct local minima from a regular Cartesian grid.
+
+    A finite grid point is considered a local minimum when its objective value
+    is no greater than every immediately adjacent point. Diagonal points are
+    included in the neighborhood, so a two-dimensional grid uses the eight
+    surrounding cells.
+
+    Adjacent local-minimum cells with the same objective value form one flat
+    local-minimum plateau. Such a plateau contributes only one representative
+    index, preventing neighboring tied points from being used as redundant
+    optimizer starts.
+
+    The returned indices are ordered from lowest to highest objective value.
+    Consequently, the global finite grid minimum is always included. Fewer
+    than ``max_starts`` indices may be returned when the grid contains fewer
+    distinct local-minimum regions.
+
+    Args:
+        objective_values: One-dimensional objective values in the same order
+            as the Cartesian-product grid points.
+        grid_shape: Number of candidate values along each grid dimension.
+        max_starts: Maximum number of distinct local minima to return.
+
+    Returns:
+        One-dimensional array of flat grid indices.
+
+    Raises:
+        TypeError: If ``max_starts`` or an entry in ``grid_shape`` is not an
+            integer.
+        ValueError: If the inputs are malformed, incompatible, or contain no
+            finite objective value.
+    """
+
+    if not isinstance(max_starts, int) or isinstance(max_starts, bool):
+        raise TypeError("max_starts must be an integer.")
+
+    if max_starts <= 0:
+        raise ValueError("max_starts must be greater than zero.")
+
+    if len(grid_shape) == 0:
+        raise ValueError("grid_shape must contain at least one dimension.")
+
+    validated_shape: list[int] = []
+
+    for dimension_index, dimension_size in enumerate(grid_shape):
+        if not isinstance(dimension_size, int) or isinstance(dimension_size, bool):
+            raise TypeError(
+                "Every grid dimension must be an integer. "
+                f"Invalid dimension index: {dimension_index}"
+            )
+
+        if dimension_size <= 0:
+            raise ValueError(
+                "Every grid dimension must be greater than zero. "
+                f"Invalid dimension index: {dimension_index}"
+            )
+
+        validated_shape.append(dimension_size)
+
+    values = np.asarray(objective_values, dtype=np.float64)
+
+    if values.ndim != 1:
+        raise ValueError("objective_values must be a one-dimensional array.")
+
+    expected_size = int(np.prod(validated_shape))
+
+    if values.size != expected_size:
+        raise ValueError(
+            "The number of objective values must match the grid size: "
+            f"got {values.size} values and expected {expected_size}."
+        )
+
+    finite_mask = np.isfinite(values)
+
+    if not finite_mask.any():
+        raise ValueError("objective_values must contain at least one finite value.")
+
+    objective_grid = values.reshape(tuple(validated_shape))
+    finite_grid = finite_mask.reshape(tuple(validated_shape))
+    finite_objective_grid = np.where(finite_grid, objective_grid, np.inf)
+
+    neighborhood_minima = minimum_filter(
+        finite_objective_grid,
+        size=3,
+        mode="constant",
+        cval=np.inf,
+    )
+
+    local_minimum_mask = finite_grid & (objective_grid <= neighborhood_minima)
+
+    connectivity = np.ones((3,) * len(validated_shape), dtype=np.int8)
+    component_labels, n_components = cast(
+        tuple[IntegerArray, int],
+        label(
+            local_minimum_mask,
+            structure=connectivity,
+        ),
+    )
+
+    flat_component_labels = component_labels.ravel()
+    representative_indices = np.empty(n_components, dtype=np.int64)
+
+    for component_label in range(1, n_components + 1):
+        component_indices = np.flatnonzero(flat_component_labels == component_label)
+        component_values = values[component_indices]
+        representative_indices[component_label - 1] = component_indices[
+            int(np.argmin(component_values))
+        ]
+
+    representative_values = values[representative_indices]
+    sorted_order = np.lexsort((representative_indices, representative_values))
+    selected_indices = representative_indices[sorted_order[:max_starts]]
+
+    return np.asarray(selected_indices, dtype=np.int64)
 
 
 def scale_unit_points_to_bounds(

@@ -1,10 +1,12 @@
 {
   "cSpell.words": [
     "BFGS",
+    "cval",
     "flatnonzero",
     "Fridberg",
     "fromiter",
     "initargs",
+    "lexsort",
     "maxiter",
     "pyreadr",
     "rdata",

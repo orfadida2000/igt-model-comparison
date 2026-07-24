@@ -3,7 +3,10 @@
 import numpy as np
 from scipy.special import logsumexp
 
-from igt.initialization import generate_grid_starts
+from igt.initialization import (
+    generate_grid_starts,
+    select_grid_local_minimum_indices,
+)
 
 from .base import (
     ComputationalModel,
@@ -21,8 +24,8 @@ class QLearningModel(ComputationalModel):
     1. ``learning_rate``
     2. ``inverse_temperature``
 
-    The model evaluates a coarse parameter grid and returns the best grid
-    point as its single local-optimizer starting point.
+    The model evaluates a coarse parameter grid and selects up to ``n_starts``
+    distinct grid-local minima as local-optimizer starting points.
     """
 
     def __init__(
@@ -34,6 +37,12 @@ class QLearningModel(ComputationalModel):
         max_inverse_temperature: float = 20.0,
         payoff_scale: float = 100.0,
     ) -> None:
+        if not isinstance(n_starts, int) or isinstance(n_starts, bool):
+            raise TypeError("n_starts must be an integer.")
+
+        if n_starts <= 0:
+            raise ValueError("n_starts must be greater than zero.")
+
         if learning_rate_grid_size < 2:
             raise ValueError("learning_rate_grid_size must be at least 2.")
 
@@ -69,10 +78,17 @@ class QLearningModel(ComputationalModel):
             dtype=np.float64,
         )
 
+        self._grid_shape = (
+            learning_rate_grid_size,
+            inverse_temperature_grid_size,
+        )
         self._grid = generate_grid_starts([learning_rates, inverse_temperatures])
 
-        if n_starts <= 0 or n_starts > self._grid.shape[0]:
-            n_starts = 1
+        if n_starts > self._grid.shape[0]:
+            raise ValueError(
+                "n_starts must not exceed the number of Q-learning grid points: "
+                f"got {n_starts} and maximum {self._grid.shape[0]}."
+            )
 
         self._n_starts = n_starts
 
@@ -146,11 +162,15 @@ class QLearningModel(ComputationalModel):
         return negative_log_likelihood
 
     def starting_points(self, data: SubjectData) -> FloatArray:
-        """Return the grid point with the lowest unoptimized NLL.
+        """Return up to ``n_starts`` distinct grid-local NLL minima.
 
-        A two-dimensional array with shape ``(n_starts, 2)`` is returned so the
-        generic fitter can handle this model and multistart models through
-        the same interface even when ``n_starts`` is 1.
+        Every selected point is no worse than its immediate horizontal,
+        vertical, and diagonal grid neighbors. Connected tied minima are
+        collapsed to one representative so a flat plateau does not supply
+        redundant starts.
+
+        Fewer than ``n_starts`` points are returned when the grid contains
+        fewer distinct local-minimum regions.
         """
 
         nll_values = np.fromiter(
@@ -159,6 +179,10 @@ class QLearningModel(ComputationalModel):
             count=self._grid.shape[0],
         )
 
-        best_indices = np.argpartition(nll_values, self._n_starts - 1)[: self._n_starts]
+        best_indices = select_grid_local_minimum_indices(
+            nll_values,
+            grid_shape=self._grid_shape,
+            max_starts=self._n_starts,
+        )
 
         return self._grid[best_indices]
