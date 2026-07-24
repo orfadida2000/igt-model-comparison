@@ -28,6 +28,7 @@ class QLearningModel(ComputationalModel):
     def __init__(
         self,
         *,
+        n_starts: int = 1,
         learning_rate_grid_size: int = 21,
         inverse_temperature_grid_size: int = 21,
         max_inverse_temperature: float = 20.0,
@@ -69,6 +70,11 @@ class QLearningModel(ComputationalModel):
         )
 
         self._grid = generate_grid_starts([learning_rates, inverse_temperatures])
+
+        if n_starts <= 0 or n_starts > self._grid.shape[0]:
+            n_starts = 1
+
+        self._n_starts = n_starts
 
     @property
     def name(self) -> str:
@@ -139,15 +145,12 @@ class QLearningModel(ComputationalModel):
 
         return negative_log_likelihood
 
-    def starting_points(
-        self,
-        data: SubjectData,
-    ) -> FloatArray:
+    def starting_points(self, data: SubjectData) -> FloatArray:
         """Return the grid point with the lowest unoptimized NLL.
 
-        A two-dimensional array with shape ``(1, 2)`` is returned so the
+        A two-dimensional array with shape ``(n_starts, 2)`` is returned so the
         generic fitter can handle this model and multistart models through
-        the same interface.
+        the same interface even when ``n_starts`` is 1.
         """
 
         nll_values = np.fromiter(
@@ -156,6 +159,6 @@ class QLearningModel(ComputationalModel):
             count=self._grid.shape[0],
         )
 
-        best_index = int(np.argmin(nll_values))
+        best_indices = np.argpartition(nll_values, self._n_starts - 1)[: self._n_starts]
 
-        return self._grid[best_index : best_index + 1].copy()
+        return self._grid[best_indices]

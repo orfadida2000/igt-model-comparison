@@ -12,62 +12,22 @@ from igt.constants.path import IGT_DATASET_PATH, RESULTS_DIR
 from igt.execution import fit_all_subjects
 from igt.models.pvl_delta import PVLDeltaModel
 from igt.models.q_learning import QLearningModel
+from igt.parser import get_parser
 from igt.rdata_preprocessing import load_igt_long_table
 
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
 
-    parser = argparse.ArgumentParser(
-        description="Fit Q-learning and PVL-Delta to the Steingroever IGT dataset."
-    )
-
-    parser.add_argument(
-        "--rdata-path",
-        type=Path,
-        default=IGT_DATASET_PATH,
-        help="Path to the input IGTdata.rdata file.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=RESULTS_DIR,
-        help="Directory in which result CSV files are written.",
-    )
-    parser.add_argument(
-        "--pvl-starts",
-        type=int,
-        default=32,
-        help="Number of Sobol starts for PVL-Delta; must be a power of two.",
-    )
-    parser.add_argument(
-        "--rng",
-        type=int,
-        default=42,
-        help="Integer RNG seed used by the scrambled Sobol generator.",
-    )
-    parser.add_argument(
-        "--max-iterations",
-        type=int,
-        default=1_000,
-        help="Maximum L-BFGS-B iterations per optimization run.",
-    )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=1,
-        help=("Number of subject-fitting worker processes. Use 1 for serial execution."),
-    )
-    parser.add_argument(
-        "--no-progress",
-        action="store_true",
-        help="Disable the subject progress bar.",
-    )
-    parser.add_argument(
-        "--subjects",
-        type=int,
-        default=None,
-        help="Number of subjects to fit (default: all subjects).",
+    parser = get_parser(
+        default_rdata_path=IGT_DATASET_PATH,
+        default_output_dir=RESULTS_DIR,
+        default_n_q_starts=1,
+        default_n_pvl_starts=32,
+        default_rng=None,
+        default_max_iterations=1_000,
+        default_n_workers=1,
+        default_n_subjects=None,
     )
 
     return parser.parse_args()
@@ -87,7 +47,9 @@ def main() -> None:
     data = load_igt_long_table(args.rdata_path)
 
     models = (
-        QLearningModel(),
+        QLearningModel(
+            n_starts=args.q_starts,
+        ),
         PVLDeltaModel(
             n_starts=args.pvl_starts,
             rng=args.rng,

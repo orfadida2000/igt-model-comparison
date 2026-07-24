@@ -13,6 +13,7 @@ wheels/
 assets/data/*.csv
 assets/data/*.txt
 tests/
+backup/
 
 # Documentation
 site/
