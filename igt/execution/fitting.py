@@ -1,63 +1,17 @@
 """Generic maximum-likelihood fitting utilities for computational models."""
 
+import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
 
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize
 
-from igt.models.base import ComputationalModel, SubjectData
+from igt.constants.config import DEFAULT_FIT_METHOD
+from igt.models.base import ComputationalModel
+from igt.models.typing import SubjectData
 from igt.typing import FloatArray
 
-
-@dataclass(frozen=True, slots=True)
-class ModelFitResult:
-    """Best optimization result for one model and one subject."""
-
-    model_name: str
-    n_trials: int
-    subject_id: int
-    source_study: str
-    parameter_names: tuple[str, ...]
-    parameter_values: tuple[float, ...]
-    negative_log_likelihood: float
-    log_likelihood: float
-    aic: float
-    bic: float
-    converged: bool
-    optimizer_message: str
-    n_function_evaluations: int
-    n_iterations: int | None
-    n_starts: int
-
-    def to_record(self) -> dict[str, object]:
-        """Return a flat dictionary suitable for a pandas DataFrame row."""
-
-        record: dict[str, object] = {
-            "model": self.model_name,
-            "n_trials": self.n_trials,
-            "subject_id": self.subject_id,
-            "source_study": self.source_study,
-            "negative_log_likelihood": self.negative_log_likelihood,
-            "log_likelihood": self.log_likelihood,
-            "aic": self.aic,
-            "bic": self.bic,
-            "converged": self.converged,
-            "optimizer_message": self.optimizer_message,
-            "n_function_evaluations": self.n_function_evaluations,
-            "n_iterations": self.n_iterations,
-            "n_starts": self.n_starts,
-        }
-
-        record.update(
-            zip(
-                self.parameter_names,
-                self.parameter_values,
-                strict=True,
-            )
-        )
-
-        return record
+from .typing import ModelFitResult
 
 
 def _validate_starting_points(
@@ -106,6 +60,8 @@ def fit_model(
     subject_id: int,
     source_study: str,
     optimizer_options: Mapping[str, object] | None = None,
+    logger: logging.Logger | None = None,
+    fit_method: str = DEFAULT_FIT_METHOD,
 ) -> ModelFitResult:
     """Fit one model to one subject by bounded multistart optimization.
 
@@ -127,6 +83,20 @@ def fit_model(
         model.starting_points(data),
     )
 
+    if logger is not None:
+        logger.debug(
+            "Fitting model %r for %r with %d starting points: %r",
+            model.name,
+            {
+                "subject_id": subject_id,
+                "source_study": source_study,
+                "n_trials": n_trials,
+                "fit_method": fit_method,
+            },
+            starts.shape[0],
+            [tuple(float(value) for value in start) for start in starts],
+        )
+
     options = dict(optimizer_options) if optimizer_options is not None else None
     optimization_results: list[OptimizeResult] = []
 
@@ -135,7 +105,7 @@ def fit_model(
             fun=model.negative_log_likelihood,
             x0=start,
             args=(data,),
-            method="L-BFGS-B",
+            method=fit_method,
             bounds=model.parameter_bounds,
             options=options,
         )
@@ -152,6 +122,39 @@ def fit_model(
     if not np.isfinite(negative_log_likelihood):
         raise RuntimeError(
             f"All optimization runs produced non-finite objective values for {model.name}."
+        )
+
+    if logger is not None:
+        logger.debug(
+            "Fitting model %r for %r results for %d starting points: %r",
+            model.name,
+            {
+                "subject_id": subject_id,
+                "source_study": source_study,
+                "n_trials": n_trials,
+                "fit_method": fit_method,
+            },
+            starts.shape[0],
+            {
+                tuple(float(value) for value in result.x): _result_nll(result)
+                for result in optimization_results
+            },
+        )
+
+        logger.debug(
+            "Fitting model %r for %r with %d starting points completed with best result: %r",
+            model.name,
+            {
+                "subject_id": subject_id,
+                "source_study": source_study,
+                "n_trials": n_trials,
+                "fit_method": fit_method,
+            },
+            starts.shape[0],
+            {
+                "best_parameters": tuple(float(value) for value in best_parameters),
+                "negative_log_likelihood": negative_log_likelihood,
+            },
         )
 
     log_likelihood = -negative_log_likelihood

@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 import pandas as pd
 
-from igt.fitting import ModelFitResult
+from igt.execution.fitting import ModelFitResult
 
 
 def fit_results_to_dataframe(
@@ -13,9 +13,9 @@ def fit_results_to_dataframe(
     """Convert model-fit results into a flat table."""
 
     if len(results) == 0:
-        raise ValueError("At least one fit result is required.")
-
-    table = pd.DataFrame(result.to_record() for result in results)
+        table = pd.DataFrame(columns=ModelFitResult.get_result_columns())
+    else:
+        table = pd.DataFrame(result.to_record() for result in results)
 
     return table.sort_values(
         by=["n_trials", "subject_id", "model"],
@@ -44,13 +44,11 @@ def add_model_comparison_columns(
     compared = results.copy()
     group_columns = ["n_trials", "subject_id"]
 
-    compared["delta_aic"] = (
-        compared["aic"]
-        - compared.groupby(group_columns)["aic"].transform("min")
+    compared["delta_aic"] = compared["aic"] - compared.groupby(group_columns)["aic"].transform(
+        "min"
     )
-    compared["delta_bic"] = (
-        compared["bic"]
-        - compared.groupby(group_columns)["bic"].transform("min")
+    compared["delta_bic"] = compared["bic"] - compared.groupby(group_columns)["bic"].transform(
+        "min"
     )
     compared["best_aic"] = compared["delta_aic"].eq(0.0)
     compared["best_bic"] = compared["delta_bic"].eq(0.0)
@@ -77,8 +75,6 @@ def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
-    summary["convergence_rate"] = (
-        summary["n_converged"] / summary["n_fits"]
-    )
+    summary["convergence_rate"] = summary["n_converged"] / summary["n_fits"]
 
     return summary

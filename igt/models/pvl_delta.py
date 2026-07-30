@@ -3,14 +3,28 @@
 import numpy as np
 from scipy.special import logsumexp
 
+from igt.constants.config import (
+    DEFAULT_N_PVL_STARTS,
+    FIXED_SEED,
+    GENERAL_MAX_LEARNING_RATE,
+    GENERAL_MIN_LEARNING_RATE,
+    MAX_LOSS_AVERSION,
+    MAX_OUTCOME_SENSITIVITY,
+    MAX_RESPONSE_CONSISTENCY,
+    MIN_LOSS_AVERSION,
+    MIN_OUTCOME_SENSITIVITY,
+    MIN_RESPONSE_CONSISTENCY,
+    OPEN_BOUND_EPSILON,
+    PAYOFF_SCALE,
+)
 from igt.initialization import generate_sobol_starts
 
 from .base import (
     ComputationalModel,
     FloatArray,
     ParameterBounds,
-    SubjectData,
 )
+from .typing import SubjectData
 
 
 class PVLDeltaModel(ComputationalModel):
@@ -32,15 +46,13 @@ class PVLDeltaModel(ComputationalModel):
     reused as the local-optimizer starting points for every subject.
     """
 
-    _OPEN_BOUND_EPSILON = 1e-6
-
     def __init__(
         self,
         *,
-        n_starts: int = 32,
-        rng: np.random.Generator | int | None = 42,
+        n_starts: int = DEFAULT_N_PVL_STARTS,
+        rng: np.random.Generator | int | None = FIXED_SEED,
         scramble: bool = True,
-        payoff_scale: float = 100.0,
+        payoff_scale: float = PAYOFF_SCALE,
     ) -> None:
         if not np.isfinite(payoff_scale):
             raise ValueError("payoff_scale must be finite.")
@@ -78,13 +90,14 @@ class PVLDeltaModel(ComputationalModel):
     def parameter_bounds(self) -> ParameterBounds:
         """Return numerically closed approximations of the model bounds."""
 
-        epsilon = self._OPEN_BOUND_EPSILON
-
         return (
-            (epsilon, 1.0 - epsilon),
-            (epsilon, 2.0),
-            (epsilon, 10.0),
-            (0.0, 5.0),
+            (
+                GENERAL_MIN_LEARNING_RATE + OPEN_BOUND_EPSILON,
+                GENERAL_MAX_LEARNING_RATE - OPEN_BOUND_EPSILON,
+            ),
+            (MIN_OUTCOME_SENSITIVITY, MAX_OUTCOME_SENSITIVITY),
+            (MIN_LOSS_AVERSION, MAX_LOSS_AVERSION),
+            (MIN_RESPONSE_CONSISTENCY, MAX_RESPONSE_CONSISTENCY),
         )
 
     def negative_log_likelihood(

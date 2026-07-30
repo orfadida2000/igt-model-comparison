@@ -18,3 +18,7 @@ tmp/
 
 # Documentation
 site/
+
+# Logs
+*.log
+logs/

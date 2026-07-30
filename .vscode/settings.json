@@ -8,6 +8,7 @@
     "initargs",
     "lexsort",
     "maxiter",
+    "nfev",
     "pyreadr",
     "rdata",
     "Steingroever"

@@ -3,6 +3,14 @@
 import numpy as np
 from scipy.special import logsumexp
 
+from igt.constants.config import (
+    DEFAULT_N_Q_STARTS,
+    GENERAL_MAX_LEARNING_RATE,
+    GENERAL_MIN_LEARNING_RATE,
+    MAX_INVERSE_TEMPERATURE,
+    MIN_INVERSE_TEMPERATURE,
+    PAYOFF_SCALE,
+)
 from igt.initialization import (
     generate_grid_starts,
     select_grid_local_minimum_indices,
@@ -12,8 +20,8 @@ from .base import (
     ComputationalModel,
     FloatArray,
     ParameterBounds,
-    SubjectData,
 )
+from .typing import SubjectData
 
 
 class QLearningModel(ComputationalModel):
@@ -31,11 +39,11 @@ class QLearningModel(ComputationalModel):
     def __init__(
         self,
         *,
-        n_starts: int = 1,
+        n_starts: int = DEFAULT_N_Q_STARTS,
         learning_rate_grid_size: int = 21,
         inverse_temperature_grid_size: int = 21,
-        max_inverse_temperature: float = 20.0,
-        payoff_scale: float = 100.0,
+        max_inverse_temperature: float = MAX_INVERSE_TEMPERATURE,
+        payoff_scale: float = PAYOFF_SCALE,
     ) -> None:
         if not isinstance(n_starts, int) or isinstance(n_starts, bool):
             raise TypeError("n_starts must be an integer.")
@@ -52,8 +60,10 @@ class QLearningModel(ComputationalModel):
         if not np.isfinite(max_inverse_temperature):
             raise ValueError("max_inverse_temperature must be finite.")
 
-        if max_inverse_temperature <= 0.0:
-            raise ValueError("max_inverse_temperature must be greater than zero.")
+        if max_inverse_temperature <= MIN_INVERSE_TEMPERATURE:
+            raise ValueError(
+                f"max_inverse_temperature must be greater than {MIN_INVERSE_TEMPERATURE}."
+            )
 
         if not np.isfinite(payoff_scale):
             raise ValueError("payoff_scale must be finite.")
@@ -65,14 +75,14 @@ class QLearningModel(ComputationalModel):
         self._payoff_scale = float(payoff_scale)
 
         learning_rates = np.linspace(
-            0.0,
-            1.0,
+            GENERAL_MIN_LEARNING_RATE,
+            GENERAL_MAX_LEARNING_RATE,
             num=learning_rate_grid_size,
             dtype=np.float64,
         )
 
         inverse_temperatures = np.linspace(
-            0.0,
+            MIN_INVERSE_TEMPERATURE,
             self._max_inverse_temperature,
             num=inverse_temperature_grid_size,
             dtype=np.float64,
@@ -112,8 +122,8 @@ class QLearningModel(ComputationalModel):
         """Return the parameter bounds."""
 
         return (
-            (0.0, 1.0),
-            (0.0, self._max_inverse_temperature),
+            (GENERAL_MIN_LEARNING_RATE, GENERAL_MAX_LEARNING_RATE),
+            (MIN_INVERSE_TEMPERATURE, self._max_inverse_temperature),
         )
 
     def negative_log_likelihood(

@@ -17,20 +17,21 @@ import pyreadr
 
 from igt.constants.path import DATA_DIR
 
+# TODO: Add to igt.constants.?
 DECK_LABELS: Mapping[int, str] = {
     1: "A",
     2: "B",
     3: "C",
     4: "D",
 }
-
+# TODO: Add to igt.constants.?
 EXPECTED_OBJECT_PREFIXES: tuple[str, ...] = (
     "choice",
     "wi",
     "lo",
     "index",
 )
-
+# TODO: Add to igt.constants.?
 OBJECT_NAME_RE = re.compile(
     r"^(choice|wi|lo|index)_(\d+)$",
     re.IGNORECASE,
@@ -313,6 +314,11 @@ def iter_subject_trials(
     n_subjects: int | None = None,
 ) -> Iterator[tuple[tuple[int, int], pd.DataFrame]]:
     """Yield each subject's trials in chronological order."""
+    if n_subjects is not None:
+        if n_subjects < 0:
+            raise ValueError("n_subjects must be greater than or equal to zero.")
+        if n_subjects == 0:
+            return  # No subjects requested, yield nothing.
 
     required_columns = {"n_trials", "subject_id", "trial"}
     missing = required_columns - set(data.columns)
@@ -325,10 +331,6 @@ def iter_subject_trials(
         ["n_trials", "subject_id"],
         sort=True,
     )
-
-    if n_subjects is not None:
-        if n_subjects <= 0:
-            raise ValueError("n_subjects must be greater than zero")
 
     i_subject = 1
 
@@ -367,7 +369,7 @@ def main() -> None:
         output_csv=output_csv,
     )
 
-    subjects = data[["n_trials", "source_study", "subject_id"]].drop_duplicates()
+    subjects = data[["n_trials", "source_study", "subject_id"]].drop_duplicates()  # pyright: ignore[reportArgumentType]
 
     total_subjects = len(subjects)
     total_studies = subjects["source_study"].nunique()

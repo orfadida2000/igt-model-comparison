@@ -1,0 +1,1 @@
+model,n_trials,subject_id,source_study,negative_log_likelihood,log_likelihood,aic,bic,converged,optimizer_message,n_function_evaluations,n_iterations,n_starts,delta_aic,delta_bic,best_aic,best_bic

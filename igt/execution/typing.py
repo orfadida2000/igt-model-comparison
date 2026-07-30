@@ -1,0 +1,103 @@
+import logging
+from dataclasses import dataclass, field
+
+from igt.models.typing import SubjectData
+
+
+@dataclass(frozen=True, slots=True)
+class LoggingContext:
+    disable_level: int = field(init=False)
+    raise_exceptions: bool = field(init=False)
+    root_logger_level: int = field(init=False)
+
+    def __post_init__(self) -> None:
+        # Captures current global state from the logging module
+        object.__setattr__(self, "disable_level", logging.root.manager.disable)
+        object.__setattr__(self, "raise_exceptions", logging.raiseExceptions)
+        object.__setattr__(self, "root_logger_level", logging.getLogger().level)
+
+    def apply(self) -> None:
+        """Applies captured global state to the current process."""
+        logging.disable(self.disable_level)
+        logging.raiseExceptions = self.raise_exceptions
+        logging.getLogger().setLevel(self.root_logger_level)
+
+
+@dataclass(frozen=True, slots=True)
+class ModelFitResult:
+    """Best optimization result for one model and one subject."""
+
+    model_name: str
+    n_trials: int
+    subject_id: int
+    source_study: str
+    parameter_names: tuple[str, ...]
+    parameter_values: tuple[float, ...]
+    negative_log_likelihood: float
+    log_likelihood: float
+    aic: float
+    bic: float
+    converged: bool
+    optimizer_message: str
+    n_function_evaluations: int
+    n_iterations: int | None
+    n_starts: int
+
+    @staticmethod
+    def get_result_columns() -> list[str]:
+        """Return the column names for a flat table of model-fit results."""
+
+        return [
+            "model",
+            "n_trials",
+            "subject_id",
+            "source_study",
+            "negative_log_likelihood",
+            "log_likelihood",
+            "aic",
+            "bic",
+            "converged",
+            "optimizer_message",
+            "n_function_evaluations",
+            "n_iterations",
+            "n_starts",
+        ]
+
+    def to_record(self) -> dict[str, object]:
+        """Return a flat dictionary suitable for a pandas DataFrame row."""
+
+        record: dict[str, object] = {
+            "model": self.model_name,
+            "n_trials": self.n_trials,
+            "subject_id": self.subject_id,
+            "source_study": self.source_study,
+            "negative_log_likelihood": self.negative_log_likelihood,
+            "log_likelihood": self.log_likelihood,
+            "aic": self.aic,
+            "bic": self.bic,
+            "converged": self.converged,
+            "optimizer_message": self.optimizer_message,
+            "n_function_evaluations": self.n_function_evaluations,
+            "n_iterations": self.n_iterations,
+            "n_starts": self.n_starts,
+        }
+
+        record.update(
+            zip(
+                self.parameter_names,
+                self.parameter_values,
+                strict=True,
+            )
+        )
+
+        return record
+
+
+@dataclass(frozen=True, slots=True)
+class SubjectFitTask:
+    """Serializable input required to fit every model to one subject."""
+
+    n_trials: int
+    subject_id: int
+    source_study: str
+    data: SubjectData = field(repr=False, compare=False, hash=False)
