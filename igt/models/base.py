@@ -12,15 +12,27 @@ from .typing import SubjectData
 class ComputationalModel(ABC):
     """Common interface implemented by every computational model."""
 
-    @property
+    @classmethod
     @abstractmethod
-    def name(self) -> str:
+    def get_name(cls) -> str:
         """Return the model's stable programmatic name."""
 
     @property
+    def name(self) -> str:
+        """Return the model's stable programmatic name."""
+
+        return self.get_name()
+
+    @classmethod
     @abstractmethod
+    def get_parameter_names(cls) -> tuple[str, ...]:
+        """Return parameter names in optimizer-array order."""
+
+    @property
     def parameter_names(self) -> tuple[str, ...]:
         """Return parameter names in optimizer-array order."""
+
+        return self.get_parameter_names()
 
     @property
     @abstractmethod
@@ -47,11 +59,17 @@ class ComputationalModel(ABC):
             (number_of_starts, number_of_parameters)
         """
 
+    @classmethod
+    def get_n_parameters(cls) -> int:
+        """Return the number of free model parameters."""
+
+        return len(cls.get_parameter_names())
+
     @property
     def n_parameters(self) -> int:
         """Return the number of free model parameters."""
 
-        return len(self.parameter_names)
+        return self.get_n_parameters()
 
     @property
     def _parameter_name_to_bound_map(self) -> dict[str, tuple[float, float]]:
@@ -59,8 +77,9 @@ class ComputationalModel(ABC):
 
         return dict(zip(self.parameter_names, self.parameter_bounds, strict=True))
 
+    @classmethod
     def validate_parameters(
-        self,
+        cls,
         parameters: FloatArray,
     ) -> FloatArray:
         """Validate and return one optimizer parameter vector."""
@@ -70,7 +89,7 @@ class ComputationalModel(ABC):
             dtype=np.float64,
         )
 
-        expected_shape = (self.n_parameters,)
+        expected_shape = (cls.get_n_parameters(),)
 
         if parameter_array.shape != expected_shape:
             raise ValueError(

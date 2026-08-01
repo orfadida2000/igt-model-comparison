@@ -37,6 +37,12 @@ class ModelFitResult:
     log_likelihood: float
     aic: float
     bic: float
+    uniform_choice_nll: float
+    nll_improvement_over_uniform: float
+    uniform_choice_fit: bool
+    n_parameters_at_lower_bound: int
+    n_parameters_at_upper_bound: int
+    n_parameters_at_any_bound: int
     converged: bool
     optimizer_message: str
     n_function_evaluations: int
@@ -56,6 +62,12 @@ class ModelFitResult:
             "log_likelihood",
             "aic",
             "bic",
+            "uniform_choice_nll",
+            "nll_improvement_over_uniform",
+            "uniform_choice_fit",
+            "n_parameters_at_lower_bound",
+            "n_parameters_at_upper_bound",
+            "n_parameters_at_any_bound",
             "converged",
             "optimizer_message",
             "n_function_evaluations",
@@ -75,6 +87,12 @@ class ModelFitResult:
             "log_likelihood": self.log_likelihood,
             "aic": self.aic,
             "bic": self.bic,
+            "uniform_choice_nll": self.uniform_choice_nll,
+            "nll_improvement_over_uniform": self.nll_improvement_over_uniform,
+            "uniform_choice_fit": self.uniform_choice_fit,
+            "n_parameters_at_lower_bound": self.n_parameters_at_lower_bound,
+            "n_parameters_at_upper_bound": self.n_parameters_at_upper_bound,
+            "n_parameters_at_any_bound": self.n_parameters_at_any_bound,
             "converged": self.converged,
             "optimizer_message": self.optimizer_message,
             "n_function_evaluations": self.n_function_evaluations,

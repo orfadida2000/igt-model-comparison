@@ -1,4 +1,5 @@
 import argparse
+from math import isfinite
 from pathlib import Path
 
 
@@ -154,6 +155,40 @@ def _positive_int_type(value: str) -> int:
     )
 
 
+def _validate_positive_float(
+    value: str | float,
+    label: str,
+    err_class: type[BaseException],
+) -> float:
+    """Parse and validate a finite positive floating-point value."""
+
+    if isinstance(value, bool):
+        raise err_class(
+            f"Invalid {label.lower()}: expected a string or number, got bool"
+        )
+
+    try:
+        parsed_value = float(value)
+    except (TypeError, ValueError) as exc:
+        raise err_class(f"Invalid {label.lower()}: {value}") from exc
+
+    if not isfinite(parsed_value):
+        raise err_class(f"{label} must be finite, got {value}")
+
+    if parsed_value <= 0.0:
+        raise err_class(f"{label} must be greater than zero, got {value}")
+
+    return parsed_value
+
+
+def _positive_float_type(value: str) -> float:
+    """Parse and validate a positive float for the argument parser."""
+
+    return _validate_positive_float(
+        value, label="Positive floating-point value", err_class=argparse.ArgumentTypeError
+    )
+
+
 def _validate_rdata_path(
     value: str | Path, is_default: bool, err_class: type[BaseException]
 ) -> Path:
@@ -218,6 +253,7 @@ def get_parser(
     default_max_iterations: int = 1000,
     default_n_q_starts: int = 1,
     default_n_pvl_starts: int = 1,
+    default_q_max_inverse_temperature: float = 20.0,
     default_seed: int | None = -1,
     default_n_workers: int = 0,
     default_n_subjects: int = -1,
@@ -276,6 +312,22 @@ def get_parser(
         help=(
             "Number of Sobol starts for "
             f"PVL-Delta; must be an integer power of 2 (default: {default_n_pvl_starts})."
+        ),
+    )
+
+    _validate_positive_float(
+        default_q_max_inverse_temperature,
+        label="Default Q-learning maximum inverse temperature",
+        err_class=ValueError,
+    )
+    parser.add_argument(
+        "--q-max-inverse-temperature",
+        type=_positive_float_type,
+        default=default_q_max_inverse_temperature,
+        help=(
+            "Upper bound for the Q-learning inverse temperature. The default "
+            "Q-learning grid automatically preserves approximately unit spacing "
+            f"along this dimension (default: {default_q_max_inverse_temperature})."
         ),
     )
 

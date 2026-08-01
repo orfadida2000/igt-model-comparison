@@ -1,57 +1,81 @@
 # Q-learning
 
-Q-learning represents the expected value associated with each deck and updates
-the value of the selected deck after observing an outcome.
+The project uses a one-state, four-action Q-learning model. Each action is one
+IGT deck. The model maintains one learned value for each deck and updates only
+the deck selected by the participant.
 
 ## Value update
 
-A general Q-learning update can be written as:
+For the selected deck \(a_t\):
 
 $$
 Q_{t+1}(a_t)
 =
 Q_t(a_t)
 +
-\alpha
-\left[
-u_t - Q_t(a_t)
-\right]
+\alpha\left[r_t-Q_t(a_t)\right]
 $$
 
-where:
+where \(r_t\) is the net trial outcome after dividing the raw payoff by 100.
+Unselected deck values remain unchanged.
 
-- \(Q_t(a_t)\) is the estimated value of the selected deck before the update;
-- \(u_t\) is the utility or outcome observed on trial \(t\);
-- \(\alpha\) is the learning-rate parameter.
+The learning rate is bounded by:
 
-Replace or extend this equation if the implementation in this project uses a
-different update rule.
+$$
+0 \leq \alpha \leq 1
+$$
+
+The endpoints remain available because they are meaningful model cases:
+\(\alpha=0\) gives no learning and \(\alpha=1\) replaces the selected deck's
+value with its latest outcome.
 
 ## Choice rule
 
-Document the exact choice rule used by the project here, including how deck
-values are converted into choice probabilities.
+Before each update, choice probabilities are calculated with a softmax rule:
 
-## Parameters
+$$
+P_t(a=j)
+=
+\frac{\exp\left(\beta Q_t(j)\right)}
+{\sum_k \exp\left(\beta Q_t(k)\right)}
+$$
 
-Document the interpretation and permitted range of each Q-learning parameter
-here.
+The inverse temperature \(\beta\) is bounded below by zero. Its upper bound is
+a configurable optimization bound, with a default of 20.
 
 ## Optimizer starting points
 
-For each subject, the implementation evaluates the negative log-likelihood on
-a regular grid over the learning-rate and inverse-temperature bounds. It then
-selects up to five distinct grid-local minima by default and runs one bounded
-L-BFGS-B optimization from each selected point.
+For each subject, the implementation evaluates the NLL on a Cartesian grid and
+selects up to five distinct grid-local minima by default. One bounded L-BFGS-B
+optimization is run from each selected point.
+
+The learning-rate dimension uses 31 quadratically spaced values by default:
+
+$$
+\alpha_i = u_i^2,
+\qquad
+u_i \in \operatorname{linspace}(0,1,31)
+$$
+
+This keeps both theoretical endpoints while adding substantially more grid
+resolution below 0.05, where the initial full-data fits frequently placed the
+continuous optimum.
+
+The inverse-temperature dimension remains linearly spaced. When its grid size
+is not supplied explicitly, the implementation chooses enough points to keep
+approximately unit spacing. Therefore, upper bounds of 20, 50, and 100 produce
+21, 51, and 101 inverse-temperature grid values respectively.
 
 A grid point is a local minimum when its NLL is no greater than the NLL at its
 immediate horizontal, vertical, and diagonal neighbors. Connected tied minima
-are treated as one flat plateau and contribute only one starting point. This
-prevents several adjacent points from the same promising region from consuming
-all optimizer starts.
+are treated as one flat plateau and contribute only one starting point.
 
-If the grid contains fewer than the requested number of distinct local-minimum
-regions, only the available regions are used.
+## Fit diagnostics
+
+The output records the uniform-choice NLL, improvement over uniform choice,
+whether the fitted likelihood is effectively uniform, and how many parameters
+are at lower or upper bounds. Boundary estimates are diagnostics and do not by
+themselves invalidate a fit.
 
 ## Implementation
 

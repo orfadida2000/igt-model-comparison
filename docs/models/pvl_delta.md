@@ -5,54 +5,72 @@ probabilistic choice rule.
 
 ## Utility function
 
-Document the exact utility function used by the implementation here.
+For the scaled net outcome \(x_t\):
 
-Include:
+$$
+u(x_t)=
+\begin{cases}
+{x_t}^{\alpha}, & x_t \geq 0 \\
+-\lambda\lvert x_t\rvert^{\alpha}, & x_t < 0
+\end{cases}
+$$
 
-- the treatment of gains;
-- the treatment of losses;
-- the outcome-sensitivity parameter;
-- the loss-aversion parameter.
+where \(\alpha\) is outcome sensitivity and \(\lambda\) is loss aversion.
+Raw IGT payoffs are divided by 100 before this transformation.
 
 ## Learning rule
 
-After deck \(a_t\) is selected on trial \(t\), its expectancy is updated using
-the delta rule:
+After deck \(a_t\) is selected, its expectancy is updated using:
 
 $$
 E_{t+1}(a_t)
 =
 E_t(a_t)
 +
-\phi
-\left[
-u_t - E_t(a_t)
-\right]
+A\left[u(x_t)-E_t(a_t)\right]
 $$
 
-where:
-
-- \(E_t(a_t)\) is the expectancy of the selected deck before the update;
-- \(u_t\) is the subjective utility of the outcome observed on trial \(t\);
-- \(\phi\) is the recency or learning-rate parameter.
-
-The expectancies of the unselected decks remain unchanged:
-
-$$
-E_{t+1}(a)
-=
-E_t(a),
-\qquad a \ne a_t
-$$
+The expectancies of unselected decks remain unchanged.
 
 ## Choice rule
 
-Document how the model converts deck expectancies into choice probabilities.
+Response consistency \(c\) is transformed into softmax sensitivity:
 
-## Parameters
+$$
+\theta=3^c-1
+$$
 
-Document the interpretation and permitted range of each PVL-Delta parameter
-here.
+and the deck probabilities are:
+
+$$
+P_t(a=j)
+=
+\frac{\exp\left(\theta E_t(j)\right)}
+{\sum_k \exp\left(\theta E_t(k)\right)}
+$$
+
+## Parameters and bounds
+
+The implementation uses the expanded PVL-Delta parameterization:
+
+- learning rate \(A\): approximately \((0,1)\), represented with epsilon bounds;
+- outcome sensitivity \(\alpha\): approximately \((0,2]\);
+- loss aversion \(\lambda\): approximately \((0,10]\);
+- response consistency \(c\): \([0,5]\).
+
+## Optimizer starting points
+
+A scrambled Sobol sequence is generated once when the model object is created
+and the same stored starting-point array is reused for every subject. The
+default is 32 starts. The main workflow uses a fixed seed, making the Sobol
+points reproducible across complete executions.
+
+## Fit diagnostics
+
+The output records the uniform-choice NLL, improvement over uniform choice,
+whether the fitted likelihood is effectively uniform, and how many parameters
+are at lower or upper bounds. Boundary estimates are diagnostics and do not by
+themselves invalidate a fit.
 
 ## Implementation
 

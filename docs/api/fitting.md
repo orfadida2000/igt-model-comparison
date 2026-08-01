@@ -1,3 +1,3 @@
 # Fitting API
 
-::: igt.fitting
+::: igt.execution.fitting

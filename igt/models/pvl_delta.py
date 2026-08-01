@@ -3,17 +3,17 @@
 import numpy as np
 from scipy.special import logsumexp
 
-from igt.constants.config import (
-    DEFAULT_N_PVL_STARTS,
-    FIXED_SEED,
-    GENERAL_MAX_LEARNING_RATE,
-    GENERAL_MIN_LEARNING_RATE,
+from igt.constants.config import DEFAULT_N_PVL_STARTS, FIXED_SEED
+from igt.constants.models import (
+    MAX_LEARNING_RATE,
     MAX_LOSS_AVERSION,
     MAX_OUTCOME_SENSITIVITY,
     MAX_RESPONSE_CONSISTENCY,
+    MIN_LEARNING_RATE,
     MIN_LOSS_AVERSION,
     MIN_OUTCOME_SENSITIVITY,
     MIN_RESPONSE_CONSISTENCY,
+    N_IGT_DECKS,
     OPEN_BOUND_EPSILON,
     PAYOFF_SCALE,
 )
@@ -69,14 +69,14 @@ class PVLDeltaModel(ComputationalModel):
             scramble=scramble,
         )
 
-    @property
-    def name(self) -> str:
+    @classmethod
+    def get_name(cls) -> str:
         """Return the model name."""
 
         return "pvl_delta"
 
-    @property
-    def parameter_names(self) -> tuple[str, ...]:
+    @classmethod
+    def get_parameter_names(cls) -> tuple[str, ...]:
         """Return parameter names in optimizer-array order."""
 
         return (
@@ -92,8 +92,8 @@ class PVLDeltaModel(ComputationalModel):
 
         return (
             (
-                GENERAL_MIN_LEARNING_RATE + OPEN_BOUND_EPSILON,
-                GENERAL_MAX_LEARNING_RATE - OPEN_BOUND_EPSILON,
+                MIN_LEARNING_RATE + OPEN_BOUND_EPSILON,
+                MAX_LEARNING_RATE - OPEN_BOUND_EPSILON,
             ),
             (MIN_OUTCOME_SENSITIVITY, MAX_OUTCOME_SENSITIVITY),
             (MIN_LOSS_AVERSION, MAX_LOSS_AVERSION),
@@ -127,7 +127,7 @@ class PVLDeltaModel(ComputationalModel):
 
         theta = (3.0**response_consistency) - 1.0
 
-        expectancies = np.zeros(4, dtype=np.float64)
+        expectancies = np.zeros(N_IGT_DECKS, dtype=np.float64)
         scaled_outcomes = data.outcomes / self._payoff_scale
 
         negative_log_likelihood = 0.0

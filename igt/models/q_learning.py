@@ -1,14 +1,19 @@
 """Two-parameter Q-learning model for the Iowa Gambling Task."""
 
+from math import ceil
+
 import numpy as np
 from scipy.special import logsumexp
 
-from igt.constants.config import (
-    DEFAULT_N_Q_STARTS,
-    GENERAL_MAX_LEARNING_RATE,
-    GENERAL_MIN_LEARNING_RATE,
-    MAX_INVERSE_TEMPERATURE,
+from igt.constants.config import DEFAULT_N_Q_STARTS
+from igt.constants.models import (
+    DEFAULT_MAX_INVERSE_TEMPERATURE,
+    DEFAULT_Q_INVERSE_TEMPERATURE_GRID_STEP,
+    DEFAULT_Q_LEARNING_RATE_GRID_SIZE,
+    MAX_LEARNING_RATE,
     MIN_INVERSE_TEMPERATURE,
+    MIN_LEARNING_RATE,
+    N_IGT_DECKS,
     PAYOFF_SCALE,
 )
 from igt.initialization import (
@@ -32,7 +37,7 @@ class QLearningModel(ComputationalModel):
     1. ``learning_rate``
     2. ``inverse_temperature``
 
-    The model evaluates a coarse parameter grid and selects up to ``n_starts``
+    The model evaluates a parameter grid and selects up to ``n_starts``
     distinct grid-local minima as local-optimizer starting points.
     """
 
@@ -40,9 +45,9 @@ class QLearningModel(ComputationalModel):
         self,
         *,
         n_starts: int = DEFAULT_N_Q_STARTS,
-        learning_rate_grid_size: int = 21,
-        inverse_temperature_grid_size: int = 21,
-        max_inverse_temperature: float = MAX_INVERSE_TEMPERATURE,
+        learning_rate_grid_size: int = DEFAULT_Q_LEARNING_RATE_GRID_SIZE,
+        inverse_temperature_grid_size: int | None = None,
+        max_inverse_temperature: float = DEFAULT_MAX_INVERSE_TEMPERATURE,
         payoff_scale: float = PAYOFF_SCALE,
     ) -> None:
         if not isinstance(n_starts, int) or isinstance(n_starts, bool):
@@ -51,10 +56,21 @@ class QLearningModel(ComputationalModel):
         if n_starts <= 0:
             raise ValueError("n_starts must be greater than zero.")
 
+        if not isinstance(learning_rate_grid_size, int) or isinstance(
+            learning_rate_grid_size, bool
+        ):
+            raise TypeError("learning_rate_grid_size must be an integer.")
+
         if learning_rate_grid_size < 2:
             raise ValueError("learning_rate_grid_size must be at least 2.")
 
-        if inverse_temperature_grid_size < 2:
+        if inverse_temperature_grid_size is not None and (
+            not isinstance(inverse_temperature_grid_size, int)
+            or isinstance(inverse_temperature_grid_size, bool)
+        ):
+            raise TypeError("inverse_temperature_grid_size must be an integer or None.")
+
+        if inverse_temperature_grid_size is not None and inverse_temperature_grid_size < 2:
             raise ValueError("inverse_temperature_grid_size must be at least 2.")
 
         if not np.isfinite(max_inverse_temperature):
@@ -74,12 +90,24 @@ class QLearningModel(ComputationalModel):
         self._max_inverse_temperature = float(max_inverse_temperature)
         self._payoff_scale = float(payoff_scale)
 
-        learning_rates = np.linspace(
-            GENERAL_MIN_LEARNING_RATE,
-            GENERAL_MAX_LEARNING_RATE,
+        unit_learning_rates = np.linspace(
+            0.0,
+            1.0,
             num=learning_rate_grid_size,
             dtype=np.float64,
         )
+        learning_rates = MIN_LEARNING_RATE + (
+            (MAX_LEARNING_RATE - MIN_LEARNING_RATE) * np.square(unit_learning_rates)
+        )
+
+        if inverse_temperature_grid_size is None:
+            inverse_temperature_grid_size = (
+                ceil(
+                    (self._max_inverse_temperature - MIN_INVERSE_TEMPERATURE)
+                    / DEFAULT_Q_INVERSE_TEMPERATURE_GRID_STEP
+                )
+                + 1
+            )
 
         inverse_temperatures = np.linspace(
             MIN_INVERSE_TEMPERATURE,
@@ -102,14 +130,14 @@ class QLearningModel(ComputationalModel):
 
         self._n_starts = n_starts
 
-    @property
-    def name(self) -> str:
+    @classmethod
+    def get_name(cls) -> str:
         """Return the model name."""
 
         return "q_learning"
 
-    @property
-    def parameter_names(self) -> tuple[str, ...]:
+    @classmethod
+    def get_parameter_names(cls) -> tuple[str, ...]:
         """Return parameter names in optimizer-array order."""
 
         return (
@@ -122,7 +150,7 @@ class QLearningModel(ComputationalModel):
         """Return the parameter bounds."""
 
         return (
-            (GENERAL_MIN_LEARNING_RATE, GENERAL_MAX_LEARNING_RATE),
+            (MIN_LEARNING_RATE, MAX_LEARNING_RATE),
             (MIN_INVERSE_TEMPERATURE, self._max_inverse_temperature),
         )
 
@@ -148,7 +176,7 @@ class QLearningModel(ComputationalModel):
         learning_rate = float(parameter_array[0])
         inverse_temperature = float(parameter_array[1])
 
-        deck_values = np.zeros(4, dtype=np.float64)
+        deck_values = np.zeros(N_IGT_DECKS, dtype=np.float64)
         scaled_outcomes = data.outcomes / self._payoff_scale
 
         negative_log_likelihood = 0.0
