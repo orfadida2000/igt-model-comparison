@@ -1,16 +1,22 @@
 {
   "cSpell.words": [
+    "arcname",
     "BFGS",
     "cval",
     "flatnonzero",
+    "formsubmit",
     "Fridberg",
     "fromiter",
+    "iinfo",
     "initargs",
     "lexsort",
     "maxiter",
     "nfev",
+    "nonconverged",
     "pyreadr",
     "rdata",
+    "Referer",
+    "rtol",
     "Steingroever"
   ]
 }

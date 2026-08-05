@@ -13,6 +13,41 @@ type IntArray = NDArray[np.int64]
 type FloatArray = NDArray[np.float64]
 type IntegerArray = NDArray[np.integer[Any]]
 type FloatingArray = NDArray[np.floating[Any]]
+
+type Int1DArray = np.ndarray[
+    tuple[int],
+    np.dtype[np.int64],
+]
+type Float1DArray = np.ndarray[
+    tuple[int],
+    np.dtype[np.float64],
+]
+type Integer1DArray = np.ndarray[
+    tuple[int],
+    np.dtype[np.integer[Any]],
+]
+type Floating1DArray = np.ndarray[
+    tuple[int],
+    np.dtype[np.floating[Any]],
+]
+
+type Int2DArray = np.ndarray[
+    tuple[int, int],
+    np.dtype[np.int64],
+]
+type Float2DArray = np.ndarray[
+    tuple[int, int],
+    np.dtype[np.float64],
+]
+type Integer2DArray = np.ndarray[
+    tuple[int, int],
+    np.dtype[np.integer[Any]],
+]
+type Floating2DArray = np.ndarray[
+    tuple[int, int],
+    np.dtype[np.floating[Any]],
+]
+
 type ParameterBounds = Sequence[tuple[float, float]]
 
 

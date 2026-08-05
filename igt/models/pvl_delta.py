@@ -21,7 +21,8 @@ from igt.initialization import generate_sobol_starts
 
 from .base import (
     ComputationalModel,
-    FloatArray,
+    Float1DArray,
+    Float2DArray,
     ParameterBounds,
 )
 from .typing import SubjectData
@@ -102,7 +103,7 @@ class PVLDeltaModel(ComputationalModel):
 
     def negative_log_likelihood(
         self,
-        parameters: FloatArray,
+        parameters: Float1DArray,
         data: SubjectData,
     ) -> float:
         """Calculate the subject's negative log-likelihood.
@@ -160,7 +161,7 @@ class PVLDeltaModel(ComputationalModel):
     def starting_points(
         self,
         data: SubjectData,
-    ) -> FloatArray:
+    ) -> Float2DArray:
         """Return all Sobol starting points.
 
         ``data`` is accepted to satisfy the common model interface. PVL-Delta

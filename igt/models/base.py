@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from igt.typing import FloatArray, ParameterBounds
+from igt.typing import Float1DArray, Float2DArray, ParameterBounds
 
 from .typing import SubjectData
 
@@ -42,7 +42,7 @@ class ComputationalModel(ABC):
     @abstractmethod
     def negative_log_likelihood(
         self,
-        parameters: FloatArray,
+        parameters: Float1DArray,
         data: SubjectData,
     ) -> float:
         """Return the negative log-likelihood for one subject."""
@@ -51,7 +51,7 @@ class ComputationalModel(ABC):
     def starting_points(
         self,
         data: SubjectData,
-    ) -> FloatArray:
+    ) -> Float2DArray:
         """Return local-optimizer starts.
 
         The returned array must have shape:
@@ -80,8 +80,8 @@ class ComputationalModel(ABC):
     @classmethod
     def validate_parameters(
         cls,
-        parameters: FloatArray,
-    ) -> FloatArray:
+        parameters: Float1DArray,
+    ) -> Float1DArray:
         """Validate and return one optimizer parameter vector."""
 
         parameter_array = np.asarray(
@@ -104,7 +104,7 @@ class ComputationalModel(ABC):
 
     def parameters_within_bounds(
         self,
-        parameters: FloatArray,
+        parameters: Float1DArray,
     ) -> bool:
         """Return whether every parameter is inside its model bound."""
 

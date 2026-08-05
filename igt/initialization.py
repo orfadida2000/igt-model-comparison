@@ -17,12 +17,18 @@ import numpy as np
 from scipy.ndimage import label, minimum_filter
 from scipy.stats import qmc
 
-from igt.typing import FloatArray, IntArray, IntegerArray, ParameterBounds
+from igt.typing import (
+    Float1DArray,
+    Float2DArray,
+    Int1DArray,
+    IntegerArray,
+    ParameterBounds,
+)
 
 
 def bounds_to_arrays(
     bounds: ParameterBounds,
-) -> tuple[FloatArray, FloatArray]:
+) -> tuple[Float1DArray, Float1DArray]:
     """Convert parameter bounds into lower- and upper-bound arrays.
 
     Args:
@@ -67,8 +73,8 @@ def bounds_to_arrays(
 
 
 def generate_grid_starts(
-    parameter_values: Sequence[Sequence[float] | FloatArray],
-) -> FloatArray:
+    parameter_values: Sequence[Sequence[float] | Float1DArray],
+) -> Float2DArray:
     """Generate every combination of supplied parameter values.
 
     This function constructs a Cartesian product. Each row of the returned
@@ -112,7 +118,7 @@ def generate_grid_starts(
     if len(parameter_values) == 0:
         raise ValueError("Candidate values for at least one parameter are required.")
 
-    value_arrays: list[FloatArray] = []
+    value_arrays: list[Float1DArray] = []
 
     for parameter_index, values in enumerate(parameter_values):
         values_array = np.asarray(values, dtype=np.float64)
@@ -145,11 +151,11 @@ def generate_grid_starts(
 
 
 def select_grid_local_minimum_indices(
-    objective_values: FloatArray,
+    objective_values: Float1DArray,
     *,
     grid_shape: Sequence[int],
     max_starts: int,
-) -> IntArray:
+) -> Int1DArray:
     """Select distinct local minima from a regular Cartesian grid.
 
     A finite grid point is considered a local minimum when its objective value
@@ -267,9 +273,9 @@ def select_grid_local_minimum_indices(
 
 
 def scale_unit_points_to_bounds(
-    unit_points: FloatArray,
+    unit_points: Float2DArray,
     bounds: ParameterBounds,
-) -> FloatArray:
+) -> Float2DArray:
     """Scale points from the unit interval to parameter bounds.
 
     Each input coordinate must be in ``[0, 1]``.
@@ -327,7 +333,7 @@ def generate_sobol_starts(
     n_starts: int,
     rng: np.random.Generator | int | None = None,
     scramble: bool = True,
-) -> FloatArray:
+) -> Float2DArray:
     """Generate Sobol starting points within parameter bounds.
 
     The number of starts must be a power of two because Sobol sequences have

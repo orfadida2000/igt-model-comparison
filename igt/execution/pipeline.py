@@ -14,6 +14,7 @@ from igt.rdata_preprocessing import load_igt_long_table
 from igt.subject_selection import filter_subjects_by_keys
 
 from .manager import fit_all_subjects
+from .typing import SubjectModelWarmStartsProvider
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +28,12 @@ class FittingPipelineConfig:
     show_progress: bool = True
     n_subjects: int | None = None
     subject_keys: pd.DataFrame | None = field(default=None, repr=False)
+    subject_model_warm_starts_provider: SubjectModelWarmStartsProvider | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
 
     def __post_init__(self) -> None:
         """Validate and freeze configuration values."""
@@ -37,9 +44,7 @@ class FittingPipelineConfig:
         if not self.models:
             raise ValueError("At least one model must be supplied.")
 
-        if not isinstance(self.max_iterations, int) or isinstance(
-            self.max_iterations, bool
-        ):
+        if not isinstance(self.max_iterations, int) or isinstance(self.max_iterations, bool):
             raise TypeError("max_iterations must be an integer.")
 
         if self.max_iterations <= 0:
@@ -53,15 +58,11 @@ class FittingPipelineConfig:
                 raise ValueError("n_workers must be greater than zero.")
 
         if self.n_subjects is not None:
-            if not isinstance(self.n_subjects, int) or isinstance(
-                self.n_subjects, bool
-            ):
+            if not isinstance(self.n_subjects, int) or isinstance(self.n_subjects, bool):
                 raise TypeError("n_subjects must be an integer or None.")
 
             if self.n_subjects < 0:
-                raise ValueError(
-                    "n_subjects must be greater than or equal to zero."
-                )
+                raise ValueError("n_subjects must be greater than or equal to zero.")
 
         if not isinstance(self.show_progress, bool):
             raise TypeError("show_progress must be a boolean.")
@@ -71,16 +72,16 @@ class FittingPipelineConfig:
                 raise TypeError("subject_keys must be a pandas DataFrame or None.")
 
             if self.subject_keys.empty:
-                raise ValueError(
-                    "subject_keys was provided but contains no subjects."
-                )
+                raise ValueError("subject_keys was provided but contains no subjects.")
 
             if self.n_subjects is not None:
-                raise ValueError(
-                    "subject_keys and n_subjects cannot both be provided."
-                )
+                raise ValueError("subject_keys and n_subjects cannot both be provided.")
 
             object.__setattr__(self, "subject_keys", self.subject_keys.copy())
+
+        if self.subject_model_warm_starts_provider is not None:
+            if not callable(self.subject_model_warm_starts_provider):
+                raise TypeError("subject_model_warm_starts_provider must be a callable or None.")
 
 
 def run_fitting_pipeline(config: FittingPipelineConfig) -> pd.DataFrame:

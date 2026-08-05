@@ -2,6 +2,8 @@ import argparse
 from math import isfinite
 from pathlib import Path
 
+from igt.notify.formsubmit import validate_normalize_email
+
 
 def _validate_n_q_starts(value: str | int, is_default: bool, err_class: type[BaseException]) -> int:
     """Parse and validate the maximum number of Q-learning grid-local-minimum starts."""
@@ -163,9 +165,7 @@ def _validate_positive_float(
     """Parse and validate a finite positive floating-point value."""
 
     if isinstance(value, bool):
-        raise err_class(
-            f"Invalid {label.lower()}: expected a string or number, got bool"
-        )
+        raise err_class(f"Invalid {label.lower()}: expected a string or number, got bool")
 
     try:
         parsed_value = float(value)
@@ -247,6 +247,14 @@ def _dir_path_type(value: str) -> Path:
     return _validate_dir_path(value, label="Directory path", err_class=argparse.ArgumentTypeError)
 
 
+def _email_address_type(value: str) -> str:
+    try:
+        normalized_email = validate_normalize_email(value)
+        return normalized_email
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(str(e)) from None
+
+
 def get_parser(
     *,
     default_rdata_path: str | Path | None = None,
@@ -260,6 +268,7 @@ def get_parser(
     default_output_dir: str | Path | None = None,
     default_logging_dir: str | Path | None = None,
     default_log_level: int = -1,
+    default_notify_formsubmit_id: str | None = None,
 ) -> argparse.ArgumentParser:
     """Get the argument parser."""
     parser = argparse.ArgumentParser(
@@ -398,6 +407,14 @@ def get_parser(
         default=default_log_level,
         help=f"Logging level of the root logger; use negative value to disable logging (default: {default_log_level}).",
     )
+
+    if default_notify_formsubmit_id is not None:
+        parser.add_argument(
+            "--notify-formsubmit-id",
+            type=str,
+            default=default_notify_formsubmit_id,
+            help=f"The ID (of the email) of the FormSubmit form to send notifications to on script completion (with result files) or crash (default: {default_notify_formsubmit_id}).",
+        )
 
     parser.add_argument(
         "--no-progress",

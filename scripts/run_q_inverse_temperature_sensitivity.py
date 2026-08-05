@@ -2,28 +2,37 @@
 
 import argparse
 import logging
-from datetime import datetime
+import time
+from collections.abc import Sequence
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Final
+
+from pandas import DataFrame
 
 from igt.constants.config import (
     DEFAULT_N_Q_STARTS,
     DEFAULT_N_WORKERS,
+    DEFAULT_NOTIFY_FORMSUBMIT_ID,
     DEFAULT_ROOT_LOG_LEVEL,
     FILENAME_DATETIME_FMT,
 )
 from igt.constants.fitting import DEFAULT_MAX_ITERATIONS
 from igt.constants.path import IGT_DATASET_PATH, LOGS_DIR, RESULTS_DIR
 from igt.execution.pipeline import FittingPipelineConfig, run_fitting_pipeline
-from igt.logging_setup import configure_application_logging
+from igt.logging import application_logging_cleanup, configure_application_logging
 from igt.models.q_learning import QLearningModel
+from igt.notify.formsubmit import (
+    error_email_notifier,
+    send_formsubmit_email_script_success_notification,
+)
 from igt.subject_selection import (
     DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
     select_q_inverse_temperature_subject_keys_from_csv,
 )
 
-MAX_INVERSE_TEMPERATURES: Final[tuple[float, ...]] = (20.0, 50.0, 100.0)
-DEFAULT_OUTPUT_DIR: Final[Path] = RESULTS_DIR / "q_inverse_temperature_sensitivity"
+MAX_INVERSE_TEMPERATURES: Final[tuple[float, ...]] = (100.0,)
+N_STARTS_VALUES: Final[tuple[int, ...]] = (DEFAULT_N_Q_STARTS, DEFAULT_N_Q_STARTS * 2)
 
 
 def _existing_file_path(value: str) -> Path:
@@ -43,7 +52,7 @@ def _directory_path(value: str) -> Path:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Refit capped Q-learning subjects with inverse-temperature maxima 20, 50, and 100."
+            f"Refit capped Q-learning subjects with inverse-temperature maxima: {MAX_INVERSE_TEMPERATURES}, and for each maximum, refit with number of starts: {N_STARTS_VALUES}."
         )
     )
     parser.add_argument(
@@ -51,7 +60,7 @@ def _parse_args() -> argparse.Namespace:
         type=_existing_file_path,
         help=(
             "Previous full model-fits CSV used to select converged Q-learning "
-            "fits with inverse_temperature >= 19.5."
+            f"fits with inverse_temperature >= {DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD}."
         ),
     )
     parser.add_argument(
@@ -63,14 +72,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=_directory_path,
-        default=DEFAULT_OUTPUT_DIR,
-        help=f"Sensitivity output directory (default: {DEFAULT_OUTPUT_DIR}).",
+        default=(RESULTS_DIR / "q_inverse_temperature_sensitivity"),
+        help=f"Sensitivity output directory (default: {RESULTS_DIR / 'q_inverse_temperature_sensitivity'}).",
     )
     parser.add_argument(
         "--logging-dir",
         type=_directory_path,
-        default=LOGS_DIR,
-        help=f"Log directory (default: {LOGS_DIR}).",
+        default=(LOGS_DIR / "q_inverse_temperature_sensitivity"),
+        help=f"Log directory (default: {LOGS_DIR / 'q_inverse_temperature_sensitivity'}).",
     )
     parser.add_argument(
         "--workers",
@@ -107,17 +116,14 @@ def _format_numeric_filename_value(value: float) -> str:
     return f"{value:g}".replace(".", "p")
 
 
-def main() -> None:
-    """Select capped subjects and run the three Q-learning sensitivity fits."""
-
+def _setup() -> tuple[argparse.Namespace, str, DataFrame, Path | None]:
     args = _parse_args()
-    datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
+    start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
     subject_keys = select_q_inverse_temperature_subject_keys_from_csv(
         args.fit_results_path,
         threshold=DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
         require_convergence=True,
     )
-    n_selected_subjects = len(subject_keys)
 
     logging_path = configure_application_logging(
         disabled=args.log_level < 0,
@@ -125,67 +131,188 @@ def main() -> None:
         log_file_path=(
             args.logging_dir
             / (
-                "q_inverse_temperature_sensitivity_"
-                f"{n_selected_subjects}_subjects_{datetime_str}.log"
+                f"q_inverse_temperature_sensitivity_{len(subject_keys)}_subjects_{start_datetime_str}.log"
             )
         ),
     )
+    return args, start_datetime_str, subject_keys, logging_path
 
-    logger = logging.getLogger("igt.q_inverse_temperature_sensitivity")
-    logger.info("Starting Q-learning inverse-temperature sensitivity analysis...")
-    logger.info(
-        "Selected %d converged Q-learning subjects with inverse temperature >= %.1f.",
-        n_selected_subjects,
-        DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
-    )
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    subject_keys_path = args.output_dir / (
-        "selected_subjects_beta_ge_"
-        f"{_format_numeric_filename_value(DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD)}_"
-        f"{datetime_str}.csv"
-    )
+def _run(
+    *,
+    args: argparse.Namespace,
+    start_datetime_str: str,
+    subject_keys: DataFrame,
+    logger: logging.Logger | str = "igt.q_inverse_temperature_sensitivity",
+) -> Sequence[str | Path]:
+    logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     output_paths: list[Path] = []
 
     for max_inverse_temperature in MAX_INVERSE_TEMPERATURES:
-        model = QLearningModel(
-            n_starts=DEFAULT_N_Q_STARTS,
-            max_inverse_temperature=max_inverse_temperature,
-        )
-        results_table = run_fitting_pipeline(
-            FittingPipelineConfig(
-                rdata_path=args.rdata_path,
-                models=(model,),
-                max_iterations=DEFAULT_MAX_ITERATIONS,
-                n_workers=_normalize_n_workers(args.workers),
-                show_progress=not args.no_progress,
-                n_subjects=None,
-                subject_keys=subject_keys,
-            )
-        )
-
-        beta_label = _format_numeric_filename_value(max_inverse_temperature)
-        output_path = args.output_dir / (
-            "q_learning_max_inverse_temperature_"
-            f"{beta_label}_{n_selected_subjects}_subjects_"
-            f"{datetime_str}.csv"
-        )
-        results_table.to_csv(output_path, index=False, lineterminator="\n")
-        output_paths.append(output_path)
         logger.info(
-            "Saved Q-learning fits for maximum inverse temperature %g: %s",
+            "Running Q-learning fits for max inverse temperature=%g, n_starts=%r",
             max_inverse_temperature,
-            output_path,
+            N_STARTS_VALUES,
+        )
+        for n_starts in N_STARTS_VALUES:
+            q_learning_model = QLearningModel(
+                n_starts=n_starts,
+                max_inverse_temperature=max_inverse_temperature,
+            )
+
+            logger.info(
+                "Running Q-learning fits for max inverse temperature=%g, n_starts=%d",
+                max_inverse_temperature,
+                n_starts,
+            )
+            results_table = run_fitting_pipeline(
+                FittingPipelineConfig(
+                    rdata_path=args.rdata_path,
+                    models=(q_learning_model,),
+                    max_iterations=DEFAULT_MAX_ITERATIONS,
+                    n_workers=_normalize_n_workers(args.workers),
+                    show_progress=not args.no_progress,
+                    n_subjects=None,
+                    subject_keys=subject_keys,
+                )
+            )
+
+            logger.info(
+                "Completed Q-learning fits for max inverse temperature=%g, n_starts=%d",
+                max_inverse_temperature,
+                n_starts,
+            )
+
+            beta_label = _format_numeric_filename_value(max_inverse_temperature)
+            output_path = args.output_dir / (
+                "q_learning_max_inverse_temperature_"
+                f"{beta_label}_{len(subject_keys)}_subjects_"
+                f"{n_starts}_starts_"
+                f"{start_datetime_str}.csv"
+            )
+
+            results_table.to_csv(output_path, index=False, lineterminator="\n")
+            output_paths.append(output_path)
+            logger.info(
+                "Saved Q-learning fits for maximum inverse temperature=%g, n_starts=%d to: %s",
+                max_inverse_temperature,
+                n_starts,
+                output_path,
+            )
+
+        logger.info(
+            "Completed Q-learning fits for max inverse temperature=%g, n_starts=%r",
+            max_inverse_temperature,
+            N_STARTS_VALUES,
         )
 
-    subject_keys.to_csv(subject_keys_path, index=False, lineterminator="\n")
-    logger.info("Saved selected subject keys: %s", subject_keys_path)
+    return output_paths
 
-    if logging_path is not None:
-        logger.info("Saved log file: %s", logging_path)
 
-    logger.info("Completed sensitivity outputs: %r", output_paths)
+def _cleanup(
+    *,
+    logger: logging.Logger | str = "igt.q_inverse_temperature_sensitivity",
+) -> None:
+    """Perform any necessary cleanup after the script has finished running."""
+    logger = logging.getLogger(logger) if isinstance(logger, str) else logger
+
+    logger.info("Cleaning up application logging...")
+    application_logging_cleanup()
+
+
+def main() -> None:
+    """Select capped subjects and run the three Q-learning sensitivity fits."""
+    start_counter = time.perf_counter()
+
+    (
+        args,
+        start_datetime_str,
+        subject_keys,
+        logging_path,
+    ) = _setup()
+
+    notify_formsubmit_id: str | None = DEFAULT_NOTIFY_FORMSUBMIT_ID
+
+    with error_email_notifier(
+        formsubmit_id=notify_formsubmit_id,
+        script_name=Path(__file__).name,
+        start_counter=start_counter,
+    ):
+        logger = logging.getLogger("igt.q_inverse_temperature_sensitivity")
+        logger.info("Starting Q-learning inverse-temperature sensitivity analysis...")
+        logger.info(
+            "Selected %d converged Q-learning subjects with inverse temperature >= %.1f.",
+            len(subject_keys),
+            DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
+        )
+
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(
+            "Running Q-learning fits for max inverse temperatures=%r, n_starts=%r",
+            tuple(f"{val:g}" for val in MAX_INVERSE_TEMPERATURES),
+            N_STARTS_VALUES,
+        )
+
+        result_files = _run(
+            args=args,
+            start_datetime_str=start_datetime_str,
+            subject_keys=subject_keys,
+            logger=logger,
+        )
+        result_files = [Path(f) for f in result_files]
+
+        subject_keys_path = args.output_dir / (
+            "selected_subjects_beta_ge_"
+            f"{_format_numeric_filename_value(DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD)}_"
+            f"{start_datetime_str}.csv"
+        )
+        subject_keys.to_csv(subject_keys_path, index=False, lineterminator="\n")
+        logger.info("Saved selected subject keys to: %s", subject_keys_path)
+        result_files.append(subject_keys_path)
+
+        if logging_path is not None:
+            logger.info("Saved log file to: %s", logging_path)
+
+            result_files.append(Path(logging_path))
+
+        end_counter = time.perf_counter()
+        elapsed_time = end_counter - start_counter
+        elapsed_time_obj = timedelta(seconds=round(elapsed_time))
+
+        logger.info(
+            "Completed Q-learning inverse-temperature sensitivity analysis in %s.", elapsed_time_obj
+        )
+
+        if notify_formsubmit_id is not None:
+            logger.info(
+                "Sending FormSubmit notification to %r with results files: %r as 1 zip attachment %r.",
+                notify_formsubmit_id,
+                [f.name for f in result_files],
+                "q_inverse_temperature_sensitivity_output_files.zip",
+            )
+
+        logger.info("Performing cleanup...")
+        _cleanup(logger=logger)
+
+        if notify_formsubmit_id is not None:
+            zip_filename = "q_inverse_temperature_sensitivity_output_files.zip"
+            email_message = f"""
+    The Q-learning inverse-temperature sensitivity analysis has completed successfully.
+
+    The following results files have been generated and are attached in a zip file named {zip_filename!r}:
+    {"\n".join(f"  - {f.name}" for f in result_files)}
+            """.strip()
+
+            send_formsubmit_email_script_success_notification(
+                formsubmit_id=notify_formsubmit_id,
+                message=email_message,
+                duration_seconds=elapsed_time,
+                script_name=Path(__file__).name,
+                file_paths=result_files,
+                zip_filename=zip_filename,
+            )
 
 
 if __name__ == "__main__":

@@ -14,16 +14,16 @@ from igt.constants.fitting import (
 from igt.constants.models import N_IGT_DECKS
 from igt.models.base import ComputationalModel
 from igt.models.typing import SubjectData
-from igt.typing import FloatArray, ParameterBounds
+from igt.typing import Float1DArray, Float2DArray, ParameterBounds
 
 from .typing import ModelFitResult
 
 
 def _validate_starting_points(
     model: ComputationalModel,
-    starts: FloatArray,
-) -> FloatArray:
-    """Validate optimizer starting points returned by a model."""
+    starts: Float2DArray,
+) -> Float2DArray:
+    """Validate optimizer starting points for a model."""
 
     starts_array = np.asarray(starts, dtype=np.float64)
     expected_columns = model.n_parameters
@@ -88,7 +88,7 @@ def _select_best_optimization_result(
 
 
 def _parameter_boundary_counts(
-    parameters: FloatArray,
+    parameters: Float1DArray,
     bounds: ParameterBounds,
 ) -> tuple[int, int, int]:
     """Count fitted parameters at lower, upper, and either bound."""
@@ -133,6 +133,7 @@ def fit_model(
     subject_id: int,
     source_study: str,
     optimizer_options: Mapping[str, object] | None = None,
+    warm_starting_points: Float2DArray | None = None,
     logger: logging.Logger | None = None,
     fit_method: str = DEFAULT_FIT_METHOD,
 ) -> ModelFitResult:
@@ -152,10 +153,24 @@ def fit_model(
     if not source_study.strip():
         raise ValueError("source_study must not be empty.")
 
-    starts = _validate_starting_points(
+    model_starts = _validate_starting_points(
         model,
         model.starting_points(data),
     )
+
+    if warm_starting_points is None:
+        starts = model_starts
+    else:
+        warm_starts = _validate_starting_points(
+            model,
+            warm_starting_points,
+        )
+        starts = np.vstack(
+            (
+                warm_starts,
+                model_starts,
+            )
+        )
 
     if logger is not None:
         logger.debug(

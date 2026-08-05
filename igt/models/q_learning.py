@@ -23,7 +23,8 @@ from igt.initialization import (
 
 from .base import (
     ComputationalModel,
-    FloatArray,
+    Float1DArray,
+    Float2DArray,
     ParameterBounds,
 )
 from .typing import SubjectData
@@ -96,8 +97,23 @@ class QLearningModel(ComputationalModel):
             num=learning_rate_grid_size,
             dtype=np.float64,
         )
-        learning_rates = MIN_LEARNING_RATE + (
+        computed_learning_rates = MIN_LEARNING_RATE + (
             (MAX_LEARNING_RATE - MIN_LEARNING_RATE) * np.square(unit_learning_rates)
+        )
+
+        additional_low_learning_rates = np.array(
+            [0.0001, 0.0003, 0.001, 0.003],
+            dtype=np.float64,
+        )
+        additional_low_learning_rates = additional_low_learning_rates[
+            (additional_low_learning_rates >= MIN_LEARNING_RATE)
+            & (additional_low_learning_rates <= MAX_LEARNING_RATE)
+        ]
+        learning_rates = np.concatenate(
+            [
+                computed_learning_rates,
+                additional_low_learning_rates,
+            ]
         )
 
         if inverse_temperature_grid_size is None:
@@ -109,16 +125,32 @@ class QLearningModel(ComputationalModel):
                 + 1
             )
 
-        inverse_temperatures = np.linspace(
+        computed_inverse_temperatures = np.linspace(
             MIN_INVERSE_TEMPERATURE,
             self._max_inverse_temperature,
             num=inverse_temperature_grid_size,
             dtype=np.float64,
         )
 
+        additional_low_inverse_temperatures = np.array(
+            [0.1, 0.25, 0.5, 0.75],
+            dtype=np.float64,
+        )
+        additional_low_inverse_temperatures = additional_low_inverse_temperatures[
+            (additional_low_inverse_temperatures >= MIN_INVERSE_TEMPERATURE)
+            & (additional_low_inverse_temperatures <= self._max_inverse_temperature)
+        ]
+
+        inverse_temperatures = np.concatenate(
+            [
+                computed_inverse_temperatures,
+                additional_low_inverse_temperatures,
+            ]
+        )
+
         self._grid_shape = (
-            learning_rate_grid_size,
-            inverse_temperature_grid_size,
+            learning_rates.size,
+            inverse_temperatures.size,
         )
         self._grid = generate_grid_starts([learning_rates, inverse_temperatures])
 
@@ -156,7 +188,7 @@ class QLearningModel(ComputationalModel):
 
     def negative_log_likelihood(
         self,
-        parameters: FloatArray,
+        parameters: Float1DArray,
         data: SubjectData,
     ) -> float:
         """Calculate the subject's negative log-likelihood.
@@ -199,7 +231,7 @@ class QLearningModel(ComputationalModel):
 
         return negative_log_likelihood
 
-    def starting_points(self, data: SubjectData) -> FloatArray:
+    def starting_points(self, data: SubjectData) -> Float2DArray:
         """Return up to ``n_starts`` distinct grid-local NLL minima.
 
         Every selected point is no worse than its immediate horizontal,

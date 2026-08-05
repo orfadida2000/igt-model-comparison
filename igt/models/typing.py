@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from igt.typing import FloatArray, IntArray
+from igt.typing import Float1DArray, Int1DArray
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,9 +20,9 @@ class SubjectData:
     non-positive.
     """
 
-    choices: IntArray
-    wins: FloatArray
-    losses: FloatArray
+    choices: Int1DArray
+    wins: Float1DArray
+    losses: Float1DArray
 
     def __post_init__(self) -> None:
         """Validate the subject arrays."""
@@ -67,7 +67,7 @@ class SubjectData:
             raise ValueError("losses must contain only non-positive values.")
 
     @property
-    def outcomes(self) -> FloatArray:
+    def outcomes(self) -> Float1DArray:
         """Return the net outcome for every trial."""
 
         return self.wins + self.losses

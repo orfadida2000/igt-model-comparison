@@ -22,7 +22,13 @@ from igt.models.typing import SubjectData
 from igt.rdata_preprocessing import iter_subject_trials
 
 from .fitting import fit_model
-from .typing import LoggingContext, ModelFitResult, SubjectFitTask
+from .typing import (
+    LoggingContext,
+    ModelFitResult,
+    ModelWarmStarts,
+    SubjectFitTask,
+    SubjectModelWarmStartsProvider,
+)
 
 # TODO: Add to igt.constants.?
 _REQUIRED_TRIAL_COLUMNS = {
@@ -99,20 +105,44 @@ def _validate_models(
     return model_tuple
 
 
-def _build_subject_tasks(data: pd.DataFrame, n_subjects: int | None = None) -> list[SubjectFitTask]:
+def _build_subject_tasks(
+    data: pd.DataFrame,
+    models: Sequence[ComputationalModel],
+    n_subjects: int | None = None,
+    subject_model_warm_starts_provider: SubjectModelWarmStartsProvider | None = None,
+) -> list[SubjectFitTask]:
     """Create one serializable fitting task per subject."""
 
     tasks: list[SubjectFitTask] = []
 
     for (n_trials, subject_id), subject_trials in iter_subject_trials(data, n_subjects=n_subjects):
-        tasks.append(
-            SubjectFitTask(
-                n_trials=n_trials,
-                subject_id=subject_id,
-                source_study=_get_subject_study(subject_trials),
-                data=_compute_subject_data_from_trials(subject_trials),
-            )
+        subject_model_warm_starts: list[ModelWarmStarts] = []
+
+        if subject_model_warm_starts_provider is not None:
+            for model in models:
+                starting_points = subject_model_warm_starts_provider(
+                    model.name,
+                    n_trials,
+                    subject_id,
+                )
+
+                if starting_points is not None:
+                    subject_model_warm_starts.append(
+                        ModelWarmStarts(
+                            model_name=model.name,
+                            starting_points=starting_points,
+                        )
+                    )
+
+        subject_task = SubjectFitTask(
+            n_trials=n_trials,
+            subject_id=subject_id,
+            source_study=_get_subject_study(subject_trials),
+            data=_compute_subject_data_from_trials(subject_trials),
+            model_warm_starts=tuple(subject_model_warm_starts),
         )
+
+        tasks.append(subject_task)
 
     if not tasks and (n_subjects is None or n_subjects > 0):
         raise ValueError("The dataset does not contain any subjects.")
@@ -131,17 +161,24 @@ def _fit_models_for_subject(
 
     model_tuple = _validate_models(models)
 
+    warm_starts_by_model = {
+        item.model_name: item.starting_points for item in task.model_warm_starts
+    }
+
     if logger is not None:
         logger.debug("Fitting the models for the subject's %r", task)
 
     model_fit_results: list[ModelFitResult] = []
 
     for model in model_tuple:
+        warm_starting_points = warm_starts_by_model.get(model.name)
+
         if logger is not None:
             logger.debug(
-                "Fitting model %r to subject's task %r",
+                "Fitting model %r to subject's task %r with warm-starting points: %r",
                 model.name,
                 task,
+                warm_starting_points,
             )
 
         model_fit_results.append(
@@ -152,6 +189,7 @@ def _fit_models_for_subject(
                 subject_id=task.subject_id,
                 source_study=task.source_study,
                 optimizer_options=optimizer_options,
+                warm_starting_points=warm_starting_points,
                 logger=logger,
             )
         )
@@ -446,6 +484,7 @@ def fit_all_subjects(
     show_progress: bool = True,
     n_workers: int | None = None,
     n_subjects: int | None = None,
+    subject_model_warm_starts_provider: SubjectModelWarmStartsProvider | None = None,
 ) -> list[ModelFitResult]:
     """Fit every model to every subject, serially or in parallel.
 
@@ -456,6 +495,10 @@ def fit_all_subjects(
         show_progress: Whether to display a subject progress bar.
         n_workers: Number of worker processes. Use ``1`` for serial fitting.
         n_subjects: Number of subjects to fit. If None, fit all subjects.
+        subject_model_warm_starts_provider: Optional callable that provides warm-start parameter values for a given model and subject.
+
+    Returns:
+        A list of model-fit results, one for each model and subject.
     """
 
     if n_workers is not None:
@@ -483,7 +526,12 @@ def fit_all_subjects(
         )
 
     manager_logger.debug("Building subject tasks from the dataset.")
-    tasks = _build_subject_tasks(data, n_subjects=n_subjects)
+    tasks = _build_subject_tasks(
+        data,
+        models=model_tuple,
+        n_subjects=n_subjects,
+        subject_model_warm_starts_provider=subject_model_warm_starts_provider,
+    )
 
     manager_logger.info("Starting to fit %d subjects", len(tasks))
 

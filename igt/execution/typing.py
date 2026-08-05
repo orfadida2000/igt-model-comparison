@@ -1,7 +1,9 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from igt.models.typing import SubjectData
+from igt.typing import Float2DArray
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,6 +113,24 @@ class ModelFitResult:
         return record
 
 
+type SubjectModelWarmStartsProvider = Callable[
+    [str, int, int],
+    Float2DArray | None,
+]
+
+
+@dataclass(frozen=True, slots=True)
+class ModelWarmStarts:
+    """Additional optimizer starting points for one model."""
+
+    model_name: str
+    starting_points: Float2DArray = field(
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class SubjectFitTask:
     """Serializable input required to fit every model to one subject."""
@@ -118,4 +138,14 @@ class SubjectFitTask:
     n_trials: int
     subject_id: int
     source_study: str
-    data: SubjectData = field(repr=False, compare=False, hash=False)
+    data: SubjectData = field(
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    model_warm_starts: tuple[ModelWarmStarts, ...] = field(
+        default=(),
+        repr=False,
+        compare=False,
+        hash=False,
+    )
