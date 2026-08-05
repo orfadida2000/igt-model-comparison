@@ -6,7 +6,7 @@ import time
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from igt.comparison import (
     add_model_comparison_columns,
@@ -39,8 +39,10 @@ from igt.notify.formsubmit import (
 )
 from igt.parser import get_parser
 
+LOGGER_NAME: Final[str] = "igt.main"
 
-def _parse_args() -> tuple[argparse.Namespace, dict[str, Any]]:
+
+def _parse_args() -> argparse.Namespace:
     """Parse command-line arguments and return resolved runtime values."""
 
     parser = get_parser(
@@ -60,7 +62,11 @@ def _parse_args() -> tuple[argparse.Namespace, dict[str, Any]]:
         else DEFAULT_NOTIFY_FORMSUBMIT_ID,
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def _normalize_args(args: argparse.Namespace) -> dict[str, Any]:
+    """Normalize command-line arguments and return a dictionary of runtime values."""
 
     normalized_args: dict[str, Any] = {
         "rdata_path": args.rdata_path,
@@ -82,14 +88,18 @@ def _parse_args() -> tuple[argparse.Namespace, dict[str, Any]]:
         else (None if not args.notify_formsubmit_id else args.notify_formsubmit_id),
     }
 
-    return args, normalized_args
+    return normalized_args
 
 
 def _setup() -> tuple[argparse.Namespace, dict[str, Any], str, Path | None]:
     """Parse command-line arguments, configure logging, and return runtime values."""
 
-    args, normalized_args = _parse_args()
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
+    args = _parse_args()
+    normalized_args = _normalize_args(args)
+
+    normalized_args["output_dir"] = Path(normalized_args["output_dir"]) / start_datetime_str
+
     logging_path = configure_application_logging(
         disabled=normalized_args["logging_disabled"],
         root_level=normalized_args["log_level"],
@@ -110,7 +120,7 @@ def _run(
     *,
     normalized_args: dict[str, Any],
     start_datetime_str: str,
-    logger: logging.Logger | str = "igt.main",
+    logger: logging.Logger | str = LOGGER_NAME,
 ) -> Sequence[str | Path]:
     """Run the IGT model fitting and comparison pipeline based on command-line arguments."""
 
@@ -140,6 +150,7 @@ def _run(
     )
 
     logger.info("Processing and saving results...")
+
     comparison_table = add_model_comparison_columns(results_table)
     summary_table = summarize_model_comparison(results_table)
 
@@ -173,7 +184,7 @@ def _run(
 
 def _cleanup(
     *,
-    logger: logging.Logger | str = "igt.main",
+    logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Perform any necessary cleanup after the script has finished running."""
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
@@ -201,7 +212,7 @@ def main() -> None:
         script_name=Path(__file__).name,
         start_counter=start_counter,
     ):
-        logger = logging.getLogger("igt.main")
+        logger = logging.getLogger(LOGGER_NAME)
         logger.info("Starting IGT model fitting and comparison...")
         logger.debug("Parsed command-line arguments: %r", vars(args))
         logger.debug("Normalized command-line arguments: %r", normalized_args)
@@ -227,10 +238,9 @@ def main() -> None:
 
         if notify_formsubmit_id is not None:
             logger.info(
-                "Sending FormSubmit notification to %r with results files: %r as 1 zip attachment %r.",
+                "Sending FormSubmit notification to %r with results files: %r as one zip attachment.",
                 notify_formsubmit_id,
                 [f.name for f in result_files],
-                "igt_model_comparison_output_files.zip",
             )
 
         logger.info("Performing cleanup...")

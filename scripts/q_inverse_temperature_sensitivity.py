@@ -6,7 +6,7 @@ import time
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from pandas import DataFrame
 
@@ -34,6 +34,8 @@ from igt.subject_selection import (
 MAX_INVERSE_TEMPERATURES: Final[tuple[float, ...]] = (100.0,)
 N_STARTS_VALUES: Final[tuple[int, ...]] = (DEFAULT_N_Q_STARTS, DEFAULT_N_Q_STARTS * 2)
 
+LOGGER_NAME: Final[str] = "scripts.q_inverse_temperature_sensitivity"
+
 
 def _existing_file_path(value: str) -> Path:
     path = Path(value)
@@ -60,7 +62,16 @@ def _parse_args() -> argparse.Namespace:
         type=_existing_file_path,
         help=(
             "Previous full model-fits CSV used to select converged Q-learning "
-            f"fits with inverse_temperature >= {DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD}."
+            "fits with inverse_temperature >= --selection-threshold."
+        ),
+    )
+    parser.add_argument(
+        "--selection-threshold",
+        type=float,
+        default=DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
+        help=(
+            "Inverse-temperature threshold for selecting converged Q-learning fits "
+            f"(default: {DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD})."
         ),
     )
     parser.add_argument(
@@ -101,49 +112,65 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable the subject progress bar.",
     )
+
     return parser.parse_args()
 
 
-def _normalize_n_workers(value: int) -> int | None:
-    if value < 0:
-        return None
-    if value == 0:
-        return 1
-    return value
+def _normalize_args(args: argparse.Namespace) -> dict[str, Any]:
+    normalized_args: dict[str, Any] = {
+        "fit_results_path": args.fit_results_path,
+        "selection_threshold": args.selection_threshold
+        if args.selection_threshold >= 0
+        else DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
+        "rdata_path": args.rdata_path,
+        "n_workers": (None if args.workers < 0 else (1 if args.workers == 0 else args.workers)),
+        "output_dir": args.output_dir or args.rdata_path.parent / "output_files",
+        "logging_dir": args.logging_dir or args.rdata_path.parent / "logs",
+        "logging_disabled": bool(args.log_level < 0),
+        "log_level": None if args.log_level < 0 else args.log_level,
+        "no_progress": args.no_progress,
+        "notify_formsubmit_id": DEFAULT_NOTIFY_FORMSUBMIT_ID,
+    }
+
+    return normalized_args
 
 
 def _format_numeric_filename_value(value: float) -> str:
     return f"{value:g}".replace(".", "p")
 
 
-def _setup() -> tuple[argparse.Namespace, str, DataFrame, Path | None]:
-    args = _parse_args()
+def _setup() -> tuple[argparse.Namespace, dict[str, Any], str, DataFrame, Path | None]:
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
+    args = _parse_args()
+    normalized_args = _normalize_args(args)
+
+    normalized_args["output_dir"] = Path(normalized_args["output_dir"]) / start_datetime_str
+
     subject_keys = select_q_inverse_temperature_subject_keys_from_csv(
-        args.fit_results_path,
-        threshold=DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
+        normalized_args["fit_results_path"],
+        threshold=normalized_args["selection_threshold"],
         require_convergence=True,
     )
 
     logging_path = configure_application_logging(
-        disabled=args.log_level < 0,
-        root_level=None if args.log_level < 0 else args.log_level,
+        disabled=normalized_args["logging_disabled"],
+        root_level=normalized_args["log_level"],
         log_file_path=(
-            args.logging_dir
+            normalized_args["logging_dir"]
             / (
                 f"q_inverse_temperature_sensitivity_{len(subject_keys)}_subjects_{start_datetime_str}.log"
             )
         ),
     )
-    return args, start_datetime_str, subject_keys, logging_path
+    return args, normalized_args, start_datetime_str, subject_keys, logging_path
 
 
 def _run(
     *,
-    args: argparse.Namespace,
+    normalized_args: dict[str, Any],
     start_datetime_str: str,
     subject_keys: DataFrame,
-    logger: logging.Logger | str = "igt.q_inverse_temperature_sensitivity",
+    logger: logging.Logger | str = LOGGER_NAME,
 ) -> Sequence[str | Path]:
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
@@ -168,11 +195,11 @@ def _run(
             )
             results_table = run_fitting_pipeline(
                 FittingPipelineConfig(
-                    rdata_path=args.rdata_path,
+                    rdata_path=normalized_args["rdata_path"],
                     models=(q_learning_model,),
                     max_iterations=DEFAULT_MAX_ITERATIONS,
-                    n_workers=_normalize_n_workers(args.workers),
-                    show_progress=not args.no_progress,
+                    n_workers=normalized_args["n_workers"],
+                    show_progress=not normalized_args["no_progress"],
                     n_subjects=None,
                     subject_keys=subject_keys,
                 )
@@ -185,7 +212,7 @@ def _run(
             )
 
             beta_label = _format_numeric_filename_value(max_inverse_temperature)
-            output_path = args.output_dir / (
+            output_path = normalized_args["output_dir"] / (
                 "q_learning_max_inverse_temperature_"
                 f"{beta_label}_{len(subject_keys)}_subjects_"
                 f"{n_starts}_starts_"
@@ -212,7 +239,7 @@ def _run(
 
 def _cleanup(
     *,
-    logger: logging.Logger | str = "igt.q_inverse_temperature_sensitivity",
+    logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Perform any necessary cleanup after the script has finished running."""
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
@@ -227,27 +254,32 @@ def main() -> None:
 
     (
         args,
+        normalized_args,
         start_datetime_str,
         subject_keys,
         logging_path,
     ) = _setup()
 
-    notify_formsubmit_id: str | None = DEFAULT_NOTIFY_FORMSUBMIT_ID
+    notify_formsubmit_id: str | None = normalized_args["notify_formsubmit_id"]
 
     with error_email_notifier(
         formsubmit_id=notify_formsubmit_id,
         script_name=Path(__file__).name,
         start_counter=start_counter,
     ):
-        logger = logging.getLogger("igt.q_inverse_temperature_sensitivity")
+        logger = logging.getLogger(LOGGER_NAME)
         logger.info("Starting Q-learning inverse-temperature sensitivity analysis...")
+
+        logger.debug("Parsed command-line arguments: %r", vars(args))
+        logger.debug("Normalized command-line arguments: %r", normalized_args)
+
         logger.info(
             "Selected %d converged Q-learning subjects with inverse temperature >= %.1f.",
             len(subject_keys),
-            DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
+            normalized_args["selection_threshold"],
         )
 
-        args.output_dir.mkdir(parents=True, exist_ok=True)
+        normalized_args["output_dir"].mkdir(parents=True, exist_ok=True)
 
         logger.info(
             "Running Q-learning fits for max inverse temperatures=%r, n_starts=%r",
@@ -256,16 +288,16 @@ def main() -> None:
         )
 
         result_files = _run(
-            args=args,
+            normalized_args=normalized_args,
             start_datetime_str=start_datetime_str,
             subject_keys=subject_keys,
             logger=logger,
         )
         result_files = [Path(f) for f in result_files]
 
-        subject_keys_path = args.output_dir / (
+        subject_keys_path = normalized_args["output_dir"] / (
             "selected_subjects_beta_ge_"
-            f"{_format_numeric_filename_value(DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD)}_"
+            f"{_format_numeric_filename_value(normalized_args['selection_threshold'])}_"
             f"{start_datetime_str}.csv"
         )
         subject_keys.to_csv(subject_keys_path, index=False, lineterminator="\n")
@@ -287,10 +319,9 @@ def main() -> None:
 
         if notify_formsubmit_id is not None:
             logger.info(
-                "Sending FormSubmit notification to %r with results files: %r as 1 zip attachment %r.",
+                "Sending FormSubmit notification to %r with results files: %r as one zip attachment.",
                 notify_formsubmit_id,
                 [f.name for f in result_files],
-                "q_inverse_temperature_sensitivity_output_files.zip",
             )
 
         logger.info("Performing cleanup...")

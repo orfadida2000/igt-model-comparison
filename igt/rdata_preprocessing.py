@@ -17,21 +17,20 @@ import pyreadr
 
 from igt.constants.path import DATA_DIR
 
-# TODO: Add to igt.constants.?
 DECK_LABELS: Mapping[int, str] = {
     1: "A",
     2: "B",
     3: "C",
     4: "D",
 }
-# TODO: Add to igt.constants.?
+
 EXPECTED_OBJECT_PREFIXES: tuple[str, ...] = (
     "choice",
     "wi",
     "lo",
     "index",
 )
-# TODO: Add to igt.constants.?
+
 OBJECT_NAME_RE = re.compile(
     r"^(choice|wi|lo|index)_(\d+)$",
     re.IGNORECASE,

@@ -1,0 +1,3 @@
+model,n_fits,n_converged,convergence_rate,n_comparisons,mean_negative_log_likelihood,mean_aic,mean_bic,aic_wins,bic_wins
+pvl_delta,617,617,1.0,617,117.99475312505271,243.98950625010542,254.66280405194294,510,427
+q_learning,617,617,1.0,617,133.62025875218504,271.24051750437013,276.5771664052889,107,190

@@ -1,0 +1,291 @@
+PVL-Delta Correction Report
+===========================
+
+Targeted subjects: 8
+Improved: 8
+Unchanged: 0
+Worse: 0
+Not improved: 0
+Corrected PVL NLL still above Q-learning NLL: 0
+NLL comparison tolerance: 1e-08
+
+Integrity checks:
+  Table shapes match: Yes
+  Column names and order match: Yes
+  Participant-model row identities and order match: Yes
+  All non-targeted rows are unchanged: Yes
+
+Subject-level results
+---------------------
+
+Participant: n_trials=100, subject_id=51
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          136.762764314
+  Original PVL-Delta:  138.6294361
+  Corrected PVL-Delta: 127.722413751
+  Improvement:         10.9070223496
+  Corrected PVL - Q:   -9.04035056362
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  1e-06
+    corrected: 0.000786706635805
+  outcome_sensitivity:
+    original:  1e-06
+    corrected: 1.99031858141
+  loss_aversion:
+    original:  1e-06
+    corrected: 0.110340503166
+  response_consistency:
+    original:  6.50224855913e-05
+    corrected: 4.95975100882
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=100, subject_id=64
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          118.673914732
+  Original PVL-Delta:  129.456999451
+  Corrected PVL-Delta: 111.967731411
+  Improvement:         17.4892680399
+  Corrected PVL - Q:   -6.7061833207
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  0.909212897788
+    corrected: 0.000353639373371
+  outcome_sensitivity:
+    original:  1e-06
+    corrected: 0.338553597522
+  loss_aversion:
+    original:  10
+    corrected: 6.07081918944
+  response_consistency:
+    original:  0.116190488477
+    corrected: 5
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=100, subject_id=246
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          116.27454465
+  Original PVL-Delta:  116.75011048
+  Corrected PVL-Delta: 114.697558121
+  Improvement:         2.05255235856
+  Corrected PVL - Q:   -1.57698652861
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  0.000587122252765
+    corrected: 0.00129059369646
+  outcome_sensitivity:
+    original:  0.875129524826
+    corrected: 1.35107107295
+  loss_aversion:
+    original:  1.39109237463
+    corrected: 0.356546866844
+  response_consistency:
+    original:  5
+    corrected: 5
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=100, subject_id=372
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          136.663782093
+  Original PVL-Delta:  136.763323389
+  Corrected PVL-Delta: 132.552120105
+  Improvement:         4.21120328351
+  Corrected PVL - Q:   -4.11166198822
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  0.880621268598
+    corrected: 0.000481197127738
+  outcome_sensitivity:
+    original:  1.66294767264
+    corrected: 1.6750396205
+  loss_aversion:
+    original:  0.749154645589
+    corrected: 0.150136588057
+  response_consistency:
+    original:  0.024258926267
+    corrected: 5
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=100, subject_id=431
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          131.524792474
+  Original PVL-Delta:  133.93641619
+  Corrected PVL-Delta: 130.931710236
+  Improvement:         3.00470595344
+  Corrected PVL - Q:   -0.593082237455
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  0.0557865266334
+    corrected: 0.000318764062872
+  outcome_sensitivity:
+    original:  0.695128787105
+    corrected: 0.878482111713
+  loss_aversion:
+    original:  2.01164448383
+    corrected: 2.76713006946
+  response_consistency:
+    original:  0.820845232892
+    corrected: 4.22244049728
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=150, subject_id=63
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          179.249459816
+  Original PVL-Delta:  188.376279946
+  Corrected PVL-Delta: 175.475478851
+  Improvement:         12.9008010944
+  Corrected PVL - Q:   -3.77398096502
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  0.999999
+    corrected: 0.00163965720472
+  outcome_sensitivity:
+    original:  1e-06
+    corrected: 0.792659298245
+  loss_aversion:
+    original:  10
+    corrected: 1.48383289245
+  response_consistency:
+    original:  0.118627431759
+    corrected: 4.20610417376
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=150, subject_id=67
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          206.337364317
+  Original PVL-Delta:  207.944153983
+  Corrected PVL-Delta: 202.018330144
+  Improvement:         5.92582383879
+  Corrected PVL - Q:   -4.31903417251
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  1e-06
+    corrected: 0.000277431421388
+  outcome_sensitivity:
+    original:  1e-06
+    corrected: 0.412186450664
+  loss_aversion:
+    original:  1.84679245913
+    corrected: 2.20088699792
+  response_consistency:
+    original:  0.000403761336464
+    corrected: 4.29501221193
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33
+
+Participant: n_trials=150, subject_id=93
+Status: IMPROVED
+PVL nesting condition satisfied: Yes
+Flags: None
+
+Negative log-likelihood:
+  Q-learning:          185.257539064
+  Original PVL-Delta:  186.378231749
+  Corrected PVL-Delta: 175.307011346
+  Improvement:         11.0712204034
+  Corrected PVL - Q:   -9.95052771816
+
+PVL-Delta parameters:
+  learning_rate:
+    original:  0.00309088146428
+    corrected: 0.000994409233219
+  outcome_sensitivity:
+    original:  1.56992404961
+    corrected: 1.27457972355
+  loss_aversion:
+    original:  5.16474539659
+    corrected: 0.526817657294
+  response_consistency:
+    original:  1.04764105942
+    corrected: 5
+
+Optimization diagnostics:
+  converged:
+    original:  True
+    corrected: True
+  n_starts:
+    original:  32
+    corrected: 33

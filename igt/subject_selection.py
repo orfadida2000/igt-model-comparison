@@ -88,7 +88,7 @@ def _normalize_integer_series(
     )
 
 
-def _normalize_subject_key_columns(
+def normalize_subject_key_columns(
     subject_keys: pd.DataFrame,
 ) -> pd.DataFrame:
     """Validate participant-key columns while preserving rows and order.
@@ -150,7 +150,7 @@ def normalize_subject_keys(
     """
 
     key_columns = list(PARTICIPANT_KEY_COLUMNS)
-    normalized = _normalize_subject_key_columns(subject_keys)
+    normalized = normalize_subject_key_columns(subject_keys)
 
     return normalized.drop_duplicates().sort_values(
         by=key_columns,
@@ -370,7 +370,7 @@ def _prepare_fit_results_for_nll_selection(
 
     results = fit_results.loc[:, relevant_columns].copy()
 
-    normalized_keys = _normalize_subject_key_columns(results)
+    normalized_keys = normalize_subject_key_columns(results)
 
     for column_name in key_columns:
         results[column_name] = normalized_keys[column_name]
@@ -528,7 +528,7 @@ def _empty_subject_keys_from(
     )
 
 
-def _read_fit_results_csv(
+def read_fit_results_csv(
     fit_results_csv: Path,
 ) -> pd.DataFrame:
     """Read a fit-results CSV file.
@@ -555,7 +555,7 @@ def _read_fit_results_csv(
 def select_model_lowest_nll_subject_keys(
     fit_results: pd.DataFrame,
     *,
-    model: ComputationalModel | str,
+    model: ComputationalModel | type[ComputationalModel] | str,
     epsilon: Real | float = 1e-8,
     require_convergence: bool = True,
 ) -> pd.DataFrame:
@@ -566,7 +566,7 @@ def select_model_lowest_nll_subject_keys(
 
     Args:
         fit_results: Per-model fit-results table.
-        model: Name of the model to evaluate.
+        model: Model to evaluate, either as a model class, model instance or a model name string.
         epsilon: Minimum required NLL advantage over the best competitor.
         require_convergence: Whether every model fit for a subject must
             have converged.
@@ -581,7 +581,7 @@ def select_model_lowest_nll_subject_keys(
             requested comparison.
     """
 
-    model_name = model if isinstance(model, str) else model.name
+    model_name = model if isinstance(model, str) else model.get_name()
     model_name = _validate_model_name(model_name)
 
     parsed_epsilon = _validate_nonnegative_finite_float(
@@ -661,7 +661,7 @@ def select_model_lowest_nll_subject_keys(
 def select_model_lowest_nll_subject_keys_from_csv(
     fit_results_csv: Path,
     *,
-    model: ComputationalModel | str,
+    model: ComputationalModel | type[ComputationalModel] | str,
     epsilon: Real | float = 1e-8,
     require_convergence: bool = True,
 ) -> pd.DataFrame:
@@ -669,7 +669,7 @@ def select_model_lowest_nll_subject_keys_from_csv(
 
     Args:
         fit_results_csv: Path to the per-model fit-results CSV file.
-        model: Name of the model to evaluate.
+        model: Model to evaluate, either as a model class, model instance or a model name string.
         epsilon: Minimum required NLL advantage over the best competitor.
         require_convergence: Whether every model fit for a subject must
             have converged.
@@ -684,7 +684,7 @@ def select_model_lowest_nll_subject_keys_from_csv(
         ValueError: If the CSV contents or selection arguments are invalid.
     """
 
-    fit_results = _read_fit_results_csv(fit_results_csv)
+    fit_results = read_fit_results_csv(fit_results_csv)
 
     return select_model_lowest_nll_subject_keys(
         fit_results,
@@ -817,7 +817,7 @@ def select_q_inverse_temperature_subject_keys_from_csv(
         ValueError: If the CSV contents or selection arguments are invalid.
     """
 
-    fit_results = _read_fit_results_csv(fit_results_csv)
+    fit_results = read_fit_results_csv(fit_results_csv)
 
     return select_q_inverse_temperature_subject_keys(
         fit_results,
@@ -872,7 +872,7 @@ def filter_subjects_by_keys(
     if normalized_keys.empty:
         return data.iloc[0:0].copy()
 
-    normalized_data_keys = _normalize_subject_key_columns(data)
+    normalized_data_keys = normalize_subject_key_columns(data)
 
     available_keys = normalized_data_keys.drop_duplicates(
         ignore_index=True,

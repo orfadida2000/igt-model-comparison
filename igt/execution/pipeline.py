@@ -113,6 +113,7 @@ def run_fitting_pipeline(config: FittingPipelineConfig) -> pd.DataFrame:
         show_progress=config.show_progress,
         n_workers=config.n_workers,
         n_subjects=config.n_subjects,
+        subject_model_warm_starts_provider=config.subject_model_warm_starts_provider,
     )
     logger.info("Model fitting completed.")
 

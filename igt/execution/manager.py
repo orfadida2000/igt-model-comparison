@@ -30,7 +30,6 @@ from .typing import (
     SubjectModelWarmStartsProvider,
 )
 
-# TODO: Add to igt.constants.?
 _REQUIRED_TRIAL_COLUMNS = {
     "source_study",
     "choice",

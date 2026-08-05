@@ -15,6 +15,7 @@ assets/data/*.txt
 tests/
 backup/
 tmp/
+igt/constants/secrets.py
 
 # Documentation
 site/
