@@ -1,13 +1,22 @@
 import logging
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
+from os import PathLike
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import numpy as np
 from numpy.typing import NDArray
+
+# For strict homogeneous tuples (all elements same type)
+type NonEmptyUniformTuple[T] = tuple[T, *tuple[T, ...]]
+
+# For mixed tuples (first type vs rest type)
+type NonEmptyMixedTuple[T, S] = tuple[T, *tuple[S, ...]]
+
+type PrimitiveNumber = int | float
 
 type IntArray = NDArray[np.int64]
 type FloatArray = NDArray[np.float64]
@@ -48,7 +57,24 @@ type Floating2DArray = np.ndarray[
     np.dtype[np.floating[Any]],
 ]
 
-type ParameterBounds = Sequence[tuple[float, float]]
+
+type StrPathLike = str | Path | PathLike[str]
+
+
+class LineEnding(Enum):
+    """Enum for line endings."""
+
+    LF = "\n"
+    CRLF = "\r\n"
+
+
+type ParameterBound = tuple[float, float]
+type ParameterBounds = Sequence[ParameterBound]
+type NamedParameterBounds = Mapping[str, ParameterBound]
+type ModelParameterBounds = Mapping[str, NamedParameterBounds]
+
+
+# type StrPathLike = str | Path | PathLike[str]
 
 
 class StandardOutput(Enum):
@@ -144,7 +170,7 @@ class TerminalLogHandlerConfig(BaseLogHandlerConfig):
 class FileLogHandlerConfig(BaseLogHandlerConfig):
     """Configuration for a file log handler."""
 
-    file_path: str | Path
+    file_path: StrPathLike
     mode: str = "a"
     encoding: str | None = "utf-8"
     delay: bool = False
@@ -153,12 +179,25 @@ class FileLogHandlerConfig(BaseLogHandlerConfig):
     def __post_init__(self) -> None:
         super().__post_init__()
 
-        if not isinstance(self.file_path, (str, Path)):
+        file_path = self.file_path
+        if not isinstance(file_path, (str, Path, PathLike)):
             raise TypeError(
-                f"'file_path' must be a str or Path, got {type(self.file_path).__name__}"
+                f"'file_path' must be a str or pathlib.Path or os.PathLike, got {type(file_path).__name__}"
             )
-        if not str(self.file_path).strip():
-            raise ValueError("'file_path' cannot be an empty string or whitespace")
+        if isinstance(file_path, str):
+            file_path = file_path.strip()
+
+            if not file_path:
+                raise ValueError("'file_path' must not be empty or whitespace only.")
+
+        try:
+            file_path = Path(file_path)
+        except Exception as e:
+            raise ValueError(
+                f"The string path-like object 'file_path' failed to be converted to a pathlib.Path: {e}"
+            ) from e
+
+        object.__setattr__(self, "file_path", file_path)
 
         if not isinstance(self.mode, str):
             raise TypeError(f"'mode' must be a str, got {type(self.mode).__name__}")
@@ -174,7 +213,7 @@ class FileLogHandlerConfig(BaseLogHandlerConfig):
 
     def _create_handler(self) -> logging.Handler:
         """Create a file log handler based on the configuration."""
-        file_path = Path(self.file_path)
+        file_path = cast(Path, self.file_path)
         if file_path.exists() and not file_path.is_file():
             raise ValueError(f"The specified path '{file_path}' exists and is not a file.")
 
@@ -187,3 +226,9 @@ class FileLogHandlerConfig(BaseLogHandlerConfig):
             delay=self.delay,
             errors=self.errors,
         )
+
+
+class CustomTypeError(TypeError):
+    """Custom TypeError class for easy identification of type errors raised explicitly."""
+
+    pass

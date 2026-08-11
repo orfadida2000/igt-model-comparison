@@ -11,6 +11,15 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, Series
 
+from igt.cli_parsing.factory.path import get_type_filters_for_existing_file_with_extensions_path
+from igt.cli_parsing.parser import get_parser
+from igt.cli_parsing.typing import (
+    ArgAction,
+    ArgSpec,
+    NumericArgType,
+    PathArgType,
+    StringArgType,
+)
 from igt.comparison import (
     add_model_comparison_columns,
     summarize_model_comparison,
@@ -22,11 +31,26 @@ from igt.constants.config import (
     DEFAULT_ROOT_LOG_LEVEL,
     FILENAME_DATETIME_FMT,
     FIXED_SEED,
+    USE_FIXED_NOTIFY_FORMSUBMIT_ID,
+    USE_RDATA_PARENT_DIR_FOR_LOGGING,
+    USE_RDATA_PARENT_DIR_FOR_OUTPUT,
 )
 from igt.constants.fitting import DEFAULT_MAX_ITERATIONS
-from igt.constants.models import MAX_LEARNING_RATE, MIN_INVERSE_TEMPERATURE, MIN_LEARNING_RATE
+from igt.constants.models import (
+    INVERSE_TEMPERATURE_PARAMETER_NAME,
+    LEARNING_RATE_PARAMETER_NAME,
+    MAX_LEARNING_RATE,
+    MIN_INVERSE_TEMPERATURE,
+    MIN_LEARNING_RATE,
+    RESPONSE_CONSISTENCY_PARAMETER_NAME,
+)
 from igt.constants.path import IGT_DATASET_PATH, LOGS_DIR, RESULTS_DIR
-from igt.constants.schema import PARTICIPANT_KEY_COLUMNS
+from igt.constants.schema import (
+    CONVERGED_COLUMN,
+    MODEL_COLUMN,
+    NLL_COLUMN,
+    PARTICIPANT_KEY_COLUMNS,
+)
 from igt.execution.pipeline import (
     FittingPipelineConfig,
     run_fitting_pipeline,
@@ -42,13 +66,15 @@ from igt.notify.formsubmit import (
     send_formsubmit_email_script_success_notification,
 )
 from igt.subject_selection import (
+    _validate_nonnegative_finite_float,
     normalize_subject_key_columns,
-    read_fit_results_csv,
-    select_model_lowest_nll_subject_keys,
+    select_subjects_with_target_is_uniquely_nll_best_model,
 )
-from igt.typing import Float2DArray
+from igt.typing import Float2DArray, StrPathLike
+from igt.utils.io import normalize_path, read_csv
+from igt.utils.tabular import normalize_nonempty_string_series
 
-NLL_SELECTION_EPSILON: Final[float] = 1e-8
+DEFAULT_SELECTION_ATOL: Final[float] = 1e-8
 
 PVL_OUTCOME_SENSITIVITY: Final[float] = 1.0
 PVL_LOSS_AVERSION: Final[float] = 1.0
@@ -56,146 +82,181 @@ PVL_LOSS_AVERSION: Final[float] = 1.0
 LOGGER_NAME: Final[str] = "scripts.correct_pvl_delta_fits"
 
 
-def _existing_file_path(value: str) -> Path:
-    """Parse an existing file path from a command-line argument.
-
-    Args:
-        value: Raw command-line path value.
-
-    Returns:
-        The parsed path.
-
-    Raises:
-        argparse.ArgumentTypeError: If the path does not identify an
-            existing file.
-    """
-
-    path = Path(value)
-
-    if not path.is_file():
-        raise argparse.ArgumentTypeError(f"File does not exist: {path}")
-
-    return path
-
-
-def _directory_path(value: str) -> Path:
-    """Parse a directory path from a command-line argument.
-
-    The directory is not created by this function.
-
-    Args:
-        value: Raw command-line path value.
-
-    Returns:
-        The parsed path.
-
-    Raises:
-        argparse.ArgumentTypeError: If the path exists but is not a
-            directory.
-    """
-
-    path = Path(value)
-
-    if path.exists() and not path.is_dir():
-        raise argparse.ArgumentTypeError(f"Path exists but is not a directory: {path}")
-
-    return path
-
-
 def _parse_args() -> argparse.Namespace:
-    """Parse command-line arguments.
+    """
+    Create the argument parser, parse the command-line arguments and return the namespace.
+
+    Some arguments are only added to the parser if certain conditions are met,
+    such as whether a fixed seed or fixed FormSubmit ID is used. The parser is configured
+    with appropriate type filters, default values, and help messages for each argument.
 
     Returns:
-        The parsed command-line namespace.
+        The parsed command-line arguments namespace.
     """
 
-    parser = argparse.ArgumentParser(
+    arg_specs: list[ArgSpec] = [
+        ArgSpec(
+            name_or_flags="fit-results-path",
+            type_filters=get_type_filters_for_existing_file_with_extensions_path(".csv"),
+            help="Path to the input CSV file containing previous model fitting results used for subject selection, warm starts construction, and corrected output generation.",
+            extra_options={
+                "metavar": "FILE_PATH",
+            },
+        ),
+        ArgSpec(
+            name_or_flags=("--atol",),
+            type_filters=(NumericArgType.NON_NEGATIVE_FINITE_FLOAT,),
+            default=str(DEFAULT_SELECTION_ATOL),
+            help=(
+                "Absolute tolerance for considering two negative log-likelihood (NLL) values as equal when selecting subjects for PVL-Delta refitting; "
+                "must be a non-negative finite float (default: %(default)s)"
+            ),
+            extra_options={
+                "metavar": "TOLERANCE",
+            },
+        ),
+        ArgSpec(
+            name_or_flags=("--rdata-path",),
+            type_filters=get_type_filters_for_existing_file_with_extensions_path(
+                extensions=(".rdata", ".rda")
+            ),
+            default=str(IGT_DATASET_PATH),
+            help="Path to the input IGTdata.rdata file (default: %(default)s)",
+            extra_options={
+                "metavar": "FILE_PATH",
+            },
+        ),
+        ArgSpec(
+            name_or_flags=("--workers",),
+            type_filters=(NumericArgType.INTEGER,),
+            default=str(DEFAULT_N_WORKERS),
+            help=(
+                "Number of worker processes to use for the refitting process; "
+                "use 0 for serial execution and negative value for all available CPU cores (default: %(default)s)"
+            ),
+            extra_options={
+                "metavar": "N_WORKERS",
+                "dest": "n_workers",
+            },
+        ),
+    ]
+
+    if not USE_RDATA_PARENT_DIR_FOR_OUTPUT:
+        arg_specs.append(
+            ArgSpec(
+                name_or_flags=("--output-dir",),
+                type_filters=(PathArgType.DIR_PATH,),
+                default=str(RESULTS_DIR / "corrected_pvl_delta_fits"),
+                help="Directory to save the results files (default: %(default)s)",
+                extra_options={
+                    "metavar": "OUTPUT_DIR",
+                },
+            )
+        )
+
+    if not USE_RDATA_PARENT_DIR_FOR_LOGGING:
+        arg_specs.append(
+            ArgSpec(
+                name_or_flags=("--logging-dir",),
+                type_filters=(PathArgType.DIR_PATH,),
+                default=str(LOGS_DIR / "corrected_pvl_delta_fits"),
+                help="Directory to save the log files (default: %(default)s)",
+                extra_options={
+                    "metavar": "LOGGING_DIR",
+                },
+            )
+        )
+
+    arg_specs.append(
+        ArgSpec(
+            name_or_flags=("--log-level",),
+            type_filters=(NumericArgType.INTEGER,),
+            default=str(DEFAULT_ROOT_LOG_LEVEL),
+            help="Logging level for the root logger; use negative value to disable logging (default: %(default)s)",
+            extra_options={
+                "metavar": "ROOT_LOG_LEVEL",
+            },
+        )
+    )
+
+    if not USE_FIXED_NOTIFY_FORMSUBMIT_ID:
+        arg_specs.append(
+            ArgSpec(
+                name_or_flags=("--notify-formsubmit-id",),
+                type_filters=(StringArgType.ALPHANUMERIC_STRING,),
+                default=DEFAULT_NOTIFY_FORMSUBMIT_ID,
+                help="FormSubmit ID to send email notifications upon script completion (default: %(default)s)",
+                extra_options={
+                    "metavar": "ID",
+                },
+            )
+        )
+
+    arg_specs.append(
+        ArgSpec(
+            name_or_flags=("--no-progress",),
+            action=ArgAction.STORE_TRUE,
+            help="Disable progress bar display during the fitting process",
+        )
+    )
+
+    (
+        parser,
+        resolved_info,
+    ) = get_parser(
+        arg_specs,
         description=(
-            "Select subjects for whom Q-learning has the lowest NLL, "
+            "Select subjects for whom Q-learning has the lowest (best) NLL, "
             "refit their PVL-Delta model using an additional "
             "Q-learning-equivalent warm start, replace those rows in the "
             "complete fit-results table, and regenerate the model "
             "comparison and summary tables."
-        )
-    )
-
-    parser.add_argument(
-        "fit_results_path",
-        type=_existing_file_path,
-        help=(
-            "Original complete model-fits CSV used to select subjects, "
-            "construct warm starts, and create the corrected output."
         ),
-    )
-    parser.add_argument(
-        "--epsilon",
-        type=float,
-        default=NLL_SELECTION_EPSILON,
-        help=(
-            "Minimum NLL advantage required for Q-learning over the best "
-            f"competing model (default: {NLL_SELECTION_EPSILON:g})."
-        ),
-    )
-    parser.add_argument(
-        "--rdata-path",
-        type=_existing_file_path,
-        default=IGT_DATASET_PATH,
-        help=(f"Input IGT RData file (default: {IGT_DATASET_PATH})."),
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=_directory_path,
-        default=RESULTS_DIR / "corrected_pvl_delta_fits",
-        help=(
-            "Corrected-results output directory "
-            f"(default: {RESULTS_DIR / 'corrected_pvl_delta_fits'})."
-        ),
-    )
-    parser.add_argument(
-        "--logging-dir",
-        type=_directory_path,
-        default=LOGS_DIR / "corrected_pvl_delta_fits",
-        help=(f"Log directory (default: {LOGS_DIR / 'corrected_pvl_delta_fits'})."),
-    )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=DEFAULT_N_WORKERS,
-        help=(
-            "Worker processes; use 0 for serial execution and a negative "
-            "value for all available CPU cores."
-        ),
-    )
-    parser.add_argument(
-        "--log-level",
-        type=int,
-        default=DEFAULT_ROOT_LOG_LEVEL,
-        help=("Root logging level; use a negative value to disable logging."),
-    )
-    parser.add_argument(
-        "--no-progress",
-        action="store_true",
-        help="Disable the subject progress bar.",
+        extra_options={},
     )
 
     return parser.parse_args()
 
 
-def _normalize_args(args: argparse.Namespace) -> dict[str, Any]:
+def _normalize_args(
+    args: argparse.Namespace,
+) -> argparse.Namespace:
+    """
+    Normalize the parsed command-line arguments namespace and return a new namespace with resolved runtime values.
+
+    Args:
+        args: The parsed command-line arguments namespace.
+
+    Returns:
+        The normalized command-line arguments namespace.
+    """
+
     normalized_args: dict[str, Any] = {
         "fit_results_path": args.fit_results_path,
-        "epsilon": args.epsilon if args.epsilon >= 0 else NLL_SELECTION_EPSILON,
+        "atol": args.atol,
         "rdata_path": args.rdata_path,
-        "n_workers": (None if args.workers < 0 else (1 if args.workers == 0 else args.workers)),
-        "output_dir": args.output_dir or args.rdata_path.parent / "output_files",
-        "logging_dir": args.logging_dir or args.rdata_path.parent / "logs",
-        "logging_disabled": bool(args.log_level < 0),
+        "n_workers": None if args.n_workers < 0 else (1 if args.n_workers == 0 else args.n_workers),
+        "output_dir": (
+            args.output_dir
+            if not USE_RDATA_PARENT_DIR_FOR_OUTPUT
+            else args.rdata_path.parent / "output_files"
+        ),
+        "logging_dir": (
+            args.logging_dir
+            if not USE_RDATA_PARENT_DIR_FOR_LOGGING
+            else args.rdata_path.parent / "logs"
+        ),
+        "logging_disabled": args.log_level < 0,
         "log_level": None if args.log_level < 0 else args.log_level,
+        "notify_formsubmit_id": (
+            DEFAULT_NOTIFY_FORMSUBMIT_ID
+            if USE_FIXED_NOTIFY_FORMSUBMIT_ID
+            else args.notify_formsubmit_id
+        ),
         "no_progress": args.no_progress,
-        "notify_formsubmit_id": DEFAULT_NOTIFY_FORMSUBMIT_ID,
     }
 
-    return normalized_args
+    return argparse.Namespace(**normalized_args)
 
 
 def _build_q_equivalent_pvl_warm_starts_provider(
@@ -206,10 +267,10 @@ def _build_q_equivalent_pvl_warm_starts_provider(
 ) -> SubjectModelWarmStartsProvider:
     """Build a provider of Q-learning-equivalent PVL-Delta warm starts.
 
-    For a Q-learning learning rate ``a`` and inverse temperature ``beta``,
+    For a Q-learning learning rate `a` and inverse temperature `beta`,
     the corresponding PVL-Delta starting point is:
 
-    ``(a, 1, 1, log_3(beta + 1))``.
+    `(a, 1, 1, log_3(beta + 1))`.
 
     Args:
         fit_results: Original complete model-fit results.
@@ -241,9 +302,9 @@ def _build_q_equivalent_pvl_warm_starts_provider(
 
     required_columns = {
         *key_columns,
-        "model",
-        "learning_rate",
-        "inverse_temperature",
+        MODEL_COLUMN,
+        LEARNING_RATE_PARAMETER_NAME,
+        INVERSE_TEMPERATURE_PARAMETER_NAME,
     }
 
     missing_columns = required_columns - set(fit_results.columns)
@@ -252,14 +313,14 @@ def _build_q_equivalent_pvl_warm_starts_provider(
         missing_text = ", ".join(sorted(missing_columns))
         raise ValueError(f"Fit-results table is missing columns: {missing_text}")
 
-    normalized_models = fit_results["model"].astype("string").str.strip()
+    normalized_models = fit_results[MODEL_COLUMN].astype("string").str.strip()
 
     q_results = fit_results.loc[
         normalized_models.eq(QLearningModel.get_name()),
         [
             *key_columns,
-            "learning_rate",
-            "inverse_temperature",
+            LEARNING_RATE_PARAMETER_NAME,
+            INVERSE_TEMPERATURE_PARAMETER_NAME,
         ],
     ].copy()
 
@@ -306,7 +367,7 @@ def _build_q_equivalent_pvl_warm_starts_provider(
 
     try:
         q_learning_rates = pd.to_numeric(
-            selected_q_results["learning_rate"],
+            selected_q_results[LEARNING_RATE_PARAMETER_NAME],
             errors="raise",
         ).to_numpy(
             dtype=np.float64,
@@ -314,7 +375,7 @@ def _build_q_equivalent_pvl_warm_starts_provider(
         )
 
         q_inverse_temperatures = pd.to_numeric(
-            selected_q_results["inverse_temperature"],
+            selected_q_results[INVERSE_TEMPERATURE_PARAMETER_NAME],
             errors="raise",
         ).to_numpy(
             dtype=np.float64,
@@ -342,7 +403,7 @@ def _build_q_equivalent_pvl_warm_starts_provider(
     if not np.isfinite(pvl_response_consistencies).all():
         raise ValueError("The mapped PVL-Delta response-consistency values are not finite.")
 
-    selected_q_results["pvl_response_consistency"] = pvl_response_consistencies
+    selected_q_results[RESPONSE_CONSISTENCY_PARAMETER_NAME] = pvl_response_consistencies
 
     warm_starts_by_subject: dict[
         tuple[int, int],
@@ -351,8 +412,8 @@ def _build_q_equivalent_pvl_warm_starts_provider(
 
     warm_start_columns = [
         *key_columns,
-        "learning_rate",
-        "pvl_response_consistency",
+        LEARNING_RATE_PARAMETER_NAME,
+        RESPONSE_CONSISTENCY_PARAMETER_NAME,
     ]
 
     for (
@@ -408,7 +469,7 @@ def _build_q_equivalent_pvl_warm_starts_provider(
             subject_id: Subject identifier.
 
         Returns:
-            One PVL-Delta warm starting point, or ``None`` when a
+            One PVL-Delta warm starting point, or `None` when a
             different model is being fitted or a warm start is not available for the subject.
         """
 
@@ -464,7 +525,7 @@ def _validate_targeted_pvl_results(
 
     required_columns = {
         *key_columns,
-        "model",
+        MODEL_COLUMN,
     }
 
     missing_columns = required_columns - set(targeted_results.columns)
@@ -473,7 +534,7 @@ def _validate_targeted_pvl_results(
         missing_text = ", ".join(sorted(missing_columns))
         raise ValueError(f"Targeted fit-results table is missing columns: {missing_text}")
 
-    normalized_models = targeted_results["model"].astype("string").str.strip()
+    normalized_models = targeted_results[MODEL_COLUMN].astype("string").str.strip()
 
     if not normalized_models.eq(pvl_delta_model_name).all():
         unexpected_models = sorted(
@@ -573,16 +634,16 @@ def _replace_model_fit_rows(
 
     key_columns = [
         *PARTICIPANT_KEY_COLUMNS,
-        "model",
+        MODEL_COLUMN,
     ]
 
     required_fit_columns = {
         *key_columns,
-        "negative_log_likelihood",
+        NLL_COLUMN,
         "log_likelihood",
         "aic",
         "bic",
-        "converged",
+        CONVERGED_COLUMN,
     }
 
     missing_original_columns = required_fit_columns - set(original_fit_results.columns)
@@ -630,7 +691,7 @@ def _replace_model_fit_rows(
         ("original", original),
         ("replacement", replacements),
     ):
-        normalized_models = table["model"].astype("string").str.strip()
+        normalized_models = table[MODEL_COLUMN].astype("string").str.strip()
 
         if normalized_models.isna().any():
             raise ValueError(f"The {table_name} fit-results table contains missing model names.")
@@ -638,7 +699,7 @@ def _replace_model_fit_rows(
         if normalized_models.eq("").any():
             raise ValueError(f"The {table_name} fit-results table contains empty model names.")
 
-        table["model"] = normalized_models
+        table[MODEL_COLUMN] = normalized_models
 
     original_duplicate_mask = original.duplicated(
         subset=key_columns,
@@ -721,7 +782,7 @@ def _replace_model_fit_rows(
 
 def _setup() -> tuple[
     argparse.Namespace,
-    dict[str, Any],
+    argparse.Namespace,
     str,
     DataFrame,
     DataFrame,
@@ -741,15 +802,18 @@ def _setup() -> tuple[
     args = _parse_args()
     normalized_args = _normalize_args(args)
 
-    normalized_args["output_dir"] = Path(normalized_args["output_dir"]) / start_datetime_str
+    normalized_args.output_dir = Path(normalized_args.output_dir) / start_datetime_str
 
-    original_fit_results = read_fit_results_csv(normalized_args["fit_results_path"])
+    original_fit_results = read_csv(
+        normalized_args.fit_results_path,
+        table_name="fit-results",
+    )
 
-    subject_keys = select_model_lowest_nll_subject_keys(
+    subject_keys = select_subjects_with_target_is_uniquely_nll_best_model(
         original_fit_results,
-        model=QLearningModel,
-        epsilon=normalized_args["epsilon"],
-        require_convergence=True,
+        target_model=QLearningModel,
+        atol=normalized_args.atol,
+        fully_converged=True,
     )
 
     pvl_delta_model = PVLDeltaModel(
@@ -764,10 +828,10 @@ def _setup() -> tuple[
     )
 
     logging_path = configure_application_logging(
-        disabled=normalized_args["logging_disabled"],
-        root_level=normalized_args["log_level"],
+        disabled=normalized_args.logging_disabled,
+        root_logger_level=normalized_args.log_level,
         log_file_path=(
-            normalized_args["logging_dir"]
+            normalized_args.logging_dir
             / (f"correct_pvl_delta_fits_{len(subject_keys)}_subjects_{start_datetime_str}.log")
         ),
     )
@@ -789,8 +853,8 @@ def _compare_original_and_corrected_fit_results(
     corrected_fit_results: DataFrame,
     subject_keys: DataFrame,
     *,
-    report_path: Path,
-    nll_tolerance: float = 1e-8,
+    report_path: StrPathLike,
+    selection_atol: float,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Validate corrected fit results and write a correction audit report.
@@ -804,24 +868,30 @@ def _compare_original_and_corrected_fit_results(
     whether the corrected PVL-Delta fit reaches the corresponding Q-learning
     negative log-likelihood.
 
-    A corrected fit is classified as:
+    When `min_nll_advantage` is positive, a corrected fit is classified as:
 
-    - ``IMPROVED`` when its NLL is lower by more than ``nll_tolerance``.
-    - ``UNCHANGED`` when the absolute NLL difference is within the tolerance.
-    - ``WORSE`` when its NLL is higher by more than the tolerance.
+    - `IMPROVED` when its NLL is lower by at least `min_nll_advantage`.
+    - `UNCHANGED` when the absolute NLL difference is less than `min_nll_advantage`.
+    - `WORSE` when its NLL is higher by at least `min_nll_advantage`.
+
+    When `min_nll_advantage` is `None`, a corrected fit is classified as:
+
+    - `IMPROVED` when its NLL is lower by more than 0 (any improvement).
+    - `UNCHANGED` when its NLL value hasn't changed.
+    - `WORSE` when its NLL is higher by more than 0 (any deterioration).
 
     Args:
         original_fit_results: Complete fit-results table before correction.
         corrected_fit_results: Complete fit-results table after correction.
         subject_keys: Participant keys selected for PVL-Delta refitting.
         report_path: Path at which to write the text audit report.
-        nll_tolerance: Nonnegative tolerance used when comparing NLL values.
+        selection_atol: The absolute tolerance used for selecting subjects with uniquely best Q-learning NLL.
         logger: Logger instance or logger name.
 
     Raises:
         TypeError: If an argument has an invalid type.
         ValueError: If schemas, row identities, target rows, or unchanged
-            rows fail validation, or if required values are invalid.
+            rows fail validation, or if required values are invalid (e.g. `selection_atol` is not a non-negative number).
     """
 
     if not isinstance(original_fit_results, pd.DataFrame):
@@ -841,19 +911,11 @@ def _compare_original_and_corrected_fit_results(
             f"subject_keys must be a pandas DataFrame, got {type(subject_keys).__name__}."
         )
 
-    if not isinstance(report_path, Path):
-        raise TypeError(f"report_path must be a pathlib.Path, got {type(report_path).__name__}.")
+    report_path = normalize_path(report_path, parameter_name="report_path")
 
-    if isinstance(nll_tolerance, bool):
-        raise TypeError("nll_tolerance must be a real number, not a Boolean value.")
-
-    try:
-        parsed_nll_tolerance = float(nll_tolerance)
-    except (TypeError, ValueError) as error:
-        raise TypeError("nll_tolerance must be a real number.") from error
-
-    if not np.isfinite(parsed_nll_tolerance) or parsed_nll_tolerance < 0.0:
-        raise ValueError("nll_tolerance must be finite and nonnegative.")
+    parsed_atol = _validate_nonnegative_finite_float(
+        selection_atol, parameter_name="selection_atol"
+    )
 
     if isinstance(logger, str):
         report_logger = logging.getLogger(logger)
@@ -905,23 +967,15 @@ def _compare_original_and_corrected_fit_results(
 
     participant_key_columns = list(PARTICIPANT_KEY_COLUMNS)
 
-    row_key_columns = [
-        *participant_key_columns,
-        "model",
-    ]
+    row_key_columns = [*participant_key_columns, MODEL_COLUMN]
 
-    pvl_parameter_columns = [
-        "learning_rate",
-        "outcome_sensitivity",
-        "loss_aversion",
-        "response_consistency",
-    ]
+    pvl_parameter_columns = [*PVLDeltaModel.get_parameter_names()]
 
     required_columns = {
         *row_key_columns,
         *pvl_parameter_columns,
-        "negative_log_likelihood",
-        "converged",
+        NLL_COLUMN,
+        CONVERGED_COLUMN,
     }
 
     missing_required_columns = required_columns - set(original_fit_results.columns)
@@ -962,15 +1016,12 @@ def _compare_original_and_corrected_fit_results(
         ("original", original),
         ("corrected", corrected),
     ):
-        normalized_models = table["model"].astype("string").str.strip()
+        normalized_models = normalize_nonempty_string_series(
+            table[MODEL_COLUMN],
+            column_name=MODEL_COLUMN,
+        )
 
-        if normalized_models.isna().any():
-            raise ValueError(f"The {table_name} fit-results table contains missing model names.")
-
-        if normalized_models.eq("").any():
-            raise ValueError(f"The {table_name} fit-results table contains empty model names.")
-
-        table["model"] = normalized_models
+        table[MODEL_COLUMN] = normalized_models
 
         duplicate_row_mask = table.duplicated(
             subset=row_key_columns,
@@ -1014,7 +1065,7 @@ def _compare_original_and_corrected_fit_results(
         """Validate that every selected subject has one row for a model."""
 
         model_subject_keys = table.loc[
-            table["model"].eq(model_name),
+            table[MODEL_COLUMN].eq(model_name),
             participant_key_columns,
         ]
 
@@ -1061,7 +1112,7 @@ def _compare_original_and_corrected_fit_results(
 
     original_subject_index = pd.MultiIndex.from_frame(original.loc[:, participant_key_columns])
 
-    targeted_pvl_mask = original["model"].eq(
+    targeted_pvl_mask = original[MODEL_COLUMN].eq(
         pvl_delta_model_name
     ).to_numpy() & original_subject_index.isin(selected_subject_index)
 
@@ -1088,26 +1139,6 @@ def _compare_original_and_corrected_fit_results(
         )
     except AssertionError as error:
         raise ValueError("Rows outside the targeted PVL-Delta fits were modified.") from error
-
-    def finite_float(
-        value: Any,
-        *,
-        value_name: str,
-    ) -> float:
-        """Convert one report value to a finite float."""
-
-        if isinstance(value, (bool, np.bool_)):
-            raise ValueError(f"{value_name} must be numeric, not Boolean.")
-
-        try:
-            parsed_value = float(value)
-        except (TypeError, ValueError) as error:
-            raise ValueError(f"{value_name} cannot be interpreted as a number.") from error
-
-        if not np.isfinite(parsed_value):
-            raise ValueError(f"{value_name} must be finite.")
-
-        return parsed_value
 
     def format_report_value(value: Any) -> str:
         """Format a scalar value for the text report."""
@@ -1138,7 +1169,7 @@ def _compare_original_and_corrected_fit_results(
     diagnostic_columns = [
         column_name
         for column_name in (
-            "converged",
+            CONVERGED_COLUMN,
             "message",
             "nfev",
             "nit",
@@ -1156,7 +1187,7 @@ def _compare_original_and_corrected_fit_results(
     ) -> Series:
         """Return exactly one model-fit row for a participant."""
 
-        row_mask = table["model"].eq(model_name)
+        row_mask = table[MODEL_COLUMN].eq(model_name)
 
         for column_name, value in zip(
             participant_key_columns,
@@ -1224,35 +1255,38 @@ def _compare_original_and_corrected_fit_results(
             )
         )
 
-        original_pvl_nll = finite_float(
-            original_pvl_row["negative_log_likelihood"],
-            value_name=(f"Original PVL-Delta NLL for {subject_description}"),
+        original_pvl_nll = _validate_nonnegative_finite_float(
+            original_pvl_row[NLL_COLUMN],
+            parameter_name=(f"Original PVL-Delta NLL for {subject_description}"),
         )
 
-        corrected_pvl_nll = finite_float(
-            corrected_pvl_row["negative_log_likelihood"],
-            value_name=(f"Corrected PVL-Delta NLL for {subject_description}"),
+        corrected_pvl_nll = _validate_nonnegative_finite_float(
+            corrected_pvl_row[NLL_COLUMN],
+            parameter_name=(f"Corrected PVL-Delta NLL for {subject_description}"),
         )
 
-        q_learning_nll = finite_float(
-            q_learning_row["negative_log_likelihood"],
-            value_name=(f"Q-learning NLL for {subject_description}"),
+        q_learning_nll = _validate_nonnegative_finite_float(
+            q_learning_row[NLL_COLUMN],
+            parameter_name=(f"Q-learning NLL for {subject_description}"),
         )
 
-        nll_improvement = original_pvl_nll - corrected_pvl_nll
+        nll_difference = original_pvl_nll - corrected_pvl_nll
 
-        if nll_improvement > parsed_nll_tolerance:
+        if nll_difference > parsed_atol:
             status = "IMPROVED"
-        elif nll_improvement < -parsed_nll_tolerance:
+        elif -nll_difference > parsed_atol:
             status = "WORSE"
         else:
+            # !(nll_difference > parsed_atol) -> nll_difference <= parsed_atol
+            # !(-nll_difference > parsed_atol) -> nll_difference >= -parsed_atol
+            # nll_difference <= parsed_atol && nll_difference >= -parsed_atol -> |nll_difference| <= parsed_atol
             status = "UNCHANGED"
 
         status_counts[status] += 1
 
         corrected_minus_q_nll = corrected_pvl_nll - q_learning_nll
 
-        nesting_condition_satisfied = corrected_pvl_nll <= q_learning_nll + parsed_nll_tolerance
+        nesting_condition_satisfied = corrected_minus_q_nll <= parsed_atol
 
         if not nesting_condition_satisfied:
             nesting_failure_count += 1
@@ -1277,7 +1311,7 @@ def _compare_original_and_corrected_fit_results(
             f"  Q-learning:          {q_learning_nll:.12g}",
             f"  Original PVL-Delta:  {original_pvl_nll:.12g}",
             f"  Corrected PVL-Delta: {corrected_pvl_nll:.12g}",
-            f"  Improvement:         {nll_improvement:.12g}",
+            f"  Improvement:         {nll_difference:.12g}",
             f"  Corrected PVL - Q:   {corrected_minus_q_nll:.12g}",
             "",
             "PVL-Delta parameters:",
@@ -1328,7 +1362,7 @@ def _compare_original_and_corrected_fit_results(
         f"Worse: {status_counts['WORSE']}",
         f"Not improved: {non_improved_count}",
         (f"Corrected PVL NLL still above Q-learning NLL: {nesting_failure_count}"),
-        f"NLL comparison tolerance: {parsed_nll_tolerance:.12g}",
+        f"NLL comparison tolerance: {parsed_atol:.12g}",
         "",
         "Integrity checks:",
         "  Table shapes match: Yes",
@@ -1384,7 +1418,7 @@ def _compare_original_and_corrected_fit_results(
 
 def _run(
     *,
-    normalized_args: dict[str, Any],
+    normalized_args: argparse.Namespace,
     start_datetime_str: str,
     original_fit_results: DataFrame,
     subject_keys: DataFrame,
@@ -1395,7 +1429,7 @@ def _run(
     """Run the targeted refit and save three corrected result tables.
 
     Args:
-        normalized_args: Normalized command-line arguments.
+        normalized_args: Normalized command-line arguments namespace.
         start_datetime_str: Timestamp used in output filenames.
         original_fit_results: Original complete model-fit table.
         subject_keys: Participant keys selected for refitting.
@@ -1420,11 +1454,11 @@ def _run(
 
     targeted_pvl_results = run_fitting_pipeline(
         FittingPipelineConfig(
-            rdata_path=normalized_args["rdata_path"],
+            rdata_path=normalized_args.rdata_path,
             models=(pvl_delta_model,),
             max_iterations=DEFAULT_MAX_ITERATIONS,
-            n_workers=normalized_args["n_workers"],
-            show_progress=not normalized_args["no_progress"],
+            n_workers=normalized_args.n_workers,
+            show_progress=not normalized_args.no_progress,
             n_subjects=None,
             subject_keys=subject_keys,
             subject_model_warm_starts_provider=warm_starts_provider,
@@ -1456,14 +1490,12 @@ def _run(
 
     filename_suffix = f"{actual_n_subjects}_subjects_{start_datetime_str}"
 
-    fits_path = normalized_args["output_dir"] / (f"model_fits_corrected_{filename_suffix}.csv")
-    comparison_path = normalized_args["output_dir"] / (
+    fits_path = normalized_args.output_dir / (f"model_fits_corrected_{filename_suffix}.csv")
+    comparison_path = normalized_args.output_dir / (
         f"model_comparison_corrected_{filename_suffix}.csv"
     )
-    summary_path = normalized_args["output_dir"] / (
-        f"model_summary_corrected_{filename_suffix}.csv"
-    )
-    report_path = normalized_args["output_dir"] / (f"model_correction_report_{filename_suffix}.txt")
+    summary_path = normalized_args.output_dir / (f"model_summary_corrected_{filename_suffix}.csv")
+    report_path = normalized_args.output_dir / (f"model_correction_report_{filename_suffix}.txt")
 
     corrected_fit_results.to_csv(
         fits_path,
@@ -1499,7 +1531,7 @@ def _run(
         corrected_fit_results=corrected_fit_results,
         subject_keys=subject_keys,
         report_path=report_path,
-        nll_tolerance=normalized_args["epsilon"],
+        selection_atol=normalized_args.atol,
         logger=logger,
     )
 
@@ -1543,90 +1575,91 @@ def main() -> None:
         logging_path,
     ) = _setup()
 
-    notify_formsubmit_id: str | None = normalized_args["notify_formsubmit_id"]
+    notify_formsubmit_id: str | None = normalized_args.notify_formsubmit_id
+    logger = logging.getLogger(LOGGER_NAME)
 
-    with error_email_notifier(
-        formsubmit_id=notify_formsubmit_id,
-        script_name=Path(__file__).name,
-        start_counter=start_counter,
-    ):
-        logger = logging.getLogger(LOGGER_NAME)
-        logger.info("Starting targeted PVL-Delta fit correction...")
+    try:
+        with error_email_notifier(
+            formsubmit_id=notify_formsubmit_id,
+            script_name=Path(__file__).name,
+            start_counter=start_counter,
+        ):
+            logger.info("Starting targeted PVL-Delta fit correction...")
 
-        logger.debug("Parsed command-line arguments: %r", vars(args))
-        logger.debug("Normalized command-line arguments: %r", normalized_args)
+            logger.debug("Parsed command-line arguments: %s", args)
+            logger.debug("Normalized command-line arguments: %s", normalized_args)
 
-        logger.info(
-            "Selected %d converged subjects for whom Q-learning beats "
-            "the best competing model by more than epsilon=%g.",
-            len(subject_keys),
-            normalized_args["epsilon"],
-        )
-
-        if subject_keys.empty:
-            raise ValueError("No subjects satisfied the Q-learning NLL-selection criterion.")
-
-        normalized_args["output_dir"].mkdir(parents=True, exist_ok=True)
-
-        result_files = _run(
-            normalized_args=normalized_args,
-            start_datetime_str=start_datetime_str,
-            original_fit_results=original_fit_results,
-            subject_keys=subject_keys,
-            pvl_delta_model=pvl_delta_model,
-            warm_starts_provider=warm_starts_provider,
-            logger=logger,
-        )
-
-        if logging_path is not None:
             logger.info(
-                "Saved log file to: %s",
-                logging_path,
+                "Selected %d converged subjects for whom Q-learning beats "
+                "the best competing model by more than atol=%g.",
+                len(subject_keys),
+                normalized_args.atol,
             )
 
-            result_files.append(Path(logging_path))
+            if subject_keys.empty:
+                raise ValueError("No subjects satisfied the Q-learning NLL-selection criterion.")
 
-        end_counter = time.perf_counter()
-        elapsed_time = end_counter - start_counter
-        elapsed_time_obj = timedelta(seconds=round(elapsed_time))
+            normalized_args.output_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info(
-            "Completed targeted PVL-Delta fit correction in %s.",
-            elapsed_time_obj,
-        )
-
-        if notify_formsubmit_id is not None:
-            logger.info(
-                "Sending FormSubmit notification to %r with result files %r as one zip attachment.",
-                notify_formsubmit_id,
-                [path.name for path in result_files],
+            result_files = _run(
+                normalized_args=normalized_args,
+                start_datetime_str=start_datetime_str,
+                original_fit_results=original_fit_results,
+                subject_keys=subject_keys,
+                pvl_delta_model=pvl_delta_model,
+                warm_starts_provider=warm_starts_provider,
+                logger=logger,
             )
 
-        logger.info("Performing cleanup...")
-        _cleanup(logger=logger)
+            if logging_path is not None:
+                logger.info(
+                    "Saved log file to: %s",
+                    logging_path,
+                )
 
-        if notify_formsubmit_id is not None:
-            zip_filename = "corrected_pvl_delta_fit_output_files.zip"
+                result_files.append(Path(logging_path))
 
-            result_file_lines = "\n".join(f"  - {path.name}" for path in result_files)
+            end_counter = time.perf_counter()
+            elapsed_time = end_counter - start_counter
+            elapsed_time_obj = timedelta(seconds=round(elapsed_time))
 
-            email_message = f"""
+            logger.info(
+                "Completed targeted PVL-Delta fit correction in %s.",
+                elapsed_time_obj,
+            )
+
+            if notify_formsubmit_id is not None:
+                logger.info(
+                    "Sending FormSubmit notification to %r with result files %r as one zip attachment.",
+                    notify_formsubmit_id,
+                    [path.name for path in result_files],
+                )
+
+            if notify_formsubmit_id is not None:
+                zip_filename = "corrected_pvl_delta_fit_output_files.zip"
+
+                result_file_lines = "\n".join(f"  - {path.name}" for path in result_files)
+
+                email_message = f"""
 The targeted PVL-Delta fit correction has completed successfully.
 
 The selected PVL-Delta rows were replaced in a copy of the complete model-fit table. The model-comparison and model-summary tables were then regenerated from that corrected table.
 
 The following files are attached in a zip file named {zip_filename!r}:
 {result_file_lines}
-            """.strip()
+                """.strip()
 
-            send_formsubmit_email_script_success_notification(
-                formsubmit_id=notify_formsubmit_id,
-                message=email_message,
-                duration_seconds=elapsed_time,
-                script_name=Path(__file__).name,
-                file_paths=result_files,
-                zip_filename=zip_filename,
-            )
+                send_formsubmit_email_script_success_notification(
+                    formsubmit_id=notify_formsubmit_id,
+                    message=email_message,
+                    duration_seconds=elapsed_time,
+                    script_name=Path(__file__).name,
+                    file_paths=result_files,
+                    zip_filename=zip_filename,
+                )
+    finally:
+        logger.info("Performing cleanup...")
+        _cleanup(logger=logger)
 
 
 if __name__ == "__main__":

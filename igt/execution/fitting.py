@@ -11,7 +11,15 @@ from igt.constants.fitting import (
     PARAMETER_BOUNDARY_ABSOLUTE_TOLERANCE_FACTOR,
     UNIFORM_CHOICE_NLL_ABSOLUTE_TOLERANCE,
 )
-from igt.constants.models import N_IGT_DECKS
+from igt.constants.models import (
+    N_IGT_DECKS,
+)
+from igt.constants.schema import (
+    N_TRIALS_COLUMN,
+    NLL_COLUMN,
+    SOURCE_STUDY_COLUMN,
+    SUBJECT_ID_COLUMN,
+)
 from igt.models.base import ComputationalModel
 from igt.models.typing import SubjectData
 from igt.typing import Float1DArray, Float2DArray, ParameterBounds
@@ -139,7 +147,7 @@ def fit_model(
 ) -> ModelFitResult:
     """Fit one model to one subject by bounded multistart optimization.
 
-    Every starting point supplied by ``model.starting_points`` is optimized
+    Every starting point supplied by `model.starting_points` is optimized
     independently. The finite successful result with the lowest negative
     log-likelihood is retained. A finite unsuccessful result is retained only
     when no run converged, and the overall fit is then marked nonconverged.
@@ -177,9 +185,9 @@ def fit_model(
             "Fitting model %r for %r with %d starting points: %r",
             model.name,
             {
-                "subject_id": subject_id,
-                "source_study": source_study,
-                "n_trials": n_trials,
+                N_TRIALS_COLUMN: n_trials,
+                SUBJECT_ID_COLUMN: subject_id,
+                SOURCE_STUDY_COLUMN: source_study,
                 "fit_method": fit_method,
             },
             starts.shape[0],
@@ -213,9 +221,9 @@ def fit_model(
             "Fitting model %r for %r results for %d starting points: %r",
             model.name,
             {
-                "subject_id": subject_id,
-                "source_study": source_study,
-                "n_trials": n_trials,
+                N_TRIALS_COLUMN: n_trials,
+                SUBJECT_ID_COLUMN: subject_id,
+                SOURCE_STUDY_COLUMN: source_study,
                 "fit_method": fit_method,
             },
             starts.shape[0],
@@ -223,7 +231,7 @@ def fit_model(
                 {
                     "start": tuple(float(value) for value in start),
                     "parameters": tuple(float(value) for value in result.x),
-                    "negative_log_likelihood": _result_nll(result),
+                    NLL_COLUMN: _result_nll(result),
                     "success": bool(result.success),
                     "message": str(result.message),
                 }
@@ -235,15 +243,15 @@ def fit_model(
             "Fitting model %r for %r with %d starting points completed with best result: %r",
             model.name,
             {
-                "subject_id": subject_id,
-                "source_study": source_study,
-                "n_trials": n_trials,
+                N_TRIALS_COLUMN: n_trials,
+                SUBJECT_ID_COLUMN: subject_id,
+                SOURCE_STUDY_COLUMN: source_study,
                 "fit_method": fit_method,
             },
             starts.shape[0],
             {
                 "best_parameters": tuple(float(value) for value in best_parameters),
-                "negative_log_likelihood": negative_log_likelihood,
+                NLL_COLUMN: negative_log_likelihood,
                 "success": bool(best_result.success),
                 "message": str(best_result.message),
             },

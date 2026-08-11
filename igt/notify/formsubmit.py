@@ -5,10 +5,12 @@ import traceback
 import zipfile
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
-from pathlib import Path
 
 import requests
 from email_validator import EmailNotValidError, validate_email
+
+from igt.typing import StrPathLike
+from igt.utils.io import normalize_path
 
 
 def validate_normalize_email(
@@ -41,7 +43,7 @@ def send_formsubmit_email_notification(
     status: str | None = None,
     duration_seconds: float | None = None,
     script_name: str | None = None,
-    file_paths: Sequence[str | Path] | None = None,
+    file_paths: Sequence[StrPathLike] | None = None,
     zip_filename: str | None = None,
 ) -> dict:
     """
@@ -99,6 +101,10 @@ def send_formsubmit_email_notification(
 
         # Condition 2: The list has files
         else:
+            file_paths = [
+                normalize_path(fp, parameter_name="file_path_attachment") for fp in file_paths
+            ]
+
             logging.info("Zipping %d file(s) in memory...", len(file_paths))
             zip_buffer = io.BytesIO()
 
@@ -106,8 +112,7 @@ def send_formsubmit_email_notification(
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_archive:
                 for file_path in file_paths:
                     # Path(file_path).name reliably extracts the file name without the full directory structure
-                    path_obj = Path(file_path)
-                    zip_archive.write(file_path, arcname=path_obj.name)
+                    zip_archive.write(file_path, arcname=file_path.name)
 
             # Reset the buffer's position to the beginning so 'requests' can read it
             zip_buffer.seek(0)
@@ -169,7 +174,7 @@ def send_formsubmit_email_script_success_notification(
     *,
     duration_seconds: float | None = None,
     script_name: str | None = None,
-    file_paths: Sequence[str | Path] | None = None,
+    file_paths: Sequence[StrPathLike] | None = None,
     zip_filename: str | None = None,
 ) -> dict:
     """
@@ -195,7 +200,7 @@ def send_formsubmit_email_script_error_notification(
     *,
     duration_seconds: float | None = None,
     script_name: str | None = None,
-    file_paths: Sequence[str | Path] | None = None,
+    file_paths: Sequence[StrPathLike] | None = None,
     zip_filename: str | None = None,
 ) -> dict:
     """

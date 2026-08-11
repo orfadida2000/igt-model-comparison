@@ -1,91 +1,28 @@
 """Select and apply participant keys for targeted fitting analyses."""
 
+from collections.abc import Iterable
 from numbers import Real
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_bool_dtype, is_integer_dtype
 
-from igt.constants.schema import PARTICIPANT_KEY_COLUMNS
+from igt.constants.models import INVERSE_TEMPERATURE_PARAMETER_NAME
+from igt.constants.schema import (
+    CONVERGED_COLUMN,
+    MODEL_COLUMN,
+    NLL_COLUMN,
+    PARTICIPANT_KEY_COLUMNS,
+)
 from igt.models import ComputationalModel, QLearningModel
+from igt.typing import CustomTypeError, NonEmptyUniformTuple, StrPathLike
+from igt.utils.io import read_csv
+from igt.utils.tabular import (
+    normalize_boolean_series,
+    normalize_integer_series,
+    normalize_nonempty_string_series,
+)
 
 DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD = 19.5
-
-
-def _normalize_integer_series(
-    series: pd.Series,
-    *,
-    column_name: str,
-) -> pd.Series:
-    """Validate and convert a series to NumPy int64 values.
-
-    Args:
-        series: Series containing values expected to represent integers.
-        column_name: Column name used in validation error messages.
-
-    Returns:
-        A series containing the normalized values with NumPy ``int64``
-        dtype and the same index and name as the input series.
-
-    Raises:
-        ValueError: If the series has Boolean, missing, nonnumeric,
-            non-finite, non-integer, or out-of-range values.
-    """
-
-    if is_bool_dtype(series.dtype):
-        raise ValueError(f"{column_name} must contain integers, not Boolean values.")
-
-    try:
-        numeric_values = pd.to_numeric(
-            series,
-            errors="raise",
-        )
-    except (TypeError, ValueError) as error:
-        raise ValueError(
-            f"{column_name} contains values that cannot be interpreted as numbers."
-        ) from error
-
-    if numeric_values.isna().any():
-        raise ValueError(f"{column_name} contains missing values.")
-
-    if numeric_values.empty:
-        return pd.Series(
-            index=series.index,
-            dtype=np.int64,
-            name=series.name,
-        )
-
-    int64_info = np.iinfo(np.int64)
-
-    if is_integer_dtype(numeric_values.dtype):
-        minimum = int(numeric_values.min())
-        maximum = int(numeric_values.max())
-
-        if minimum < int64_info.min or maximum > int64_info.max:
-            raise ValueError(f"{column_name} contains values outside the int64 range.")
-
-        return numeric_values.astype(np.int64)
-
-    numeric_array = numeric_values.to_numpy(
-        dtype=np.float64,
-        na_value=np.nan,
-    )
-
-    if not np.isfinite(numeric_array).all():
-        raise ValueError(f"{column_name} contains non-finite values.")
-
-    if not np.equal(numeric_array, np.trunc(numeric_array)).all():
-        raise ValueError(f"{column_name} must contain only integer values.")
-
-    if np.any(numeric_array < -(2**63)) or np.any(numeric_array >= 2**63):
-        raise ValueError(f"{column_name} contains values outside the int64 range.")
-
-    return pd.Series(
-        numeric_array.astype(np.int64),
-        index=series.index,
-        name=series.name,
-    )
 
 
 def normalize_subject_key_columns(
@@ -95,14 +32,14 @@ def normalize_subject_key_columns(
 
     Args:
         subject_keys: Table containing the participant-key columns defined
-            by ``PARTICIPANT_KEY_COLUMNS``.
+            by `PARTICIPANT_KEY_COLUMNS`.
 
     Returns:
         A copy containing only the participant-key columns, normalized to
-        NumPy ``int64`` values while preserving row order and index.
+        NumPy `int64` values while preserving row order and index.
 
     Raises:
-        TypeError: If ``subject_keys`` is not a pandas DataFrame.
+        TypeError: If `subject_keys` is not a pandas DataFrame.
         ValueError: If a required participant-key column is missing or
             contains an invalid integer value.
     """
@@ -122,7 +59,7 @@ def normalize_subject_key_columns(
     normalized = subject_keys.loc[:, key_columns].copy()
 
     for column_name in key_columns:
-        normalized[column_name] = _normalize_integer_series(
+        normalized[column_name] = normalize_integer_series(
             normalized[column_name],
             column_name=column_name,
         )
@@ -137,14 +74,14 @@ def normalize_subject_keys(
 
     Args:
         subject_keys: Table containing the participant-key columns defined
-            by ``PARTICIPANT_KEY_COLUMNS``.
+            by `PARTICIPANT_KEY_COLUMNS`.
 
     Returns:
         A normalized participant-key table with duplicate rows removed and
-        rows sorted by ``PARTICIPANT_KEY_COLUMNS``.
+        rows sorted by `PARTICIPANT_KEY_COLUMNS`.
 
     Raises:
-        TypeError: If ``subject_keys`` is not a pandas DataFrame.
+        TypeError: If `subject_keys` is not a pandas DataFrame.
         ValueError: If a required participant-key column is missing or
             contains an invalid integer value.
     """
@@ -159,89 +96,6 @@ def normalize_subject_keys(
     )
 
 
-def _normalize_boolean_series(
-    series: pd.Series,
-    *,
-    column_name: str,
-) -> pd.Series:
-    """Return a strict Boolean series parsed from common CSV representations.
-
-    Args:
-        series: Series containing Boolean values or supported textual and
-            numeric Boolean representations.
-        column_name: Column name used in validation error messages.
-
-    Returns:
-        A Boolean series with the same index as the input series.
-
-    Raises:
-        ValueError: If the series contains missing values or values other
-            than ``True``, ``False``, ``"true"``, ``"false"``, ``1``, or
-            ``0``.
-    """
-
-    if is_bool_dtype(series.dtype):
-        if series.isna().any():
-            raise ValueError(f"{column_name} contains missing values.")
-
-        return series.astype(bool)
-
-    normalized = series.astype("string").str.strip().str.lower()
-
-    if normalized.isna().any():
-        raise ValueError(f"{column_name} contains missing values.")
-
-    parsed = normalized.map(
-        {
-            "true": True,
-            "false": False,
-            "1": True,
-            "0": False,
-        }
-    )
-
-    invalid_mask = parsed.isna()
-
-    if invalid_mask.any():
-        invalid_values = sorted(normalized.loc[invalid_mask].unique().tolist())
-
-        raise ValueError(
-            f"{column_name} contains values that cannot be interpreted "
-            f"as booleans: {invalid_values}"
-        )
-
-    return parsed.astype(bool)
-
-
-def _normalize_model_series(
-    series: pd.Series,
-    *,
-    column_name: str = "model",
-) -> pd.Series:
-    """Validate and normalize a series of model names.
-
-    Args:
-        series: Series containing model names.
-        column_name: Column name used in validation error messages.
-
-    Returns:
-        A string series containing model names with surrounding whitespace
-        removed.
-
-    Raises:
-        ValueError: If any model name is missing or empty.
-    """
-
-    normalized = series.astype("string").str.strip()
-    invalid_mask = normalized.isna() | normalized.eq("")
-
-    if invalid_mask.any():
-        invalid_count = int(invalid_mask.sum())
-        raise ValueError(f"{column_name} contains {invalid_count} missing or empty value(s).")
-
-    return normalized
-
-
 def _validate_model_name(model: str) -> str:
     """Validate and normalize a model name.
 
@@ -252,7 +106,7 @@ def _validate_model_name(model: str) -> str:
         The model name with surrounding whitespace removed.
 
     Raises:
-        TypeError: If ``model`` is not a string.
+        TypeError: If `model` is not a string.
         ValueError: If the normalized model name is empty.
     """
 
@@ -267,8 +121,43 @@ def _validate_model_name(model: str) -> str:
     return model_name
 
 
+def _validate_finite_float(
+    value: Real | float | int,
+    *,
+    parameter_name: str,
+) -> float:
+    """Validate a finite real-valued argument.
+
+    Args:
+        value: Value to validate.
+        parameter_name: Parameter name used in validation error messages.
+
+    Returns:
+        The validated value converted to `float`.
+
+    Raises:
+        TypeError: If `value` is Boolean or is not a real number.
+        ValueError: If `value` is non-finite.
+    """
+
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (Real, float, int)):
+        raise TypeError(
+            f"{parameter_name} must be a real number (float or int), got {type(value).__name__}."
+        )
+
+    try:
+        parsed_value = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{parameter_name} cannot be interpreted as a number.") from error
+
+    if not np.isfinite(parsed_value):
+        raise ValueError(f"{parameter_name} must be finite.")
+
+    return parsed_value
+
+
 def _validate_nonnegative_finite_float(
-    value: Real | float,
+    value: Real | float | int,
     *,
     parameter_name: str,
 ) -> float:
@@ -279,20 +168,17 @@ def _validate_nonnegative_finite_float(
         parameter_name: Parameter name used in validation error messages.
 
     Returns:
-        The validated value converted to ``float``.
+        The validated value converted to `float`.
 
     Raises:
-        TypeError: If ``value`` is Boolean or is not a real number.
-        ValueError: If ``value`` is non-finite or negative.
+        TypeError: If `value` is Boolean or is not a real number.
+        ValueError: If `value` is non-finite or negative.
     """
 
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
-        raise TypeError(f"{parameter_name} must be a real number, got {type(value).__name__}.")
-
-    parsed_value = float(value)
-
-    if not np.isfinite(parsed_value):
-        raise ValueError(f"{parameter_name} must be finite.")
+    parsed_value = _validate_finite_float(
+        value,
+        parameter_name=parameter_name,
+    )
 
     if parsed_value < 0.0:
         raise ValueError(f"{parameter_name} must be nonnegative.")
@@ -300,47 +186,115 @@ def _validate_nonnegative_finite_float(
     return parsed_value
 
 
-def _validate_threshold(threshold: Real | float) -> float:
-    """Validate and normalize an inverse-temperature threshold.
+def _validate_positive_finite_float(
+    value: Real | float | int,
+    *,
+    parameter_name: str,
+) -> float:
+    """Validate a finite, positive real-valued argument.
 
     Args:
-        threshold: Threshold value to validate.
+        value: Value to validate.
+        parameter_name: Parameter name used in validation error messages.
 
     Returns:
-        The validated threshold converted to ``float``.
+        The validated value converted to `float`.
 
     Raises:
-        TypeError: If ``threshold`` is Boolean or is not a real number.
-        ValueError: If ``threshold`` is non-finite or negative.
+        TypeError: If `value` is Boolean or is not a real number.
+        ValueError: If `value` is non-finite or not positive.
     """
 
-    return _validate_nonnegative_finite_float(
-        threshold,
-        parameter_name="threshold",
+    parsed_value = _validate_nonnegative_finite_float(
+        value,
+        parameter_name=parameter_name,
     )
 
+    if parsed_value == 0:
+        raise ValueError(f"{parameter_name} must be positive.")
 
-def _prepare_fit_results_for_nll_selection(
+    return parsed_value
+
+
+def _validate_column_names(
+    columns: tuple[str, ...], excluded_columns: set[str] | None = None
+) -> NonEmptyUniformTuple[str]:
+    """Validate and normalize a collection of column names.
+
+    Args:
+        columns: Column name(s) to validate.
+        excluded_columns: A set of column names that are not allowed.
+
+    Returns:
+        A non-empty tuple of unique column names.
+    """
+
+    if excluded_columns is None:
+        excluded_columns = set()
+
+    if not isinstance(excluded_columns, set):
+        raise TypeError(
+            f"'excluded_columns' must be a set of strings, got {type(excluded_columns).__name__}."
+        )
+
+    if not isinstance(columns, tuple):
+        raise TypeError(f"'columns' must be a tuple of strings, got {type(columns).__name__}.")
+
+    clean_columns: Iterable[str] = []
+
+    try:
+        for column in columns:
+            if not isinstance(column, str):
+                raise CustomTypeError(
+                    f"'columns' must be a tuple of strings, but found a non-string value: {column!r} of type {type(column).__name__}."
+                )
+
+            if column in excluded_columns:
+                raise ValueError(
+                    f"'columns' contains a disallowed column name: {column!r}. Disallowed columns: {excluded_columns!r}."
+                )
+
+            clean_columns.append(column)
+
+        clean_columns = tuple(clean_columns)
+    except CustomTypeError:
+        raise
+    except Exception as e:
+        raise RuntimeError(
+            f"'columns' is determined to be an instance of tuple, but an error occurred while iterating over its elements: {e}"
+        ) from e
+
+    if len(clean_columns) == 0:
+        raise ValueError(f"'columns' must not be an empty tuple, got {columns!r}.")
+
+    if len(clean_columns) != len(set(clean_columns)):
+        raise ValueError(f"'columns' must not contain duplicate values, got {columns!r}.")
+
+    return clean_columns
+
+
+def _prepare_fit_results_for_selection(
     fit_results: pd.DataFrame,
+    comparison_columns: tuple[str, ...],
     *,
-    require_convergence: bool,
+    require_converge_column: bool,
 ) -> pd.DataFrame:
-    """Validate and normalize fit-result rows used for NLL comparison.
+    """Validate and normalize fit-result rows used for comparison-based (using the given comparison columns) subject selection
 
     Args:
         fit_results: Per-model fit-results table.
-        require_convergence: Whether the normalized table must include and
-            validate the ``converged`` column.
+        comparison_columns: The column(s) to use for comparison, where each value in the tuple is treated as an individual column.
+        require_converge_column: Whether the normalized table must include a `converged` column that can be normalized into boolean type.
 
     Returns:
         A copy containing normalized participant keys, model names,
-        negative log-likelihood values, and optionally convergence values.
+        numeric comparison values, and optionally boolean convergence values.
 
     Raises:
-        TypeError: If ``fit_results`` is not a pandas DataFrame or
-            ``require_convergence`` is not Boolean.
-        ValueError: If a required column is missing, a value is invalid, or
-            duplicate participant-model combinations are present.
+        TypeError: If `fit_results` is not a pandas DataFrame, `comparison_columns` is not an iterable of strings or a single string, or
+            `require_converge_column` is not Boolean.
+        ValueError: If a required column is missing, a value is invalid, duplicate participant-model combinations are present, or
+            a comparison column is missing, is a subject key column, the 'model', the 'converged' column, or can't be converted to a numeric type.
     """
 
     if not isinstance(fit_results, pd.DataFrame):
@@ -348,19 +302,18 @@ def _prepare_fit_results_for_nll_selection(
             f"fit_results must be a pandas DataFrame, got {type(fit_results).__name__}."
         )
 
-    if not isinstance(require_convergence, (bool, np.bool_)):
-        raise TypeError("require_convergence must be a Boolean value.")
+    if not isinstance(require_converge_column, (bool, np.bool_)):
+        raise TypeError("require_converge_column must be a Boolean value.")
 
-    key_columns = list(PARTICIPANT_KEY_COLUMNS)
+    comparison_columns = _validate_column_names(
+        comparison_columns,
+        excluded_columns={MODEL_COLUMN, CONVERGED_COLUMN, *PARTICIPANT_KEY_COLUMNS},
+    )
 
-    relevant_columns = [
-        *key_columns,
-        "model",
-        "negative_log_likelihood",
-    ]
+    relevant_columns = [*PARTICIPANT_KEY_COLUMNS, MODEL_COLUMN, *comparison_columns]
 
-    if require_convergence:
-        relevant_columns.append("converged")
+    if require_converge_column:
+        relevant_columns.append(CONVERGED_COLUMN)
 
     missing_columns = set(relevant_columns) - set(fit_results.columns)
 
@@ -372,45 +325,47 @@ def _prepare_fit_results_for_nll_selection(
 
     normalized_keys = normalize_subject_key_columns(results)
 
-    for column_name in key_columns:
+    for column_name in PARTICIPANT_KEY_COLUMNS:
         results[column_name] = normalized_keys[column_name]
 
-    results["model"] = _normalize_model_series(
-        results["model"],
+    results[MODEL_COLUMN] = normalize_nonempty_string_series(
+        results[MODEL_COLUMN],
+        column_name=MODEL_COLUMN,
     )
 
-    try:
-        nll_values = pd.to_numeric(
-            results["negative_log_likelihood"],
-            errors="raise",
-        )
-    except (TypeError, ValueError) as error:
-        raise ValueError(
-            "negative_log_likelihood contains values that cannot be interpreted as numbers."
-        ) from error
+    for comparison_column in comparison_columns:
+        try:
+            comparison_values = pd.to_numeric(
+                results[comparison_column],
+                errors="raise",
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"{comparison_column} contains values that cannot be interpreted as numbers."
+            ) from error
 
-    nll_array = nll_values.to_numpy(
-        dtype=np.float64,
-        na_value=np.nan,
-    )
-
-    if not np.isfinite(nll_array).all():
-        invalid_count = int((~np.isfinite(nll_array)).sum())
-        raise ValueError(
-            f"negative_log_likelihood contains {invalid_count} missing or non-finite value(s)."
+        comparison_values_array = comparison_values.to_numpy(
+            dtype=np.float64,
+            na_value=np.nan,
         )
 
-    results["negative_log_likelihood"] = nll_array
+        if not np.isfinite(comparison_values_array).all():
+            invalid_count = int((~np.isfinite(comparison_values_array)).sum())
+            raise ValueError(
+                f"{comparison_column} contains {invalid_count} missing or non-finite value(s)."
+            )
 
-    if require_convergence:
-        results["converged"] = _normalize_boolean_series(
-            results["converged"],
-            column_name="converged",
+        results[comparison_column] = comparison_values_array
+
+    if require_converge_column:
+        results[CONVERGED_COLUMN] = normalize_boolean_series(
+            results[CONVERGED_COLUMN],
+            column_name=CONVERGED_COLUMN,
         )
 
     duplicate_columns = [
-        *key_columns,
-        "model",
+        *PARTICIPANT_KEY_COLUMNS,
+        MODEL_COLUMN,
     ]
 
     duplicate_mask = results.duplicated(
@@ -427,6 +382,35 @@ def _prepare_fit_results_for_nll_selection(
         )
 
     return results
+
+
+def _prepare_fit_results_for_nll_selection(
+    fit_results: pd.DataFrame,
+    *,
+    require_converge_column: bool,
+) -> pd.DataFrame:
+    """Validate and normalize fit-result rows used for NLL comparison.
+
+    Args:
+        fit_results: Per-model fit-results table.
+        require_converge_column: Whether the normalized table must include a `converged` column that can be normalized into boolean type.
+
+    Returns:
+        A copy containing normalized participant keys, model names,
+        negative log-likelihood values, and optionally convergence values.
+
+    Raises:
+        TypeError: If `fit_results` is not a pandas DataFrame or
+            `require_converge_column` is not Boolean.
+        ValueError: If a required column is missing, a value is invalid, or
+            duplicate participant-model combinations are present.
+    """
+
+    return _prepare_fit_results_for_selection(
+        fit_results,
+        comparison_columns=(NLL_COLUMN,),
+        require_converge_column=require_converge_column,
+    )
 
 
 def _validate_subject_model_coverage(
@@ -446,7 +430,7 @@ def _validate_subject_model_coverage(
             result for an available model.
     """
 
-    model_names = tuple(sorted(fit_results["model"].unique().tolist()))
+    model_names = tuple(sorted(fit_results[MODEL_COLUMN].unique().tolist()))
 
     if not model_names:
         raise ValueError("Fit-results table does not contain any model results.")
@@ -467,7 +451,7 @@ def _validate_subject_model_coverage(
         key_columns,
         sort=False,
         observed=True,
-    )["model"].nunique()
+    )[MODEL_COLUMN].nunique()
 
     incomplete_mask = model_counts.ne(len(model_names))
 
@@ -486,7 +470,7 @@ def _select_fully_converged_subject_rows(
 
     Args:
         fit_results: Normalized fit-results table containing a
-            ``converged`` column.
+            `converged` column.
 
     Returns:
         A copy containing all model rows for subjects whose model fits all
@@ -499,7 +483,7 @@ def _select_fully_converged_subject_rows(
         key_columns,
         sort=False,
         observed=True,
-    )["converged"].transform("all")
+    )[CONVERGED_COLUMN].transform("all")
 
     return fit_results.loc[fully_converged_mask].copy()
 
@@ -528,51 +512,28 @@ def _empty_subject_keys_from(
     )
 
 
-def read_fit_results_csv(
-    fit_results_csv: Path,
-) -> pd.DataFrame:
-    """Read a fit-results CSV file.
-
-    Args:
-        fit_results_csv: Path to the fit-results CSV file.
-
-    Returns:
-        The parsed fit-results table.
-
-    Raises:
-        FileNotFoundError: If ``fit_results_csv`` does not identify an
-            existing file.
-    """
-
-    csv_path = Path(fit_results_csv)
-
-    if not csv_path.is_file():
-        raise FileNotFoundError(f"Fit-results CSV does not exist: {csv_path}")
-
-    return pd.read_csv(csv_path)
-
-
-def select_model_lowest_nll_subject_keys(
+def _select_subjects_with_target_is_uniquely_best_model(
     fit_results: pd.DataFrame,
+    comparison_column: str,
     *,
-    model: ComputationalModel | type[ComputationalModel] | str,
-    epsilon: Real | float = 1e-8,
-    require_convergence: bool = True,
+    target_model: ComputationalModel | type[ComputationalModel] | str,
+    atol: Real | float = 1e-8,
+    fully_converged: bool = True,
+    lower_is_better: bool = True,
 ) -> pd.DataFrame:
-    """Select subjects for whom one model has the lowest NLL.
-
-    The requested model is selected only when its NLL is lower than the
-    best competing model's NLL by more than ``epsilon``.
+    """Select subjects for whom the target model is uniquely best regarding the specified comparison column.
 
     Args:
         fit_results: Per-model fit-results table.
-        model: Model to evaluate, either as a model class, model instance or a model name string.
-        epsilon: Minimum required NLL advantage over the best competitor.
-        require_convergence: Whether every model fit for a subject must
-            have converged.
+        comparison_column: The column to use for comparison when determining the best model.
+        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
+        atol: The absolute tolerance for considering two comparison values as equal.
+        fully_converged: Whether every model fit for a subject must
+            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
+        lower_is_better: Whether lower values in the comparison column are considered better (e.g., for NLL, lower is better).
 
     Returns:
-        Unique participant keys ordered by ``PARTICIPANT_KEY_COLUMNS``.
+        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS` representing the selected subjects.
 
     Raises:
         TypeError: If an argument has an invalid type.
@@ -581,116 +542,227 @@ def select_model_lowest_nll_subject_keys(
             requested comparison.
     """
 
-    model_name = model if isinstance(model, str) else model.get_name()
-    model_name = _validate_model_name(model_name)
+    if not isinstance(fully_converged, bool):
+        raise TypeError(
+            f"fully_converged must be a Boolean value, got {type(fully_converged).__name__}."
+        )
 
-    parsed_epsilon = _validate_nonnegative_finite_float(
-        epsilon,
-        parameter_name="epsilon",
+    if not isinstance(lower_is_better, bool):
+        raise TypeError(
+            f"lower_is_better must be a Boolean value, got {type(lower_is_better).__name__}."
+        )
+
+    target_model_name = target_model if isinstance(target_model, str) else target_model.get_name()
+    target_model_name = _validate_model_name(target_model_name)
+
+    atol = _validate_nonnegative_finite_float(
+        atol,
+        parameter_name="atol",
     )
 
-    results = _prepare_fit_results_for_nll_selection(
+    results_df = _prepare_fit_results_for_selection(
         fit_results,
-        require_convergence=require_convergence,
+        (comparison_column,),
+        require_converge_column=True,
     )
 
     _validate_subject_model_coverage(
-        results,
-        model=model_name,
+        results_df,
+        model=target_model_name,
     )
 
-    if require_convergence:
-        results = _select_fully_converged_subject_rows(results)
+    if fully_converged:
+        results_df = _select_fully_converged_subject_rows(results_df)
 
-    if results.empty:
-        return _empty_subject_keys_from(results)
+    if results_df.empty:
+        return _empty_subject_keys_from(results_df)
 
     key_columns = list(PARTICIPANT_KEY_COLUMNS)
 
-    target_results = results.loc[
-        results["model"].eq(model_name),
+    target_comparison_col_name = "target_model_" + comparison_column.strip()
+    target_model_results_df = results_df.loc[
+        results_df[MODEL_COLUMN].eq(target_model_name),
         [
             *key_columns,
-            "negative_log_likelihood",
+            comparison_column,
         ],
     ].rename(
         columns={
-            "negative_log_likelihood": "target_nll",
+            comparison_column: target_comparison_col_name,
         }
     )
 
-    competing_results = results.loc[
-        results["model"].ne(model_name),
+    competing_models_results_df = results_df.loc[
+        results_df[MODEL_COLUMN].ne(target_model_name),
         [
             *key_columns,
-            "negative_log_likelihood",
+            comparison_column,
         ],
     ]
 
-    best_competing_results = competing_results.groupby(
+    competitor_comparison_col_name = "competitor_model_" + comparison_column.strip()
+    best_competitor_model_results_df = competing_models_results_df.groupby(
         key_columns,
         as_index=False,
         sort=False,
         observed=True,
     ).agg(
-        best_competing_nll=(
-            "negative_log_likelihood",
-            "min",
-        )
+        **{
+            competitor_comparison_col_name: (
+                comparison_column,
+                "min" if lower_is_better else "max",
+            )
+        }
     )
 
-    comparisons = target_results.merge(
-        best_competing_results,
+    target_vs_competitor_results_df = target_model_results_df.merge(
+        best_competitor_model_results_df,
         on=key_columns,
         how="inner",
         validate="one_to_one",
     )
 
-    nll_advantage = comparisons["best_competing_nll"] - comparisons["target_nll"]
+    # A subject is selected if the target models's comparison value isn't considered as equal to the competitor (the best model out of the competing/remaining models) model's comparison value (i.e. the absolute difference is greater than the equality tolerance),
+    # and the target model's comparison value is the better (smaller if `lower_is_better` is True or larger if False) out of the two. An equivalent check is to check if the target model's comparison value is better than the competitor (best competing model) model's comparison value by a magnitude larger than the equality tolerance.
+    # The magnitude > tolerance gives us the "not equal" part, and the target model's comparison being better gives us the "target is best" part.
 
-    selected_mask = nll_advantage.gt(parsed_epsilon)
+    if lower_is_better:
+        per_subject_comparison_difference = (
+            target_vs_competitor_results_df[competitor_comparison_col_name]
+            - target_vs_competitor_results_df[target_comparison_col_name]
+        )
+    else:
+        per_subject_comparison_difference = (
+            target_vs_competitor_results_df[target_comparison_col_name]
+            - target_vs_competitor_results_df[competitor_comparison_col_name]
+        )
 
-    return normalize_subject_keys(
-        comparisons.loc[
-            selected_mask,
-            key_columns,
-        ]
-    )
+    selected_subjects_mask = per_subject_comparison_difference.gt(atol)
+    selected_subjects_keys = target_vs_competitor_results_df.loc[
+        selected_subjects_mask,
+        key_columns,
+    ]
+
+    return normalize_subject_keys(selected_subjects_keys)
 
 
-def select_model_lowest_nll_subject_keys_from_csv(
-    fit_results_csv: Path,
+def _select_subjects_with_target_is_uniquely_best_model_from_csv(
+    fit_results_csv: StrPathLike,
+    comparison_column: str,
     *,
-    model: ComputationalModel | type[ComputationalModel] | str,
-    epsilon: Real | float = 1e-8,
-    require_convergence: bool = True,
+    target_model: ComputationalModel | type[ComputationalModel] | str,
+    atol: Real | float = 1e-8,
+    fully_converged: bool = True,
+    lower_is_better: bool = True,
 ) -> pd.DataFrame:
-    """Read a fit-results CSV and select subjects won by one model.
+    """Read a fit-results CSV and select the subjects for whom the target model is uniquely best regarding the specified comparison column.
 
     Args:
         fit_results_csv: Path to the per-model fit-results CSV file.
-        model: Model to evaluate, either as a model class, model instance or a model name string.
-        epsilon: Minimum required NLL advantage over the best competitor.
-        require_convergence: Whether every model fit for a subject must
-            have converged.
+        comparison_column: The column to use for comparison when determining the best model.
+        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
+        atol: The absolute tolerance for considering two comparison values as equal.
+        fully_converged: Whether every model fit for a subject must
+            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
+        lower_is_better: Whether lower values in the comparison column are considered better (e.g., for NLL, lower is better).
 
     Returns:
-        Unique participant keys ordered by ``PARTICIPANT_KEY_COLUMNS``.
+        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS`.
 
     Raises:
-        FileNotFoundError: If ``fit_results_csv`` does not identify an
+        FileNotFoundError: If `fit_results_csv` does not identify an
             existing file.
         TypeError: If an argument has an invalid type.
         ValueError: If the CSV contents or selection arguments are invalid.
     """
 
-    fit_results = read_fit_results_csv(fit_results_csv)
+    fit_results = read_csv(
+        fit_results_csv,
+        table_name="fit-results",
+    )
 
-    return select_model_lowest_nll_subject_keys(
+    return _select_subjects_with_target_is_uniquely_best_model(
         fit_results,
-        model=model,
-        epsilon=epsilon,
-        require_convergence=require_convergence,
+        comparison_column,
+        target_model=target_model,
+        atol=atol,
+        fully_converged=fully_converged,
+        lower_is_better=lower_is_better,
+    )
+
+
+def select_subjects_with_target_is_uniquely_nll_best_model(
+    fit_results: pd.DataFrame,
+    *,
+    target_model: ComputationalModel | type[ComputationalModel] | str,
+    atol: Real | float = 1e-8,
+    fully_converged: bool = True,
+) -> pd.DataFrame:
+    """Select subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
+
+    Args:
+        fit_results: Per-model fit-results table.
+        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
+        atol: The absolute tolerance for considering two NLL values as equal.
+        fully_converged: Whether every model fit for a subject must
+            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
+
+    Returns:
+        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS` representing the selected subjects.
+
+    Raises:
+        TypeError: If an argument has an invalid type.
+        ValueError: If an argument or fit-results value is invalid, model
+            coverage is incomplete, or the table cannot support the
+            requested comparison.
+    """
+
+    return _select_subjects_with_target_is_uniquely_best_model(
+        fit_results,
+        NLL_COLUMN,
+        target_model=target_model,
+        atol=atol,
+        fully_converged=fully_converged,
+        lower_is_better=True,  # NLL is better when lower
+    )
+
+
+def select_subjects_with_target_is_uniquely_nll_best_model_from_csv(
+    fit_results_csv: StrPathLike,
+    *,
+    target_model: ComputationalModel | type[ComputationalModel] | str,
+    atol: Real | float = 1e-8,
+    fully_converged: bool = True,
+) -> pd.DataFrame:
+    """Read a fit-results CSV and select the subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
+
+    Args:
+        fit_results_csv: Path to the per-model fit-results CSV file.
+        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
+        atol: The absolute tolerance for considering two NLL values as equal.
+        fully_converged: Whether every model fit for a subject must
+            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
+
+    Returns:
+        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS`.
+
+    Raises:
+        FileNotFoundError: If `fit_results_csv` does not identify an
+            existing file.
+        TypeError: If an argument has an invalid type.
+        ValueError: If the CSV contents or selection arguments are invalid.
+    """
+
+    fit_results = read_csv(
+        fit_results_csv,
+        table_name="fit-results",
+    )
+
+    return select_subjects_with_target_is_uniquely_nll_best_model(
+        fit_results,
+        target_model=target_model,
+        atol=atol,
+        fully_converged=fully_converged,
     )
 
 
@@ -709,11 +781,11 @@ def select_q_inverse_temperature_subject_keys(
             fits.
 
     Returns:
-        Unique participant keys ordered by ``PARTICIPANT_KEY_COLUMNS``.
+        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS`.
 
     Raises:
-        TypeError: If ``fit_results`` is not a pandas DataFrame or
-            ``require_convergence`` is not Boolean.
+        TypeError: If `fit_results` is not a pandas DataFrame or
+            `require_convergence` is not Boolean.
         ValueError: If a required column is missing or contains invalid
             values.
     """
@@ -726,16 +798,16 @@ def select_q_inverse_temperature_subject_keys(
     if not isinstance(require_convergence, (bool, np.bool_)):
         raise TypeError("require_convergence must be a Boolean value.")
 
-    parsed_threshold = _validate_threshold(threshold)
+    parsed_threshold = _validate_nonnegative_finite_float(threshold, parameter_name="threshold")
 
     required_columns = {
-        "model",
-        "inverse_temperature",
+        MODEL_COLUMN,
+        INVERSE_TEMPERATURE_PARAMETER_NAME,
         *PARTICIPANT_KEY_COLUMNS,
     }
 
     if require_convergence:
-        required_columns.add("converged")
+        required_columns.add(CONVERGED_COLUMN)
 
     missing_columns = required_columns - set(fit_results.columns)
 
@@ -743,8 +815,9 @@ def select_q_inverse_temperature_subject_keys(
         missing_text = ", ".join(sorted(missing_columns))
         raise ValueError(f"Fit-results table is missing columns: {missing_text}")
 
-    normalized_models = _normalize_model_series(
-        fit_results["model"],
+    normalized_models = normalize_nonempty_string_series(
+        fit_results[MODEL_COLUMN],
+        column_name=MODEL_COLUMN,
     )
 
     q_results = fit_results.loc[normalized_models.eq(QLearningModel.get_name())].copy()
@@ -754,7 +827,7 @@ def select_q_inverse_temperature_subject_keys(
 
     try:
         inverse_temperatures = pd.to_numeric(
-            q_results["inverse_temperature"],
+            q_results[INVERSE_TEMPERATURE_PARAMETER_NAME],
             errors="raise",
         )
     except (TypeError, ValueError) as error:
@@ -779,9 +852,9 @@ def select_q_inverse_temperature_subject_keys(
     selected_mask = inverse_temperatures.ge(parsed_threshold)
 
     if require_convergence:
-        converged = _normalize_boolean_series(
-            q_results["converged"],
-            column_name="converged",
+        converged = normalize_boolean_series(
+            q_results[CONVERGED_COLUMN],
+            column_name=CONVERGED_COLUMN,
         )
         selected_mask &= converged
 
@@ -794,7 +867,7 @@ def select_q_inverse_temperature_subject_keys(
 
 
 def select_q_inverse_temperature_subject_keys_from_csv(
-    fit_results_csv: Path,
+    fit_results_csv: StrPathLike,
     *,
     threshold: Real | float = DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD,
     require_convergence: bool = True,
@@ -808,16 +881,19 @@ def select_q_inverse_temperature_subject_keys_from_csv(
             fits.
 
     Returns:
-        Unique participant keys ordered by ``PARTICIPANT_KEY_COLUMNS``.
+        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS`.
 
     Raises:
-        FileNotFoundError: If ``fit_results_csv`` does not identify an
+        FileNotFoundError: If `fit_results_csv` does not identify an
             existing file.
         TypeError: If an argument has an invalid type.
         ValueError: If the CSV contents or selection arguments are invalid.
     """
 
-    fit_results = read_fit_results_csv(fit_results_csv)
+    fit_results = read_csv(
+        fit_results_csv,
+        table_name="fit-results",
+    )
 
     return select_q_inverse_temperature_subject_keys(
         fit_results,
@@ -845,11 +921,11 @@ def filter_subjects_by_keys(
         by participant-key columns and trial number.
 
     Raises:
-        TypeError: If ``data`` or ``subject_keys`` is not a pandas
+        TypeError: If `data` or `subject_keys` is not a pandas
             DataFrame.
         ValueError: If required columns are missing, participant keys are
             invalid, or requested participant keys are absent from
-            ``data``.
+            `data`.
     """
 
     if not isinstance(data, pd.DataFrame):

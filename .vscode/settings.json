@@ -1,8 +1,12 @@
 {
+  "autoDocstring.docstringFormat": "google-notypes",
+
   "cSpell.words": [
     "arcname",
+    "axvline",
     "BFGS",
     "cval",
+    "figsize",
     "flatnonzero",
     "formsubmit",
     "Fridberg",
@@ -10,6 +14,7 @@
     "iinfo",
     "initargs",
     "lexsort",
+    "linestyle",
     "maxiter",
     "nfev",
     "nonconverged",
@@ -17,6 +22,8 @@
     "rdata",
     "Referer",
     "rtol",
-    "Steingroever"
+    "Steingroever",
+    "xlim",
+    "ylim"
   ]
 }

@@ -3,7 +3,6 @@
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import pandas as pd
 
@@ -12,6 +11,8 @@ from igt.constants.fitting import DEFAULT_MAX_ITERATIONS
 from igt.models.base import ComputationalModel
 from igt.rdata_preprocessing import load_igt_long_table
 from igt.subject_selection import filter_subjects_by_keys
+from igt.typing import StrPathLike
+from igt.utils.io import normalize_path
 
 from .manager import fit_all_subjects
 from .typing import SubjectModelWarmStartsProvider
@@ -21,7 +22,7 @@ from .typing import SubjectModelWarmStartsProvider
 class FittingPipelineConfig:
     """Resolved inputs for one fitting pipeline execution."""
 
-    rdata_path: Path
+    rdata_path: StrPathLike
     models: Sequence[ComputationalModel] = field(repr=False)
     max_iterations: int = DEFAULT_MAX_ITERATIONS
     n_workers: int | None = None
@@ -38,7 +39,9 @@ class FittingPipelineConfig:
     def __post_init__(self) -> None:
         """Validate and freeze configuration values."""
 
-        object.__setattr__(self, "rdata_path", Path(self.rdata_path))
+        object.__setattr__(
+            self, "rdata_path", normalize_path(self.rdata_path, parameter_name="rdata_path")
+        )
         object.__setattr__(self, "models", tuple(self.models))
 
         if not self.models:

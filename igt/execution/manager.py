@@ -1,7 +1,7 @@
 """Execute model fitting across IGT subjects.
 
 This module owns dataset-to-subject conversion and subject-level scheduling.
-The statistical comparison of completed fits belongs in ``comparison.py``.
+The statistical comparison of completed fits belongs in `comparison.py`.
 """
 
 import logging
@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
 
+from igt.constants.schema import SOURCE_STUDY_COLUMN
 from igt.models.base import ComputationalModel
 from igt.models.typing import SubjectData
 from igt.rdata_preprocessing import iter_subject_trials
@@ -31,7 +32,7 @@ from .typing import (
 )
 
 _REQUIRED_TRIAL_COLUMNS = {
-    "source_study",
+    SOURCE_STUDY_COLUMN,
     "choice",
     "win",
     "loss",
@@ -71,7 +72,7 @@ def _compute_subject_data_from_trials(subject_trials: pd.DataFrame) -> SubjectDa
 def _get_subject_study(subject_trials: pd.DataFrame) -> str:
     """Return and validate the unique source study for one subject."""
 
-    studies = subject_trials["source_study"].astype("string").str.strip().dropna().unique()
+    studies = subject_trials[SOURCE_STUDY_COLUMN].astype("string").str.strip().dropna().unique()
 
     if len(studies) != 1:
         raise ValueError(
@@ -492,7 +493,7 @@ def fit_all_subjects(
         models: Models to fit to every subject.
         optimizer_options: Options passed to every L-BFGS-B run.
         show_progress: Whether to display a subject progress bar.
-        n_workers: Number of worker processes. Use ``1`` for serial fitting.
+        n_workers: Number of worker processes. Use `1` for serial fitting.
         n_subjects: Number of subjects to fit. If None, fit all subjects.
         subject_model_warm_starts_provider: Optional callable that provides warm-start parameter values for a given model and subject.
 

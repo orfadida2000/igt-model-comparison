@@ -5,7 +5,13 @@ from collections.abc import Sequence
 import numpy as np
 import pandas as pd
 
-from igt.constants.schema import PARTICIPANT_KEY_COLUMNS
+from igt.constants.schema import (
+    CONVERGED_COLUMN,
+    MODEL_COLUMN,
+    NLL_COLUMN,
+    PARTICIPANT_KEY_COLUMNS,
+    SOURCE_STUDY_COLUMN,
+)
 from igt.execution.typing import ModelFitResult
 
 
@@ -20,7 +26,7 @@ def fit_results_to_dataframe(
         table = pd.DataFrame(result.to_record() for result in results)
 
     return table.sort_values(
-        by=["source_study", *PARTICIPANT_KEY_COLUMNS, "model"],
+        by=[SOURCE_STUDY_COLUMN, *PARTICIPANT_KEY_COLUMNS, MODEL_COLUMN],
         ignore_index=True,
     )
 
@@ -37,11 +43,11 @@ def add_model_comparison_columns(
     """
 
     required_columns = {
-        "source_study",
-        "model",
+        SOURCE_STUDY_COLUMN,
+        MODEL_COLUMN,
         "aic",
         "bic",
-        "converged",
+        CONVERGED_COLUMN,
     } | set(PARTICIPANT_KEY_COLUMNS)
     missing_columns = required_columns - set(results.columns)
 
@@ -59,9 +65,9 @@ def add_model_comparison_columns(
         sort=False,
         dropna=False,
     )
-    group_sizes = grouped["model"].transform("size")
-    unique_model_counts = grouped["model"].transform("nunique")
-    all_converged = grouped["converged"].transform("all")
+    group_sizes = grouped[MODEL_COLUMN].transform("size")
+    unique_model_counts = grouped[MODEL_COLUMN].transform("nunique")
+    all_converged = grouped[CONVERGED_COLUMN].transform("all")
     all_metrics_finite = grouped["_finite_comparison_metrics"].transform("all")
 
     compared["comparison_eligible"] = (
@@ -101,7 +107,7 @@ def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
     """Summarize convergence and valid information-criterion comparisons."""
 
     summary_columns = [
-        "model",
+        MODEL_COLUMN,
         "n_fits",
         "n_converged",
         "convergence_rate",
@@ -119,10 +125,10 @@ def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=summary_columns)
 
     fit_counts = (
-        compared.groupby("model", sort=True)
+        compared.groupby(MODEL_COLUMN, sort=True)
         .agg(
-            n_fits=("model", "size"),
-            n_converged=("converged", "sum"),
+            n_fits=(MODEL_COLUMN, "size"),
+            n_converged=(CONVERGED_COLUMN, "sum"),
         )
         .reset_index()
     )
@@ -133,7 +139,7 @@ def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
     if eligible.empty:
         comparison_metrics = pd.DataFrame(
             columns=[
-                "model",
+                MODEL_COLUMN,
                 "n_comparisons",
                 "mean_negative_log_likelihood",
                 "mean_aic",
@@ -144,10 +150,10 @@ def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
         )
     else:
         comparison_metrics = (
-            eligible.groupby("model", sort=True)
+            eligible.groupby(MODEL_COLUMN, sort=True)
             .agg(
-                n_comparisons=("model", "size"),
-                mean_negative_log_likelihood=("negative_log_likelihood", "mean"),
+                n_comparisons=(MODEL_COLUMN, "size"),
+                mean_negative_log_likelihood=(NLL_COLUMN, "mean"),
                 mean_aic=("aic", "mean"),
                 mean_bic=("bic", "mean"),
                 aic_wins=("best_aic", "sum"),
@@ -158,7 +164,7 @@ def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
 
     summary = fit_counts.merge(
         comparison_metrics,
-        on="model",
+        on=MODEL_COLUMN,
         how="left",
         validate="one_to_one",
     )

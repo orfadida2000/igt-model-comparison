@@ -5,17 +5,11 @@ from scipy.special import logsumexp
 
 from igt.constants.config import DEFAULT_N_PVL_STARTS, FIXED_SEED
 from igt.constants.models import (
-    MAX_LEARNING_RATE,
-    MAX_LOSS_AVERSION,
-    MAX_OUTCOME_SENSITIVITY,
-    MAX_RESPONSE_CONSISTENCY,
-    MIN_LEARNING_RATE,
-    MIN_LOSS_AVERSION,
-    MIN_OUTCOME_SENSITIVITY,
-    MIN_RESPONSE_CONSISTENCY,
     N_IGT_DECKS,
-    OPEN_BOUND_EPSILON,
     PAYOFF_SCALE,
+    PVL_DELTA_MODEL_NAME,
+    PVL_DELTA_PARAMETER_BOUNDS,
+    PVL_DELTA_PARAMETER_NAMES,
 )
 from igt.initialization import generate_sobol_starts
 
@@ -33,10 +27,10 @@ class PVLDeltaModel(ComputationalModel):
 
     Parameters, in optimizer-array order:
 
-    1. ``learning_rate`` (A)
-    2. ``outcome_sensitivity`` (alpha)
-    3. ``loss_aversion`` (lambda)
-    4. ``response_consistency`` (c)
+    1. `learning_rate` (A)
+    2. `outcome_sensitivity` (alpha)
+    3. `loss_aversion` (lambda)
+    4. `response_consistency` (c)
 
     Subjective utility is calculated from the net outcome. Only the chosen
     deck expectancy is updated. Choice probabilities use a softmax rule with:
@@ -74,32 +68,19 @@ class PVLDeltaModel(ComputationalModel):
     def get_name(cls) -> str:
         """Return the model name."""
 
-        return "pvl_delta"
+        return PVL_DELTA_MODEL_NAME
 
     @classmethod
     def get_parameter_names(cls) -> tuple[str, ...]:
         """Return parameter names in optimizer-array order."""
 
-        return (
-            "learning_rate",
-            "outcome_sensitivity",
-            "loss_aversion",
-            "response_consistency",
-        )
+        return PVL_DELTA_PARAMETER_NAMES
 
     @property
     def parameter_bounds(self) -> ParameterBounds:
         """Return numerically closed approximations of the model bounds."""
 
-        return (
-            (
-                MIN_LEARNING_RATE + OPEN_BOUND_EPSILON,
-                MAX_LEARNING_RATE - OPEN_BOUND_EPSILON,
-            ),
-            (MIN_OUTCOME_SENSITIVITY, MAX_OUTCOME_SENSITIVITY),
-            (MIN_LOSS_AVERSION, MAX_LOSS_AVERSION),
-            (MIN_RESPONSE_CONSISTENCY, MAX_RESPONSE_CONSISTENCY),
-        )
+        return PVL_DELTA_PARAMETER_BOUNDS
 
     def negative_log_likelihood(
         self,
@@ -164,7 +145,7 @@ class PVLDeltaModel(ComputationalModel):
     ) -> Float2DArray:
         """Return all Sobol starting points.
 
-        ``data`` is accepted to satisfy the common model interface. PVL-Delta
+        `data` is accepted to satisfy the common model interface. PVL-Delta
         starting points depend only on the parameter bounds, not on a
         particular subject.
         """

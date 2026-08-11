@@ -9,12 +9,15 @@ from igt.constants.config import DEFAULT_N_Q_STARTS
 from igt.constants.models import (
     DEFAULT_MAX_INVERSE_TEMPERATURE,
     DEFAULT_Q_INVERSE_TEMPERATURE_GRID_STEP,
+    DEFAULT_Q_LEARNING_PARAMETER_BOUNDS,
     DEFAULT_Q_LEARNING_RATE_GRID_SIZE,
-    MAX_LEARNING_RATE,
+    INVERSE_TEMPERATURE_PARAMETER_NAME,
+    LEARNING_RATE_PARAMETER_NAME,
     MIN_INVERSE_TEMPERATURE,
-    MIN_LEARNING_RATE,
     N_IGT_DECKS,
     PAYOFF_SCALE,
+    Q_LEARNING_MODEL_NAME,
+    Q_LEARNING_PARAMETER_NAMES,
 )
 from igt.initialization import (
     generate_grid_starts,
@@ -35,10 +38,10 @@ class QLearningModel(ComputationalModel):
 
     Parameters, in optimizer-array order:
 
-    1. ``learning_rate``
-    2. ``inverse_temperature``
+    1. `learning_rate`
+    2. `inverse_temperature`
 
-    The model evaluates a parameter grid and selects up to ``n_starts``
+    The model evaluates a parameter grid and selects up to `n_starts`
     distinct grid-local minima as local-optimizer starting points.
     """
 
@@ -77,9 +80,16 @@ class QLearningModel(ComputationalModel):
         if not np.isfinite(max_inverse_temperature):
             raise ValueError("max_inverse_temperature must be finite.")
 
-        if max_inverse_temperature <= MIN_INVERSE_TEMPERATURE:
+        _parameter_name_to_bound_map = dict(
+            zip(self.parameter_names, self.parameter_bounds, strict=True)
+        )
+
+        if (
+            max_inverse_temperature
+            <= _parameter_name_to_bound_map[INVERSE_TEMPERATURE_PARAMETER_NAME][0]
+        ):
             raise ValueError(
-                f"max_inverse_temperature must be greater than {MIN_INVERSE_TEMPERATURE}."
+                f"max_inverse_temperature must be greater than {_parameter_name_to_bound_map[INVERSE_TEMPERATURE_PARAMETER_NAME][0]}."
             )
 
         if not np.isfinite(payoff_scale):
@@ -97,8 +107,12 @@ class QLearningModel(ComputationalModel):
             num=learning_rate_grid_size,
             dtype=np.float64,
         )
-        computed_learning_rates = MIN_LEARNING_RATE + (
-            (MAX_LEARNING_RATE - MIN_LEARNING_RATE) * np.square(unit_learning_rates)
+        computed_learning_rates = _parameter_name_to_bound_map[LEARNING_RATE_PARAMETER_NAME][0] + (
+            (
+                _parameter_name_to_bound_map[LEARNING_RATE_PARAMETER_NAME][1]
+                - _parameter_name_to_bound_map[LEARNING_RATE_PARAMETER_NAME][0]
+            )
+            * np.square(unit_learning_rates)
         )
 
         additional_low_learning_rates = np.array(
@@ -106,8 +120,14 @@ class QLearningModel(ComputationalModel):
             dtype=np.float64,
         )
         additional_low_learning_rates = additional_low_learning_rates[
-            (additional_low_learning_rates >= MIN_LEARNING_RATE)
-            & (additional_low_learning_rates <= MAX_LEARNING_RATE)
+            (
+                additional_low_learning_rates
+                >= _parameter_name_to_bound_map[LEARNING_RATE_PARAMETER_NAME][0]
+            )
+            & (
+                additional_low_learning_rates
+                <= _parameter_name_to_bound_map[LEARNING_RATE_PARAMETER_NAME][1]
+            )
         ]
         learning_rates = np.concatenate(
             [
@@ -119,14 +139,17 @@ class QLearningModel(ComputationalModel):
         if inverse_temperature_grid_size is None:
             inverse_temperature_grid_size = (
                 ceil(
-                    (self._max_inverse_temperature - MIN_INVERSE_TEMPERATURE)
+                    (
+                        self._max_inverse_temperature
+                        - _parameter_name_to_bound_map[INVERSE_TEMPERATURE_PARAMETER_NAME][0]
+                    )
                     / DEFAULT_Q_INVERSE_TEMPERATURE_GRID_STEP
                 )
                 + 1
             )
 
         computed_inverse_temperatures = np.linspace(
-            MIN_INVERSE_TEMPERATURE,
+            _parameter_name_to_bound_map[INVERSE_TEMPERATURE_PARAMETER_NAME][0],
             self._max_inverse_temperature,
             num=inverse_temperature_grid_size,
             dtype=np.float64,
@@ -137,7 +160,10 @@ class QLearningModel(ComputationalModel):
             dtype=np.float64,
         )
         additional_low_inverse_temperatures = additional_low_inverse_temperatures[
-            (additional_low_inverse_temperatures >= MIN_INVERSE_TEMPERATURE)
+            (
+                additional_low_inverse_temperatures
+                >= _parameter_name_to_bound_map[INVERSE_TEMPERATURE_PARAMETER_NAME][0]
+            )
             & (additional_low_inverse_temperatures <= self._max_inverse_temperature)
         ]
 
@@ -166,24 +192,24 @@ class QLearningModel(ComputationalModel):
     def get_name(cls) -> str:
         """Return the model name."""
 
-        return "q_learning"
+        return Q_LEARNING_MODEL_NAME
 
     @classmethod
     def get_parameter_names(cls) -> tuple[str, ...]:
         """Return parameter names in optimizer-array order."""
 
-        return (
-            "learning_rate",
-            "inverse_temperature",
-        )
+        return Q_LEARNING_PARAMETER_NAMES
 
     @property
     def parameter_bounds(self) -> ParameterBounds:
         """Return the parameter bounds."""
 
         return (
-            (MIN_LEARNING_RATE, MAX_LEARNING_RATE),
-            (MIN_INVERSE_TEMPERATURE, self._max_inverse_temperature),
+            DEFAULT_Q_LEARNING_PARAMETER_BOUNDS[0],
+            (
+                MIN_INVERSE_TEMPERATURE,
+                self._max_inverse_temperature,
+            ),
         )
 
     def negative_log_likelihood(
@@ -232,14 +258,14 @@ class QLearningModel(ComputationalModel):
         return negative_log_likelihood
 
     def starting_points(self, data: SubjectData) -> Float2DArray:
-        """Return up to ``n_starts`` distinct grid-local NLL minima.
+        """Return up to `n_starts` distinct grid-local NLL minima.
 
         Every selected point is no worse than its immediate horizontal,
         vertical, and diagonal grid neighbors. Connected tied minima are
         collapsed to one representative so a flat plateau does not supply
         redundant starts.
 
-        Fewer than ``n_starts`` points are returned when the grid contains
+        Fewer than `n_starts` points are returned when the grid contains
         fewer distinct local-minimum regions.
         """
 

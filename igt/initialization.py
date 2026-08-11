@@ -32,7 +32,7 @@ def bounds_to_arrays(
     """Convert parameter bounds into lower- and upper-bound arrays.
 
     Args:
-        bounds: Sequence of ``(lower_bound, upper_bound)`` pairs.
+        bounds: Sequence of `(lower_bound, upper_bound)` pairs.
 
     Returns:
         A pair containing:
@@ -87,7 +87,7 @@ def generate_grid_starts(
     Returns:
         Two-dimensional array with shape:
 
-        ``(number_of_combinations, number_of_parameters)``
+        `(number_of_combinations, number_of_parameters)`
 
     Raises:
         ValueError: If no parameters are supplied, a parameter has no candidate
@@ -96,23 +96,23 @@ def generate_grid_starts(
     Example:
         Given:
 
-        ``alpha = [0.1, 0.5]``
+        `alpha = [0.1, 0.5]`
 
-        ``beta = [1.0, 2.0, 3.0]``
+        `beta = [1.0, 2.0, 3.0]`
 
         the returned starting points are:
 
-        ``[0.1, 1.0]``
+        `[0.1, 1.0]`
 
-        ``[0.1, 2.0]``
+        `[0.1, 2.0]`
 
-        ``[0.1, 3.0]``
+        `[0.1, 3.0]`
 
-        ``[0.5, 1.0]``
+        `[0.5, 1.0]`
 
-        ``[0.5, 2.0]``
+        `[0.5, 2.0]`
 
-        ``[0.5, 3.0]``
+        `[0.5, 3.0]`
     """
 
     if len(parameter_values) == 0:
@@ -142,10 +142,10 @@ def generate_grid_starts(
 
         value_arrays.append(values_array)
 
-    combinations = product(*value_arrays)
+    combination_tuples = list(product(*(values.tolist() for values in value_arrays)))
 
     return np.asarray(
-        list(combinations),
+        combination_tuples,
         dtype=np.float64,
     )
 
@@ -170,7 +170,7 @@ def select_grid_local_minimum_indices(
 
     The returned indices are ordered from lowest to highest objective value.
     Consequently, the global finite grid minimum is always included. Fewer
-    than ``max_starts`` indices may be returned when the grid contains fewer
+    than `max_starts` indices may be returned when the grid contains fewer
     distinct local-minimum regions.
 
     Args:
@@ -183,7 +183,7 @@ def select_grid_local_minimum_indices(
         One-dimensional array of flat grid indices.
 
     Raises:
-        TypeError: If ``max_starts`` or an entry in ``grid_shape`` is not an
+        TypeError: If `max_starts` or an entry in `grid_shape` is not an
             integer.
         ValueError: If the inputs are malformed, incompatible, or contain no
             finite objective value.
@@ -278,17 +278,17 @@ def scale_unit_points_to_bounds(
 ) -> Float2DArray:
     """Scale points from the unit interval to parameter bounds.
 
-    Each input coordinate must be in ``[0, 1]``.
+    Each input coordinate must be in `[0, 1]`.
 
-    For example, a unit coordinate of ``0.5`` is mapped to the midpoint of the
+    For example, a unit coordinate of `0.5` is mapped to the midpoint of the
     corresponding parameter interval.
 
     Args:
-        unit_points: Two-dimensional array with values in ``[0, 1]``.
-        bounds: One ``(lower_bound, upper_bound)`` pair per parameter.
+        unit_points: Two-dimensional array with values in `[0, 1]`.
+        bounds: One `(lower_bound, upper_bound)` pair per parameter.
 
     Returns:
-        Scaled two-dimensional array with the same shape as ``unit_points``.
+        Scaled two-dimensional array with the same shape as `unit_points`.
 
     Raises:
         ValueError: If the points are malformed, non-finite, outside the unit
@@ -342,10 +342,10 @@ def generate_sobol_starts(
 
     Valid examples include:
 
-    ``8, 16, 32, 64``
+    `8, 16, 32, 64`
 
     Args:
-        bounds: One ``(lower_bound, upper_bound)`` pair per parameter.
+        bounds: One `(lower_bound, upper_bound)` pair per parameter.
         n_starts: Number of starting points. Must be a positive power of two.
         rng: Optional random number generator or seed for the random number generator.
         scramble: Whether to scramble the Sobol sequence.
@@ -353,11 +353,11 @@ def generate_sobol_starts(
     Returns:
         Two-dimensional array with shape:
 
-        ``(n_starts, number_of_parameters)``
+        `(n_starts, number_of_parameters)`
 
     Raises:
-        TypeError: If ``n_starts`` is not an integer.
-        ValueError: If ``n_starts`` is not a positive power of two or if the
+        TypeError: If `n_starts` is not an integer.
+        ValueError: If `n_starts` is not a positive power of two or if the
             supplied parameter bounds are invalid.
     """
 

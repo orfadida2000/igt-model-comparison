@@ -1,14 +1,13 @@
 """Preprocessing utilities for the Steingroever et al. IGT dataset.
 
-This module reads the original ``IGTdata.rdata`` file directly with
-``pyreadr`` and converts the contained wide-format objects into one clean
+This module reads the original `IGTdata.rdata` file directly with
+`pyreadr` and converts the contained wide-format objects into one clean
 long-format pandas DataFrame suitable for model fitting.
 """
 
 import re
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
-from pathlib import Path
 from typing import cast
 
 import numpy as np
@@ -16,6 +15,14 @@ import pandas as pd
 import pyreadr
 
 from igt.constants.path import DATA_DIR
+from igt.constants.schema import (
+    N_TRIALS_COLUMN,
+    PARTICIPANT_KEY_COLUMNS,
+    SOURCE_STUDY_COLUMN,
+    SUBJECT_ID_COLUMN,
+)
+from igt.typing import LineEnding, StrPathLike
+from igt.utils.io import normalize_path, write_csv
 
 DECK_LABELS: Mapping[int, str] = {
     1: "A",
@@ -48,10 +55,10 @@ class IGTBundle:
     index: pd.DataFrame
 
 
-def load_rdata_objects(rdata_path: Path) -> dict[str, pd.DataFrame]:
+def load_rdata_objects(rdata_path: StrPathLike) -> dict[str, pd.DataFrame]:
     """Load all pandas DataFrames from the IGT RData file."""
 
-    rdata_path = Path(rdata_path)
+    rdata_path = normalize_path(rdata_path)
 
     if not rdata_path.exists():
         raise FileNotFoundError(f"RData file does not exist: {rdata_path}")
@@ -259,9 +266,9 @@ def bundle_to_long_table(bundle: IGTBundle) -> pd.DataFrame:
 
     return pd.DataFrame(
         {
-            "subject_id": subject_id_column,
-            "n_trials": n_trials_column,
-            "source_study": source_study_column,
+            SUBJECT_ID_COLUMN: subject_id_column,
+            N_TRIALS_COLUMN: n_trials_column,
+            SOURCE_STUDY_COLUMN: source_study_column,
             "trial": trial_column,
             "choice": choice_column,
             "deck": deck_column,
@@ -272,7 +279,7 @@ def bundle_to_long_table(bundle: IGTBundle) -> pd.DataFrame:
     )
 
 
-def load_igt_long_table(rdata_path: Path) -> pd.DataFrame:
+def load_igt_long_table(rdata_path: StrPathLike) -> pd.DataFrame:
     """Load the RData file and return one combined long-format table."""
 
     objects = load_rdata_objects(rdata_path)
@@ -283,26 +290,24 @@ def load_igt_long_table(rdata_path: Path) -> pd.DataFrame:
     data = pd.concat(tables, ignore_index=True)
 
     return data.sort_values(
-        by=["n_trials", "subject_id", "trial"],
+        by=[*PARTICIPANT_KEY_COLUMNS, "trial"],
         kind="mergesort",
         ignore_index=True,
     )
 
 
 def save_igt_long_table(
-    rdata_path: Path,
-    output_csv: Path,
+    rdata_path: StrPathLike,
+    output_csv: StrPathLike,
 ) -> pd.DataFrame:
     """Load, preprocess, and save the complete IGT long-format table."""
 
-    output_csv = Path(output_csv)
-    output_csv.parent.mkdir(parents=True, exist_ok=True)
-
     data = load_igt_long_table(rdata_path)
-    data.to_csv(
+    write_csv(
+        data,
         output_csv,
         index=False,
-        lineterminator="\n",
+        newline=LineEnding.LF,
     )
 
     return data
@@ -319,7 +324,7 @@ def iter_subject_trials(
         if n_subjects == 0:
             return  # No subjects requested, yield nothing.
 
-    required_columns = {"n_trials", "subject_id", "trial"}
+    required_columns = {*PARTICIPANT_KEY_COLUMNS, "trial"}
     missing = required_columns - set(data.columns)
 
     if missing:
@@ -327,7 +332,7 @@ def iter_subject_trials(
         raise ValueError(f"Missing required columns: {missing_text}")
 
     grouped = data.groupby(
-        ["n_trials", "subject_id"],
+        [*PARTICIPANT_KEY_COLUMNS],
         sort=True,
     )
 
@@ -368,12 +373,14 @@ def main() -> None:
         output_csv=output_csv,
     )
 
-    subjects = data[["n_trials", "source_study", "subject_id"]].drop_duplicates()  # pyright: ignore[reportArgumentType]
+    subjects = data[[*PARTICIPANT_KEY_COLUMNS]].drop_duplicates()  # pyright: ignore[reportArgumentType]
 
     total_subjects = len(subjects)
-    total_studies = subjects["source_study"].nunique()
+    total_studies = subjects[SOURCE_STUDY_COLUMN].nunique()
 
-    subjects_n_per_study = subjects.groupby("source_study", sort=False).size().rename("n_subjects")
+    subjects_n_per_study = (
+        subjects.groupby(SOURCE_STUDY_COLUMN, sort=False).size().rename("n_subjects")
+    )
 
     print(f"Saved: {output_csv}")
     print(f"Trial Rows: {len(data)}")

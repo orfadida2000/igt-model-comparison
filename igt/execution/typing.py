@@ -2,6 +2,14 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from igt.constants.schema import (
+    CONVERGED_COLUMN,
+    MODEL_COLUMN,
+    N_TRIALS_COLUMN,
+    NLL_COLUMN,
+    SOURCE_STUDY_COLUMN,
+    SUBJECT_ID_COLUMN,
+)
 from igt.models.typing import SubjectData
 from igt.typing import Float2DArray
 
@@ -56,11 +64,11 @@ class ModelFitResult:
         """Return the column names for a flat table of model-fit results."""
 
         return [
-            "model",
-            "n_trials",
-            "subject_id",
-            "source_study",
-            "negative_log_likelihood",
+            MODEL_COLUMN,
+            N_TRIALS_COLUMN,
+            SUBJECT_ID_COLUMN,
+            SOURCE_STUDY_COLUMN,
+            NLL_COLUMN,
             "log_likelihood",
             "aic",
             "bic",
@@ -70,7 +78,7 @@ class ModelFitResult:
             "n_parameters_at_lower_bound",
             "n_parameters_at_upper_bound",
             "n_parameters_at_any_bound",
-            "converged",
+            CONVERGED_COLUMN,
             "optimizer_message",
             "n_function_evaluations",
             "n_iterations",
@@ -81,11 +89,11 @@ class ModelFitResult:
         """Return a flat dictionary suitable for a pandas DataFrame row."""
 
         record: dict[str, object] = {
-            "model": self.model_name,
-            "n_trials": self.n_trials,
-            "subject_id": self.subject_id,
-            "source_study": self.source_study,
-            "negative_log_likelihood": self.negative_log_likelihood,
+            MODEL_COLUMN: self.model_name,
+            N_TRIALS_COLUMN: self.n_trials,
+            SUBJECT_ID_COLUMN: self.subject_id,
+            SOURCE_STUDY_COLUMN: self.source_study,
+            NLL_COLUMN: self.negative_log_likelihood,
             "log_likelihood": self.log_likelihood,
             "aic": self.aic,
             "bic": self.bic,
@@ -95,7 +103,7 @@ class ModelFitResult:
             "n_parameters_at_lower_bound": self.n_parameters_at_lower_bound,
             "n_parameters_at_upper_bound": self.n_parameters_at_upper_bound,
             "n_parameters_at_any_bound": self.n_parameters_at_any_bound,
-            "converged": self.converged,
+            CONVERGED_COLUMN: self.converged,
             "optimizer_message": self.optimizer_message,
             "n_function_evaluations": self.n_function_evaluations,
             "n_iterations": self.n_iterations,

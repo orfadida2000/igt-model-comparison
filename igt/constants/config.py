@@ -13,7 +13,9 @@ DEFAULT_ROOT_LOG_LEVEL: Final[int] = logging.DEBUG
 DEFAULT_NOTIFY_FORMSUBMIT_ID: Final[str | None] = None
 
 USE_FIXED_SEED: Final[bool] = True
-USE_DEFAULT_NOTIFY_FORMSUBMIT_ID: Final[bool] = True
+USE_FIXED_NOTIFY_FORMSUBMIT_ID: Final[bool] = True
+USE_RDATA_PARENT_DIR_FOR_OUTPUT: Final[bool] = False
+USE_RDATA_PARENT_DIR_FOR_LOGGING: Final[bool] = False
 
 FILENAME_DATETIME_FMT: Final[str] = "%Y-%m-%d_%H-%M-%S"
 DATETIME_FORMAT: Final[str] = "%Y-%m-%d %H:%M:%S"
