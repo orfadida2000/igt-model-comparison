@@ -1,7 +1,19 @@
 """Application, execution, and logging defaults."""
 
 import logging
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Final
+
+DECK_LABELS: Final[Mapping[int, str]] = MappingProxyType(
+    {
+        1: "A",
+        2: "B",
+        3: "C",
+        4: "D",
+    }
+)
+
 
 SUBJECTS_AVAILABLE: Final[int] = 617
 FIXED_SEED: Final[int] = 42

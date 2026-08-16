@@ -1,5 +1,8 @@
 """Prospect Valence Learning model with the delta update rule."""
 
+from collections.abc import Iterable
+from typing import cast
+
 import numpy as np
 from scipy.special import logsumexp
 
@@ -115,7 +118,7 @@ class PVLDeltaModel(ComputationalModel):
         negative_log_likelihood = 0.0
 
         for choice, outcome in zip(
-            data.choices,
+            cast(Iterable[np.int64], data.choices),
             scaled_outcomes,
             strict=True,
         ):

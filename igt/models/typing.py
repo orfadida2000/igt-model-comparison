@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
+from numpy.typing import ArrayLike
 
+from igt.constants.config import DECK_LABELS
 from igt.typing import Float1DArray, Int1DArray
 
 
@@ -51,12 +54,12 @@ class SubjectData:
             raise ValueError("losses contains missing or non-finite values.")
 
         valid_choices = np.isin(
-            self.choices,
-            np.array([1, 2, 3, 4], dtype=np.int64),
+            cast(ArrayLike, self.choices),
+            np.array(list(DECK_LABELS.keys()), dtype=np.int64),
         )
 
         if not valid_choices.all():
-            invalid_choices = np.unique(self.choices[~valid_choices]).tolist()
+            invalid_choices = np.unique(cast(ArrayLike, self.choices[~valid_choices])).tolist()
 
             raise ValueError(f"choices contains invalid deck codes: {invalid_choices}")
 

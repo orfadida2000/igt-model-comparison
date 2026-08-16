@@ -10,6 +10,7 @@ from igt.constants.models import INVERSE_TEMPERATURE_PARAMETER_NAME
 from igt.constants.schema import (
     CONVERGED_COLUMN,
     MODEL_COLUMN,
+    N_TRIALS_COLUMN,
     NLL_COLUMN,
     PARTICIPANT_KEY_COLUMNS,
 )
@@ -512,25 +513,21 @@ def _empty_subject_keys_from(
     )
 
 
-def _select_subjects_with_target_is_uniquely_best_model(
+def select_subjects_with_target_is_uniquely_nll_best_model(
     fit_results: pd.DataFrame,
-    comparison_column: str,
     *,
     target_model: ComputationalModel | type[ComputationalModel] | str,
-    atol: Real | float = 1e-8,
+    atol_per_trial: Real | float = 1e-8,
     fully_converged: bool = True,
-    lower_is_better: bool = True,
 ) -> pd.DataFrame:
-    """Select subjects for whom the target model is uniquely best regarding the specified comparison column.
+    """Select subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
 
     Args:
         fit_results: Per-model fit-results table.
-        comparison_column: The column to use for comparison when determining the best model.
         target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
-        atol: The absolute tolerance for considering two comparison values as equal.
+        atol_per_trial: The absolute tolerance for considering two NLL values as equal for 1 trial.
         fully_converged: Whether every model fit for a subject must
             have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
-        lower_is_better: Whether lower values in the comparison column are considered better (e.g., for NLL, lower is better).
 
     Returns:
         Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS` representing the selected subjects.
@@ -547,22 +544,16 @@ def _select_subjects_with_target_is_uniquely_best_model(
             f"fully_converged must be a Boolean value, got {type(fully_converged).__name__}."
         )
 
-    if not isinstance(lower_is_better, bool):
-        raise TypeError(
-            f"lower_is_better must be a Boolean value, got {type(lower_is_better).__name__}."
-        )
-
     target_model_name = target_model if isinstance(target_model, str) else target_model.get_name()
     target_model_name = _validate_model_name(target_model_name)
 
-    atol = _validate_nonnegative_finite_float(
-        atol,
-        parameter_name="atol",
+    atol_per_trial = _validate_nonnegative_finite_float(
+        atol_per_trial,
+        parameter_name="atol_per_trial",
     )
 
-    results_df = _prepare_fit_results_for_selection(
+    results_df = _prepare_fit_results_for_nll_selection(
         fit_results,
-        (comparison_column,),
         require_converge_column=True,
     )
 
@@ -579,16 +570,16 @@ def _select_subjects_with_target_is_uniquely_best_model(
 
     key_columns = list(PARTICIPANT_KEY_COLUMNS)
 
-    target_comparison_col_name = "target_model_" + comparison_column.strip()
+    target_nll_col_name = "target_model_" + NLL_COLUMN.strip()
     target_model_results_df = results_df.loc[
         results_df[MODEL_COLUMN].eq(target_model_name),
         [
             *key_columns,
-            comparison_column,
+            NLL_COLUMN,
         ],
     ].rename(
         columns={
-            comparison_column: target_comparison_col_name,
+            NLL_COLUMN: target_nll_col_name,
         }
     )
 
@@ -596,11 +587,11 @@ def _select_subjects_with_target_is_uniquely_best_model(
         results_df[MODEL_COLUMN].ne(target_model_name),
         [
             *key_columns,
-            comparison_column,
+            NLL_COLUMN,
         ],
     ]
 
-    competitor_comparison_col_name = "competitor_model_" + comparison_column.strip()
+    competitor_nll_col_name = "competitor_model_" + NLL_COLUMN.strip()
     best_competitor_model_results_df = competing_models_results_df.groupby(
         key_columns,
         as_index=False,
@@ -608,9 +599,9 @@ def _select_subjects_with_target_is_uniquely_best_model(
         observed=True,
     ).agg(
         **{
-            competitor_comparison_col_name: (
-                comparison_column,
-                "min" if lower_is_better else "max",
+            competitor_nll_col_name: (
+                NLL_COLUMN,
+                "min",  # NLL is better when lower
             )
         }
     )
@@ -622,22 +613,19 @@ def _select_subjects_with_target_is_uniquely_best_model(
         validate="one_to_one",
     )
 
-    # A subject is selected if the target models's comparison value isn't considered as equal to the competitor (the best model out of the competing/remaining models) model's comparison value (i.e. the absolute difference is greater than the equality tolerance),
-    # and the target model's comparison value is the better (smaller if `lower_is_better` is True or larger if False) out of the two. An equivalent check is to check if the target model's comparison value is better than the competitor (best competing model) model's comparison value by a magnitude larger than the equality tolerance.
-    # The magnitude > tolerance gives us the "not equal" part, and the target model's comparison being better gives us the "target is best" part.
+    # A subject is selected if the target models's NLL value isn't considered as equal to the competitor (the best model out of the competing/remaining models) model's NLL value (i.e. the absolute difference is greater than: number of trials the subject has times the absolute tolerance per trial),
+    # and the target model's NLL value is the better (smaller) out of the two. An equivalent check is to check if the target model's NLL value is better (smaller) than the competitor (best competing model) model's NLL value by a magnitude larger than: number of trials the subject has times the absolute tolerance per trial.
+    # The magnitude > tolerance gives us the "not equal" part, and the target model's NLL being smaller gives us the "target is best" part.
 
-    if lower_is_better:
-        per_subject_comparison_difference = (
-            target_vs_competitor_results_df[competitor_comparison_col_name]
-            - target_vs_competitor_results_df[target_comparison_col_name]
-        )
-    else:
-        per_subject_comparison_difference = (
-            target_vs_competitor_results_df[target_comparison_col_name]
-            - target_vs_competitor_results_df[competitor_comparison_col_name]
-        )
+    per_subject_nll_difference = (
+        target_vs_competitor_results_df[competitor_nll_col_name]
+        - target_vs_competitor_results_df[target_nll_col_name]
+    )
 
-    selected_subjects_mask = per_subject_comparison_difference.gt(atol)
+    selected_subjects_mask = (
+        per_subject_nll_difference
+        > atol_per_trial * target_vs_competitor_results_df[N_TRIALS_COLUMN]
+    )
     selected_subjects_keys = target_vs_competitor_results_df.loc[
         selected_subjects_mask,
         key_columns,
@@ -646,92 +634,11 @@ def _select_subjects_with_target_is_uniquely_best_model(
     return normalize_subject_keys(selected_subjects_keys)
 
 
-def _select_subjects_with_target_is_uniquely_best_model_from_csv(
-    fit_results_csv: StrPathLike,
-    comparison_column: str,
-    *,
-    target_model: ComputationalModel | type[ComputationalModel] | str,
-    atol: Real | float = 1e-8,
-    fully_converged: bool = True,
-    lower_is_better: bool = True,
-) -> pd.DataFrame:
-    """Read a fit-results CSV and select the subjects for whom the target model is uniquely best regarding the specified comparison column.
-
-    Args:
-        fit_results_csv: Path to the per-model fit-results CSV file.
-        comparison_column: The column to use for comparison when determining the best model.
-        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
-        atol: The absolute tolerance for considering two comparison values as equal.
-        fully_converged: Whether every model fit for a subject must
-            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
-        lower_is_better: Whether lower values in the comparison column are considered better (e.g., for NLL, lower is better).
-
-    Returns:
-        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS`.
-
-    Raises:
-        FileNotFoundError: If `fit_results_csv` does not identify an
-            existing file.
-        TypeError: If an argument has an invalid type.
-        ValueError: If the CSV contents or selection arguments are invalid.
-    """
-
-    fit_results = read_csv(
-        fit_results_csv,
-        table_name="fit-results",
-    )
-
-    return _select_subjects_with_target_is_uniquely_best_model(
-        fit_results,
-        comparison_column,
-        target_model=target_model,
-        atol=atol,
-        fully_converged=fully_converged,
-        lower_is_better=lower_is_better,
-    )
-
-
-def select_subjects_with_target_is_uniquely_nll_best_model(
-    fit_results: pd.DataFrame,
-    *,
-    target_model: ComputationalModel | type[ComputationalModel] | str,
-    atol: Real | float = 1e-8,
-    fully_converged: bool = True,
-) -> pd.DataFrame:
-    """Select subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
-
-    Args:
-        fit_results: Per-model fit-results table.
-        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
-        atol: The absolute tolerance for considering two NLL values as equal.
-        fully_converged: Whether every model fit for a subject must
-            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
-
-    Returns:
-        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS` representing the selected subjects.
-
-    Raises:
-        TypeError: If an argument has an invalid type.
-        ValueError: If an argument or fit-results value is invalid, model
-            coverage is incomplete, or the table cannot support the
-            requested comparison.
-    """
-
-    return _select_subjects_with_target_is_uniquely_best_model(
-        fit_results,
-        NLL_COLUMN,
-        target_model=target_model,
-        atol=atol,
-        fully_converged=fully_converged,
-        lower_is_better=True,  # NLL is better when lower
-    )
-
-
 def select_subjects_with_target_is_uniquely_nll_best_model_from_csv(
     fit_results_csv: StrPathLike,
     *,
     target_model: ComputationalModel | type[ComputationalModel] | str,
-    atol: Real | float = 1e-8,
+    atol_per_trial: Real | float = 1e-8,
     fully_converged: bool = True,
 ) -> pd.DataFrame:
     """Read a fit-results CSV and select the subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
@@ -739,7 +646,7 @@ def select_subjects_with_target_is_uniquely_nll_best_model_from_csv(
     Args:
         fit_results_csv: Path to the per-model fit-results CSV file.
         target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
-        atol: The absolute tolerance for considering two NLL values as equal.
+        atol_per_trial: The absolute tolerance per trial for considering two NLL values as equal for 1 trial.
         fully_converged: Whether every model fit for a subject must
             have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
 
@@ -761,7 +668,7 @@ def select_subjects_with_target_is_uniquely_nll_best_model_from_csv(
     return select_subjects_with_target_is_uniquely_nll_best_model(
         fit_results,
         target_model=target_model,
-        atol=atol,
+        atol_per_trial=atol_per_trial,
         fully_converged=fully_converged,
     )
 

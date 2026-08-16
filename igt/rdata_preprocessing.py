@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import pyreadr
 
+from igt.constants.config import DECK_LABELS
 from igt.constants.path import DATA_DIR
 from igt.constants.schema import (
     N_TRIALS_COLUMN,
@@ -23,13 +24,6 @@ from igt.constants.schema import (
 )
 from igt.typing import LineEnding, StrPathLike
 from igt.utils.io import normalize_path, write_csv
-
-DECK_LABELS: Mapping[int, str] = {
-    1: "A",
-    2: "B",
-    3: "C",
-    4: "D",
-}
 
 EXPECTED_OBJECT_PREFIXES: tuple[str, ...] = (
     "choice",

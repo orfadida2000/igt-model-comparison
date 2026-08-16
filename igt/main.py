@@ -8,14 +8,20 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
 
-from igt.cli_parsing.factory.path import get_type_filters_for_existing_file_with_extensions_path
+from igt.analysis.config import AnalysisConfig
+from igt.analysis.pipeline import generate_results_analysis
 from igt.cli_parsing.parser import get_parser
+from igt.cli_parsing.type_filters.factory.path import (
+    get_type_filters_for_existing_file_with_extensions_path,
+)
+from igt.cli_parsing.type_filters.presets import (
+    NumericArgTypeProvider,
+    PathArgTypeProvider,
+    StringArgTypeProvider,
+)
 from igt.cli_parsing.typing import (
     ArgAction,
     ArgSpec,
-    NumericArgType,
-    PathArgType,
-    StringArgType,
 )
 from igt.comparison import (
     add_model_comparison_columns,
@@ -47,7 +53,6 @@ from igt.notify.formsubmit import (
     error_email_notifier,
     send_formsubmit_email_script_success_notification,
 )
-from igt.typing import StrPathLike
 
 LOGGER_NAME: Final[str] = "igt.main"
 
@@ -61,21 +66,6 @@ def _n_pvl_starts_power_of_two(n_starts: int) -> int:
         )
 
     return n_starts
-
-
-def _rdata_path_extension(path: StrPathLike) -> Path:
-    """Parse and validate the RData file path for the argument parser."""
-
-    path = Path(path)
-
-    ext = path.suffix.lower()
-
-    if ext not in {".rdata", ".rda"}:
-        raise argparse.ArgumentTypeError(
-            f"Invalid RData file path: RData file must have a .rdata or .rda extension, got {ext}"
-        )
-
-    return path
 
 
 def _parse_args() -> argparse.Namespace:
@@ -104,7 +94,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--max-iterations",),
-            type_filters=(NumericArgType.POSITIVE_INTEGER,),
+            type_filters=(NumericArgTypeProvider.POSITIVE_INTEGER,),
             default=str(DEFAULT_MAX_ITERATIONS),
             help="Maximum number of iterations for each parameter optimization in the fitting process; must be a positive integer (default: %(default)s)",
             extra_options={
@@ -113,7 +103,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--q-starts",),
-            type_filters=(NumericArgType.POSITIVE_INTEGER,),
+            type_filters=(NumericArgTypeProvider.POSITIVE_INTEGER,),
             default=str(DEFAULT_N_Q_STARTS),
             help="Maximum number of distinct grid-local-minimum starts used for the Q-learning model fitting; must be a positive integer (default: %(default)s)",
             extra_options={
@@ -123,7 +113,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--pvl-starts",),
-            type_filters=(NumericArgType.POSITIVE_INTEGER, _n_pvl_starts_power_of_two),
+            type_filters=(NumericArgTypeProvider.POSITIVE_INTEGER, _n_pvl_starts_power_of_two),
             default=str(DEFAULT_N_PVL_STARTS),
             help="Number of distinct Sobol starts used for the PVL-Delta model fitting; must be a positive integer and a power of two (default: %(default)s)",
             extra_options={
@@ -133,7 +123,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--q-max-inverse-temperature",),
-            type_filters=(NumericArgType.POSITIVE_FINITE_FLOAT,),
+            type_filters=(NumericArgTypeProvider.POSITIVE_FINITE_FLOAT,),
             default=str(DEFAULT_MAX_INVERSE_TEMPERATURE),
             help=(
                 "Upper bound for the Q-learning inverse temperature parameter. The default "
@@ -149,9 +139,9 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--seed",),
-                type_filters=(NumericArgType.INTEGER,),
+                type_filters=(NumericArgTypeProvider.INTEGER,),
                 default="-1",
-                help="Integer seed used by the scrambled Sobol generator; use negative value for no fixed seed (default: %(default)s)",
+                help="Integer seed used by the scrambled Sobol generator; use negative value to disable seeding (default: %(default)s)",
                 extra_options={
                     "metavar": "SEED",
                     "dest": "rng_seed",
@@ -163,7 +153,7 @@ def _parse_args() -> argparse.Namespace:
         [
             ArgSpec(
                 name_or_flags=("--workers",),
-                type_filters=(NumericArgType.INTEGER,),
+                type_filters=(NumericArgTypeProvider.INTEGER,),
                 default=str(DEFAULT_N_WORKERS),
                 help=(
                     "Number of worker processes to use for the fitting process; "
@@ -176,7 +166,7 @@ def _parse_args() -> argparse.Namespace:
             ),
             ArgSpec(
                 name_or_flags=("--subjects",),
-                type_filters=(NumericArgType.INTEGER,),
+                type_filters=(NumericArgTypeProvider.INTEGER,),
                 default=str(DEFAULT_N_SUBJECTS),
                 help=(
                     "Number of subjects to use for the fitting process; "
@@ -194,7 +184,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--output-dir",),
-                type_filters=(PathArgType.DIR_PATH,),
+                type_filters=(PathArgTypeProvider.DIR_PATH,),
                 default=str(RESULTS_DIR / "igt_model_comparison"),
                 help="Directory to save the results files (default: %(default)s)",
                 extra_options={
@@ -207,7 +197,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--logging-dir",),
-                type_filters=(PathArgType.DIR_PATH,),
+                type_filters=(PathArgTypeProvider.DIR_PATH,),
                 default=str(LOGS_DIR / "igt_model_comparison"),
                 help="Directory to save the log files (default: %(default)s)",
                 extra_options={
@@ -219,7 +209,7 @@ def _parse_args() -> argparse.Namespace:
     arg_specs.append(
         ArgSpec(
             name_or_flags=("--log-level",),
-            type_filters=(NumericArgType.INTEGER,),
+            type_filters=(NumericArgTypeProvider.INTEGER,),
             default=str(DEFAULT_ROOT_LOG_LEVEL),
             help="Logging level for the root logger; use negative value to disable logging (default: %(default)s)",
             extra_options={
@@ -232,7 +222,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--notify-formsubmit-id",),
-                type_filters=(StringArgType.ALPHANUMERIC_STRING,),
+                type_filters=(StringArgTypeProvider.ALPHANUMERIC_STRING,),
                 default=DEFAULT_NOTIFY_FORMSUBMIT_ID,
                 help="FormSubmit ID to send email notifications upon script completion (default: %(default)s)",
                 extra_options={
@@ -246,6 +236,14 @@ def _parse_args() -> argparse.Namespace:
             name_or_flags=("--no-progress",),
             action=ArgAction.STORE_TRUE,
             help="Disable progress bar display during the fitting process",
+        )
+    )
+
+    arg_specs.append(
+        ArgSpec(
+            name_or_flags=("--analyze",),
+            action=ArgAction.STORE_TRUE,
+            help="Run the analysis steps on the computed results and generate summary tables, plots, and perform statistical tests",
         )
     )
 
@@ -308,6 +306,7 @@ def _normalize_args(
             else args.notify_formsubmit_id
         ),
         "no_progress": args.no_progress,
+        "analyze": args.analyze,
     }
 
     return argparse.Namespace(**normalized_args)
@@ -402,7 +401,32 @@ def _run(
 
     logger.debug("Model summary:\n%s", summary_table.to_string(index=False))
 
-    return [fits_path, comparison_path, summary_path]
+    output_paths: list[Path] = [fits_path, comparison_path, summary_path]
+
+    if normalized_args.analyze:
+        logger.info("Generating result analysis...")
+
+        config = AnalysisConfig()
+
+        logger.debug("Using analysis configuration: %s", config)
+
+        outputs = generate_results_analysis(
+            fits_path,
+            comparison_path,
+            summary_path,
+            normalized_args.output_dir / "analysis",
+            config=config,
+        )
+        logger.info("Result analysis completed successfully.")
+        logger.info(f"Report: {outputs.report_path}")
+        logger.info(f"Figures: {len(outputs.figure_paths)}")
+        logger.info(f"Tables: {len(outputs.table_paths)}")
+
+        output_paths.append(outputs.report_path)
+        output_paths.extend(outputs.figure_paths)
+        output_paths.extend(outputs.table_paths)
+
+    return output_paths
 
 
 def _cleanup(

@@ -8,12 +8,12 @@ from enum import Enum
 from types import MappingProxyType
 from typing import Any, ClassVar, Final, cast
 
-from igt.cli_parsing.types.numeric import ARG_TYPE_CALLABLE_MAP as NUMERIC_ARG_TYPE_CALLABLE_MAP
-from igt.cli_parsing.types.numeric import NumericArgType
-from igt.cli_parsing.types.path import ARG_TYPE_CALLABLE_MAP as PATH_ARG_TYPE_CALLABLE_MAP
-from igt.cli_parsing.types.path import PathArgType
-from igt.cli_parsing.types.string import ARG_TYPE_CALLABLE_MAP as STRING_ARG_TYPE_CALLABLE_MAP
-from igt.cli_parsing.types.string import StringArgType
+from igt.cli_parsing.type_filters.core.definitions import (
+    GenericTypeFilter,
+    TypeFilter,
+    TypeFilterDefinition,
+)
+from igt.cli_parsing.type_filters.core.registry import TypeFilterRegistry
 from igt.typing import NonEmptyMixedTuple
 
 NOTSET: Final[object] = object()
@@ -32,29 +32,6 @@ class ArgAction(Enum):
     COUNT = "count"
     HELP = "help"
     VERSION = "version"
-
-
-type ArgType = StringArgType | NumericArgType | PathArgType
-
-
-def _is_arg_type(value: Any) -> bool:
-    """Check if the given value is an instance of ArgType (StringArgType, NumericArgType, or PathArgType)."""
-
-    return isinstance(value, (StringArgType, NumericArgType, PathArgType))
-
-
-ARG_TYPE_CALLABLE_MAP: Final[
-    Mapping[
-        ArgType,
-        Callable[[str], Any] | NonEmptyMixedTuple[Callable[[str], Any], Callable[[Any], Any]],
-    ]
-] = MappingProxyType(
-    {
-        **STRING_ARG_TYPE_CALLABLE_MAP,
-        **NUMERIC_ARG_TYPE_CALLABLE_MAP,
-        **PATH_ARG_TYPE_CALLABLE_MAP,
-    }
-)
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -115,14 +92,17 @@ class ArgSpec:
         },
     )
     type_filters: (
-        ArgType | Callable[[str], Any] | Sequence[ArgType | Callable[[Any], Any]] | None
+        TypeFilterDefinition
+        | TypeFilter
+        | Sequence[TypeFilterDefinition | GenericTypeFilter]
+        | None
     ) = field(
         default=None,
         metadata={
-            "help": "Type filter(s) for the argument (used for validation and conversion). Can be an ArgType, a callable, or a sequence of ArgTypes and/or callables. (will be normalized to a sequence of callables for validation and conversion).",
+            "help": "Type filter(s) for the argument (used for validation and conversion). Can be an TypeFilterDefinition member, a callable, or a sequence of TypeFilterDefinition members and/or callables. (will be normalized to a sequence of callables for validation and conversion).",
         },
     )
-    _argparse_type: Callable[[str], Any] | None = field(
+    _argparse_type: TypeFilter | None = field(
         init=False,
         default=None,
         metadata={
@@ -219,13 +199,11 @@ class ArgSpec:
                     f"'type_filters' must not be specified (not None) when 'action' isn't one of {(ArgAction.STORE.value, ArgAction.APPEND.value, ArgAction.EXTEND.value)}, got {self.action.value}"
                 )
 
-            if (
-                not _is_arg_type(self.type_filters)
-                and not isinstance(self.type_filters, Sequence)
-                and not callable(self.type_filters)
+            if not isinstance(self.type_filters, (TypeFilterDefinition, Sequence)) and not callable(
+                self.type_filters
             ):
                 raise TypeError(
-                    f"'type_filters' must be an ArgType, a callable, a non-empty sequence of ArgTypes and/or callables, or None, got {type(self.type_filters).__name__}"
+                    f"'type_filters' must be an TypeFilterDefinition member, a callable, a non-empty sequence of TypeFilterDefinition members and/or callables, or None, got {type(self.type_filters).__name__}"
                 )
 
             if isinstance(self.type_filters, Sequence):
@@ -234,9 +212,9 @@ class ArgSpec:
 
                 type_filters = []
                 for filter in self.type_filters:
-                    if not _is_arg_type(filter) and not callable(filter):
+                    if not isinstance(filter, TypeFilterDefinition) and not callable(filter):
                         raise TypeError(
-                            f"Each element of 'type_filters' sequence must be an ArgType or a callable, got {type(filter).__name__}"
+                            f"Each element of 'type_filters' sequence must be an TypeFilterDefinition member or a callable, got {type(filter).__name__}"
                         )
                     type_filters.append(filter)
 
@@ -245,7 +223,8 @@ class ArgSpec:
                 type_filters = (self.type_filters,)
 
             type_filters_tup: NonEmptyMixedTuple[
-                ArgType | Callable[[str], Any], ArgType | Callable[[Any], Any]
+                TypeFilterDefinition | TypeFilter,
+                TypeFilterDefinition | GenericTypeFilter,
             ] = type_filters
             object.__setattr__(self, "type_filters", type_filters_tup)
 
@@ -303,45 +282,30 @@ class ArgSpec:
             )
 
         type_filters = cast(
-            NonEmptyMixedTuple[ArgType | Callable[[str], Any], ArgType | Callable[[Any], Any]],
+            NonEmptyMixedTuple[
+                TypeFilterDefinition | TypeFilter,
+                TypeFilterDefinition | GenericTypeFilter,
+            ],
             self.type_filters,
         )
 
         normalized_type_filters: list[Callable[[Any], Any]] = []
 
         for filter in type_filters:
-            if _is_arg_type(filter):
-                filter = cast(ArgType, filter)
+            if isinstance(filter, TypeFilterDefinition):
+                callable_filter = TypeFilterRegistry.resolve_type_filter(filter)
 
-                if filter not in ARG_TYPE_CALLABLE_MAP:
-                    raise ValueError(f"Unsupported ArgType: {filter}")
-
-                callable_filter = ARG_TYPE_CALLABLE_MAP[filter]
-                if isinstance(callable_filter, tuple):
-                    if len(callable_filter) == 0:
-                        raise ValueError(
-                            f"Callable filter for ArgType {filter} is an empty tuple; This should not happen under normal circumstances unless the `ARG_TYPE_CALLABLE_MAP` was modified after initialization."
-                        )
-
-                    callable_filters = cast(
-                        NonEmptyMixedTuple[Callable[[str], Any], Callable[[Any], Any]],
-                        callable_filter,
+                if not callable(callable_filter):
+                    raise TypeError(
+                        f"Resolved type filter for {filter.name!r} of {type(filter).__name__!r} is not callable, got {type(callable_filter).__name__!r}; This should not happen."
                     )
-                else:
-                    callable_filters = (callable_filter,)
 
-                for f in callable_filters:
-                    if not callable(f):
-                        raise TypeError(
-                            f"Each element of the callable filters for ArgType {filter} must be a callable, got {type(f).__name__}"
-                        )
-
-                normalized_type_filters.extend(callable_filters)
+                normalized_type_filters.append(callable_filter)
             elif callable(filter):
                 normalized_type_filters.append(filter)
             else:
                 raise TypeError(
-                    f"Each element of 'type_filters' must be an ArgType or a callable, got {type(filter).__name__}"
+                    f"Each element of 'type_filters' must be a TypeFilterDefinition member or a callable, got {type(filter).__name__!r}"
                 )
 
         def _aggregated_argparse_type(value: str) -> Any:

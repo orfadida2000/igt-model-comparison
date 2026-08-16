@@ -24,6 +24,9 @@
     "rtol",
     "Steingroever",
     "xlim",
-    "ylim"
+    "ylim",
+    "xerr",
+    "yerr",
+    "axhline"
   ]
 }

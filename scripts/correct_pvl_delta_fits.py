@@ -3,6 +3,7 @@
 import argparse
 import logging
 import time
+from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
@@ -11,14 +12,18 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame, Series
 
-from igt.cli_parsing.factory.path import get_type_filters_for_existing_file_with_extensions_path
 from igt.cli_parsing.parser import get_parser
+from igt.cli_parsing.type_filters.factory.path import (
+    get_type_filters_for_existing_file_with_extensions_path,
+)
+from igt.cli_parsing.type_filters.presets import (
+    NumericArgTypeProvider,
+    PathArgTypeProvider,
+    StringArgTypeProvider,
+)
 from igt.cli_parsing.typing import (
     ArgAction,
     ArgSpec,
-    NumericArgType,
-    PathArgType,
-    StringArgType,
 )
 from igt.comparison import (
     add_model_comparison_columns,
@@ -48,6 +53,7 @@ from igt.constants.path import IGT_DATASET_PATH, LOGS_DIR, RESULTS_DIR
 from igt.constants.schema import (
     CONVERGED_COLUMN,
     MODEL_COLUMN,
+    N_TRIALS_COLUMN,
     NLL_COLUMN,
     PARTICIPANT_KEY_COLUMNS,
 )
@@ -104,11 +110,12 @@ def _parse_args() -> argparse.Namespace:
             },
         ),
         ArgSpec(
-            name_or_flags=("--atol",),
-            type_filters=(NumericArgType.NON_NEGATIVE_FINITE_FLOAT,),
+            name_or_flags=("--atol-per-trial",),
+            type_filters=(NumericArgTypeProvider.NON_NEGATIVE_FINITE_FLOAT,),
             default=str(DEFAULT_SELECTION_ATOL),
             help=(
-                "Absolute tolerance for considering two negative log-likelihood (NLL) values as equal when selecting subjects for PVL-Delta refitting; "
+                "Absolute tolerance for considering two negative log-likelihood (NLL) values as equal for 1 trial when selecting subjects for PVL-Delta refitting. "
+                "The effective absolute tolerance for a subject with N trials is N * atol_per_trial; "
                 "must be a non-negative finite float (default: %(default)s)"
             ),
             extra_options={
@@ -128,7 +135,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--workers",),
-            type_filters=(NumericArgType.INTEGER,),
+            type_filters=(NumericArgTypeProvider.INTEGER,),
             default=str(DEFAULT_N_WORKERS),
             help=(
                 "Number of worker processes to use for the refitting process; "
@@ -145,7 +152,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--output-dir",),
-                type_filters=(PathArgType.DIR_PATH,),
+                type_filters=(PathArgTypeProvider.DIR_PATH,),
                 default=str(RESULTS_DIR / "corrected_pvl_delta_fits"),
                 help="Directory to save the results files (default: %(default)s)",
                 extra_options={
@@ -158,7 +165,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--logging-dir",),
-                type_filters=(PathArgType.DIR_PATH,),
+                type_filters=(PathArgTypeProvider.DIR_PATH,),
                 default=str(LOGS_DIR / "corrected_pvl_delta_fits"),
                 help="Directory to save the log files (default: %(default)s)",
                 extra_options={
@@ -170,7 +177,7 @@ def _parse_args() -> argparse.Namespace:
     arg_specs.append(
         ArgSpec(
             name_or_flags=("--log-level",),
-            type_filters=(NumericArgType.INTEGER,),
+            type_filters=(NumericArgTypeProvider.INTEGER,),
             default=str(DEFAULT_ROOT_LOG_LEVEL),
             help="Logging level for the root logger; use negative value to disable logging (default: %(default)s)",
             extra_options={
@@ -183,7 +190,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--notify-formsubmit-id",),
-                type_filters=(StringArgType.ALPHANUMERIC_STRING,),
+                type_filters=(StringArgTypeProvider.ALPHANUMERIC_STRING,),
                 default=DEFAULT_NOTIFY_FORMSUBMIT_ID,
                 help="FormSubmit ID to send email notifications upon script completion (default: %(default)s)",
                 extra_options={
@@ -233,7 +240,7 @@ def _normalize_args(
 
     normalized_args: dict[str, Any] = {
         "fit_results_path": args.fit_results_path,
-        "atol": args.atol,
+        "atol_per_trial": args.atol_per_trial,
         "rdata_path": args.rdata_path,
         "n_workers": None if args.n_workers < 0 else (1 if args.n_workers == 0 else args.n_workers),
         "output_dir": (
@@ -812,7 +819,7 @@ def _setup() -> tuple[
     subject_keys = select_subjects_with_target_is_uniquely_nll_best_model(
         original_fit_results,
         target_model=QLearningModel,
-        atol=normalized_args.atol,
+        atol_per_trial=normalized_args.atol_per_trial,
         fully_converged=True,
     )
 
@@ -854,7 +861,7 @@ def _compare_original_and_corrected_fit_results(
     subject_keys: DataFrame,
     *,
     report_path: StrPathLike,
-    selection_atol: float,
+    selection_atol_per_trial: float,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Validate corrected fit results and write a correction audit report.
@@ -868,30 +875,23 @@ def _compare_original_and_corrected_fit_results(
     whether the corrected PVL-Delta fit reaches the corresponding Q-learning
     negative log-likelihood.
 
-    When `min_nll_advantage` is positive, a corrected fit is classified as:
-
-    - `IMPROVED` when its NLL is lower by at least `min_nll_advantage`.
-    - `UNCHANGED` when the absolute NLL difference is less than `min_nll_advantage`.
-    - `WORSE` when its NLL is higher by at least `min_nll_advantage`.
-
-    When `min_nll_advantage` is `None`, a corrected fit is classified as:
-
-    - `IMPROVED` when its NLL is lower by more than 0 (any improvement).
-    - `UNCHANGED` when its NLL value hasn't changed.
-    - `WORSE` when its NLL is higher by more than 0 (any deterioration).
+    A corrected fit can be classified as:
+        1. `IMPROVED` when its NLL is lower by a magnitude larger than `n_trials * selection_atol_per_trial`.
+        2. `UNCHANGED` when the absolute NLL difference is less than or equal to `n_trials * selection_atol_per_trial`.
+        3. `WORSE` when its NLL is higher by a magnitude larger than `n_trials * selection_atol_per_trial`.
 
     Args:
         original_fit_results: Complete fit-results table before correction.
         corrected_fit_results: Complete fit-results table after correction.
         subject_keys: Participant keys selected for PVL-Delta refitting.
         report_path: Path at which to write the text audit report.
-        selection_atol: The absolute tolerance used for selecting subjects with uniquely best Q-learning NLL.
+        selection_atol_per_trial: The absolute tolerance per trial used for selecting subjects for PVL-Delta refitting.
         logger: Logger instance or logger name.
 
     Raises:
         TypeError: If an argument has an invalid type.
         ValueError: If schemas, row identities, target rows, or unchanged
-            rows fail validation, or if required values are invalid (e.g. `selection_atol` is not a non-negative number).
+            rows fail validation, or if required values are invalid (e.g. `selection_atol_per_trial` is not a non-negative number).
     """
 
     if not isinstance(original_fit_results, pd.DataFrame):
@@ -913,8 +913,8 @@ def _compare_original_and_corrected_fit_results(
 
     report_path = normalize_path(report_path, parameter_name="report_path")
 
-    parsed_atol = _validate_nonnegative_finite_float(
-        selection_atol, parameter_name="selection_atol"
+    parsed_atol_per_trial = _validate_nonnegative_finite_float(
+        selection_atol_per_trial, parameter_name="selection_atol_per_trial"
     )
 
     if isinstance(logger, str):
@@ -965,7 +965,7 @@ def _compare_original_and_corrected_fit_results(
             "The column order must also be identical."
         )
 
-    participant_key_columns = list(PARTICIPANT_KEY_COLUMNS)
+    participant_key_columns = list(PARTICIPANT_KEY_COLUMNS)  # includes the 'n_trials' column
 
     row_key_columns = [*participant_key_columns, MODEL_COLUMN]
 
@@ -1157,13 +1157,13 @@ def _compare_original_and_corrected_fit_results(
 
         return str(value)
 
-    status_counts = {
-        "IMPROVED": 0,
-        "UNCHANGED": 0,
-        "WORSE": 0,
+    status_counts: dict[str, list[int]] = {
+        "IMPROVED": [],
+        "UNCHANGED": [],
+        "WORSE": [],
+        "NESTING_FAILURE": [],
     }
 
-    nesting_failure_count = 0
     subject_report_blocks: list[str] = []
 
     diagnostic_columns = [
@@ -1246,14 +1246,22 @@ def _compare_original_and_corrected_fit_results(
             subject_key_values=normalized_key_values,
         )
 
-        subject_description = ", ".join(
-            f"{column_name}={value}"
-            for column_name, value in zip(
-                participant_key_columns,
-                normalized_key_values,
-                strict=True,
+        subject_description = (
+            "("
+            + ", ".join(
+                f"{column_name}={value}"
+                for column_name, value in zip(
+                    participant_key_columns,
+                    normalized_key_values,
+                    strict=True,
+                )
             )
+            + ")"
         )
+
+        # could be taken also from `corrected_pvl_row` or `q_learning_row` (already validated to be identical)
+        n_trials = int(original_pvl_row[N_TRIALS_COLUMN])
+        effective_atol = n_trials * parsed_atol_per_trial
 
         original_pvl_nll = _validate_nonnegative_finite_float(
             original_pvl_row[NLL_COLUMN],
@@ -1270,26 +1278,26 @@ def _compare_original_and_corrected_fit_results(
             parameter_name=(f"Q-learning NLL for {subject_description}"),
         )
 
-        nll_difference = original_pvl_nll - corrected_pvl_nll
+        pvl_nll_difference = original_pvl_nll - corrected_pvl_nll
 
-        if nll_difference > parsed_atol:
+        if pvl_nll_difference > effective_atol:
             status = "IMPROVED"
-        elif -nll_difference > parsed_atol:
+        elif -pvl_nll_difference > effective_atol:
             status = "WORSE"
         else:
-            # !(nll_difference > parsed_atol) -> nll_difference <= parsed_atol
-            # !(-nll_difference > parsed_atol) -> nll_difference >= -parsed_atol
-            # nll_difference <= parsed_atol && nll_difference >= -parsed_atol -> |nll_difference| <= parsed_atol
+            # !(nll_difference > effective_atol) -> nll_difference <= effective_atol
+            # !(-nll_difference > effective_atol) -> nll_difference >= -effective_atol
+            # nll_difference <= effective_atol && nll_difference >= -effective_atol -> |nll_difference| <= effective_atol
             status = "UNCHANGED"
 
-        status_counts[status] += 1
+        status_counts[status].append(n_trials)
 
-        corrected_minus_q_nll = corrected_pvl_nll - q_learning_nll
+        corrected_models_nll_difference = corrected_pvl_nll - q_learning_nll
 
-        nesting_condition_satisfied = corrected_minus_q_nll <= parsed_atol
+        nesting_condition_satisfied = not (corrected_models_nll_difference > effective_atol)
 
         if not nesting_condition_satisfied:
-            nesting_failure_count += 1
+            status_counts["NESTING_FAILURE"].append(n_trials)
 
         flags: list[str] = []
 
@@ -1301,20 +1309,23 @@ def _compare_original_and_corrected_fit_results(
         if not nesting_condition_satisfied:
             flags.append("CORRECTED_PVL_NLL_REMAINS_ABOVE_Q_NLL")
 
+        is_there_neg_diff = pvl_nll_difference < 0 or corrected_models_nll_difference < 0
         subject_lines = [
-            f"Participant: {subject_description}",
-            f"Status: {status}",
-            (f"PVL nesting condition satisfied: {'Yes' if nesting_condition_satisfied else 'No'}"),
-            (f"Flags: {', '.join(flags) if flags else 'None'}"),
+            f"Participant {subject_description}",
+            f"  Status                         : {status}",
+            (
+                f"  PVL nesting condition satisfied: {'Yes' if nesting_condition_satisfied else 'No'}"
+            ),
+            (f"  Flags                          : {', '.join(flags) if flags else 'N/A'}"),
             "",
-            "Negative log-likelihood:",
-            f"  Q-learning:          {q_learning_nll:.12g}",
-            f"  Original PVL-Delta:  {original_pvl_nll:.12g}",
-            f"  Corrected PVL-Delta: {corrected_pvl_nll:.12g}",
-            f"  Improvement:         {nll_difference:.12g}",
-            f"  Corrected PVL - Q:   {corrected_minus_q_nll:.12g}",
+            "  Negative log-likelihood comparison",
+            f"    • Q-learning                        : {' ' * is_there_neg_diff}{q_learning_nll:.12g}",  # NLL is non-negative
+            f"    • Original PVL-Delta                : {' ' * is_there_neg_diff}{original_pvl_nll:.12g}",  # NLL is non-negative
+            f"    • Corrected PVL-Delta               : {' ' * is_there_neg_diff}{corrected_pvl_nll:.12g}",  # NLL is non-negative
+            f"    • Corrected PVL-Delta - Original PVL: {' ' if is_there_neg_diff and pvl_nll_difference >= 0 else ''}{pvl_nll_difference:.12g}",
+            f"    • Corrected PVL-Delta - Q-learning  : {' ' if is_there_neg_diff and corrected_models_nll_difference >= 0 else ''}{corrected_models_nll_difference:.12g}",
             "",
-            "PVL-Delta parameters:",
+            "  PVL-Delta parameters comparison",
         ]
 
         for parameter_name in pvl_parameter_columns:
@@ -1323,16 +1334,16 @@ def _compare_original_and_corrected_fit_results(
 
             subject_lines.extend(
                 [
-                    f"  {parameter_name}:",
-                    f"    original:  {original_value}",
-                    f"    corrected: {corrected_value}",
+                    f"    • {parameter_name}",
+                    f"        original : {original_value}",
+                    f"        corrected: {corrected_value}",
                 ]
             )
 
         subject_lines.extend(
             [
                 "",
-                "Optimization diagnostics:",
+                "  Optimization diagnostics comparison",
             ]
         )
 
@@ -1342,33 +1353,92 @@ def _compare_original_and_corrected_fit_results(
 
             subject_lines.extend(
                 [
-                    f"  {diagnostic_name}:",
-                    f"    original:  {original_value}",
-                    f"    corrected: {corrected_value}",
+                    f"    • {diagnostic_name}",
+                    f"        original : {original_value}",
+                    f"        corrected: {corrected_value}",
                 ]
             )
 
         subject_report_blocks.append("\n".join(subject_lines))
 
-    non_improved_count = status_counts["UNCHANGED"] + status_counts["WORSE"]
+    improved_count_per_n_trials = Counter(status_counts["IMPROVED"])
+    unchanged_count_per_n_trials = Counter(status_counts["UNCHANGED"])
+    worse_count_per_n_trials = Counter(status_counts["WORSE"])
+    non_improved_count_per_n_trials = unchanged_count_per_n_trials + worse_count_per_n_trials
+    total_count_per_n_trials = improved_count_per_n_trials + non_improved_count_per_n_trials
+
+    nesting_failure_count_per_n_trials = Counter(status_counts["NESTING_FAILURE"])
+
+    sorted_n_trials = sorted(total_count_per_n_trials.keys())
+    max_n_trials_width = len(str(sorted_n_trials[-1]))
+
+    def format_report_lines_of_count_per_n_trials(
+        status_name: str,
+        count_per_n_trials: Counter[int],
+        *,
+        indent_size: int = 2,
+        base_indent_level: int = 0,
+    ) -> list[str]:
+        lines: list[str] = [f"{' ' * (base_indent_level * indent_size)}{status_name} subjects"]
+
+        max_n_trials_width = max((len(str(n_trials)) for n_trials in count_per_n_trials), default=0)
+
+        total_count = count_per_n_trials.total()
+        max_count_width = len(str(total_count))
+
+        for n_trials, count in sorted(count_per_n_trials.items()):
+            lines.append(
+                f"{' ' * ((base_indent_level + 1) * indent_size)}• {n_trials:>{max_n_trials_width}} trials: {count:>{max_count_width}} subjects"
+            )
+
+        # len("trials") = len("Total") + 1
+        right_pad_for_total = max_n_trials_width + 2
+        lines.append(
+            f"{' ' * ((base_indent_level + 1) * indent_size)}• Total{' ' * right_pad_for_total}: {total_count:>{max_count_width}} subjects"
+        )
+
+        return lines
 
     report_lines = [
         "PVL-Delta Correction Report",
         "===========================",
         "",
-        f"Targeted subjects: {len(normalized_subject_keys)}",
-        f"Improved: {status_counts['IMPROVED']}",
-        f"Unchanged: {status_counts['UNCHANGED']}",
-        f"Worse: {status_counts['WORSE']}",
-        f"Not improved: {non_improved_count}",
-        (f"Corrected PVL NLL still above Q-learning NLL: {nesting_failure_count}"),
-        f"NLL comparison tolerance: {parsed_atol:.12g}",
+        *format_report_lines_of_count_per_n_trials(
+            "Target", total_count_per_n_trials, base_indent_level=0
+        ),
         "",
-        "Integrity checks:",
-        "  Table shapes match: Yes",
-        "  Column names and order match: Yes",
-        "  Participant-model row identities and order match: Yes",
-        "  All non-targeted rows are unchanged: Yes",
+        *format_report_lines_of_count_per_n_trials(
+            "Improved", improved_count_per_n_trials, base_indent_level=0
+        ),
+        "",
+        *format_report_lines_of_count_per_n_trials(
+            "Unchanged", unchanged_count_per_n_trials, base_indent_level=0
+        ),
+        "",
+        *format_report_lines_of_count_per_n_trials(
+            "Worsen", worse_count_per_n_trials, base_indent_level=0
+        ),
+        "",
+        *format_report_lines_of_count_per_n_trials(
+            "Not improved", non_improved_count_per_n_trials, base_indent_level=0
+        ),
+        "",
+        *format_report_lines_of_count_per_n_trials(
+            "Nesting failure", nesting_failure_count_per_n_trials, base_indent_level=0
+        ),
+        "",
+        "NLL absolute comparison tolerance",
+        f"  • per trial{' ' * (len('subject with ') + max_n_trials_width + 2)}: {parsed_atol_per_trial:.12g}",
+        *[
+            f"  • for subject with {n_trials:>{max_n_trials_width}} trials: {n_trials * parsed_atol_per_trial:.12g}"
+            for n_trials in sorted_n_trials
+        ],
+        "",
+        "Integrity checks",
+        "  • Table shapes match                              : Yes",
+        "  • Column names and order match                    : Yes",
+        "  • Participant-model row identities and order match: Yes",
+        "  • All non-targeted rows are unchanged             : Yes",
         "",
         "Subject-level results",
         "---------------------",
@@ -1391,6 +1461,9 @@ def _compare_original_and_corrected_fit_results(
         "Saved PVL-Delta correction report written to: %s",
         report_path,
     )
+
+    non_improved_count = non_improved_count_per_n_trials.total()
+    nesting_failure_count = nesting_failure_count_per_n_trials.total()
 
     if non_improved_count > 0:
         report_logger.warning(
@@ -1531,7 +1604,7 @@ def _run(
         corrected_fit_results=corrected_fit_results,
         subject_keys=subject_keys,
         report_path=report_path,
-        selection_atol=normalized_args.atol,
+        selection_atol_per_trial=normalized_args.atol_per_trial,
         logger=logger,
     )
 
@@ -1546,14 +1619,33 @@ def _run(
 def _cleanup(
     *,
     logger: logging.Logger | str = LOGGER_NAME,
+    output_dir: Path | None = None,
 ) -> None:
     """Perform cleanup after the script has finished.
 
     Args:
         logger: Logger instance or logger name.
+        output_dir: Path to the output directory.
     """
 
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
+
+    if output_dir is not None and output_dir.is_dir():
+        logger.info("Cleaning up output directory: %s", output_dir)
+
+        if not any(output_dir.iterdir()):
+            logger.info("Output directory is empty, attempting to remove it: %s", output_dir)
+            try:
+                output_dir.rmdir()
+                logger.info("Removed empty output directory: %s", output_dir)
+            except Exception as e:
+                logger.warning(
+                    "Failed to remove output directory %s: %s",
+                    output_dir,
+                    str(e),
+                )
+        else:
+            logger.info("Output directory is not empty, skipping cleanup: %s", output_dir)
 
     logger.info("Cleaning up application logging...")
     application_logging_cleanup()
@@ -1584,16 +1676,16 @@ def main() -> None:
             script_name=Path(__file__).name,
             start_counter=start_counter,
         ):
-            logger.info("Starting targeted PVL-Delta fit correction...")
+            logger.info(msg="Starting targeted PVL-Delta fit correction...")
 
             logger.debug("Parsed command-line arguments: %s", args)
             logger.debug("Normalized command-line arguments: %s", normalized_args)
 
             logger.info(
                 "Selected %d converged subjects for whom Q-learning beats "
-                "the best competing model by more than atol=%g.",
+                "the best competing model by more than atol=(N * %g), where N denotes the number of trials for each subject respectively.",
                 len(subject_keys),
-                normalized_args.atol,
+                normalized_args.atol_per_trial,
             )
 
             if subject_keys.empty:
@@ -1659,7 +1751,10 @@ The following files are attached in a zip file named {zip_filename!r}:
                 )
     finally:
         logger.info("Performing cleanup...")
-        _cleanup(logger=logger)
+        _cleanup(
+            logger=logger,
+            output_dir=normalized_args.output_dir,
+        )
 
 
 if __name__ == "__main__":

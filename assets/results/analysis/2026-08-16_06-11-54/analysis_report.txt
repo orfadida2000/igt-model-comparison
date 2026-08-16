@@ -1,0 +1,107 @@
+IGT Model Analysis Report
+=================================
+
+Validated inputs
+----------------
+The fit, comparison, and summary tables passed schema, key,
+cross-table alignment, and summary-recomputation checks.
+
+Aggregate model results
+-----------------------
+PVL-Delta:
+  Fits: 617
+  Converged: 617 (100.00%)
+  Mean NLL: 117.994753
+  Mean AIC: 243.989506
+  Mean BIC: 254.662804
+  AIC wins: 510
+  BIC wins: 427
+
+Q-Learning:
+  Fits: 617
+  Converged: 617 (100.00%)
+  Mean NLL: 133.620259
+  Mean AIC: 271.240518
+  Mean BIC: 276.577166
+  AIC wins: 107
+  BIC wins: 190
+
+Model-win rates
+---------------
+AIC — Q-Learning: 107/617 (17.34%)
+AIC — PVL-Delta: 510/617 (82.66%)
+BIC — Q-Learning: 190/617 (30.79%)
+BIC — PVL-Delta: 427/617 (69.21%)
+
+Population-level statistical inference
+--------------------------------------
+Criterion differences are Q-learning minus PVL-Delta, so positive values favor PVL-Delta.
+Wilcoxon signed-rank and exact binomial tests are two-sided.
+AIC:
+  Mean difference: 27.251 (95% BCa CI [24.7403, 30.4383])
+  Median difference: 16.2498 (95% BCa CI [13.5006, 18.8821])
+  Wilcoxon signed-rank: W=9504, two-sided p=1.26028e-83
+BIC:
+  Mean difference: 21.9144 (95% BCa CI [19.4027, 25.0939])
+  Median difference: 11.0395 (95% BCa CI [8.29024, 13.5572])
+  Wilcoxon signed-rank: W=30440, two-sided p=1.3796e-48
+AIC model wins:
+  PVL-Delta=510, Q-learning=107, ties=0
+  PVL-Delta non-tied win rate: 82.66% (95% exact CI [79.44%, 85.56%])
+  Exact binomial test versus 50%: n=617, two-sided p=7.86211e-64
+BIC model wins:
+  PVL-Delta=427, Q-learning=190, ties=0
+  PVL-Delta non-tied win rate: 69.21% (95% exact CI [65.40%, 72.83%])
+  Exact binomial test versus 50%: n=617, two-sided p=6.45136e-22
+
+Inference note
+--------------
+These inferential summaries treat subjects as independent observational units. Source-study heterogeneity is summarized separately and is not modeled hierarchically.
+
+Source-study coverage
+---------------------
+Studies summarized: 10
+
+Boundary diagnostics
+--------------------
+PVL-Delta: 393/617 fits (63.70%) had at least one parameter at a bound.
+Q-Learning: 422/617 fits (68.40%) had at least one parameter at a bound.
+
+Parameter distributions
+-----------------------
+Q-Learning / learning_rate: median=0.28516, IQR=[0.00129049, 1], lower-bound rate=10.37%, upper-bound rate=33.87%
+Q-Learning / inverse_temperature: median=0.290511, IQR=[0.0949533, 47], lower-bound rate=10.37%, upper-bound rate=24.15%
+PVL-Delta / learning_rate: median=0.185235, IQR=[0.0154463, 0.791269], lower-bound rate=2.76%, upper-bound rate=17.02%
+PVL-Delta / outcome_sensitivity: median=0.402478, IQR=[1e-06, 0.821072], lower-bound rate=26.09%, upper-bound rate=5.02%
+PVL-Delta / loss_aversion: median=0.409143, IQR=[0.00802865, 1.70777], lower-bound rate=22.04%, upper-bound rate=5.51%
+PVL-Delta / response_consistency: median=1.22106, IQR=[0.809214, 2.21164], lower-bound rate=0.81%, upper-bound rate=12.48%
+
+Generated artifacts
+-------------------
+Figures: 18
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/signed_aic_difference_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/signed_bic_difference_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/q_vs_pvl_negative_log_likelihood.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/q_vs_pvl_aic.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/q_vs_pvl_bic.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/model_win_counts.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/criterion_difference_confidence_intervals.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/pvl_win_rate_confidence_intervals.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/study_pvl_preference_rates.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/boundary_fit_rates.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/uniform_choice_improvement_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/uniform_choice_improvement_scatter.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/parameters/q_learning/learning_rate_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/parameters/q_learning/inverse_temperature_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/parameters/pvl_delta/learning_rate_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/parameters/pvl_delta/outcome_sensitivity_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/parameters/pvl_delta/loss_aversion_distribution.png
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/figures/parameters/pvl_delta/response_consistency_distribution.png
+Tables: 7
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/subject_level_model_comparison.csv
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/study_model_preference.csv
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/boundary_summary.csv
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/parameter_summary.csv
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/model_win_summary.csv
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/criterion_difference_inference.csv
+  H:/Projects/igt-model-comparison/assets/results/analysis/2026-08-16_06-11-54/tables/model_win_inference.csv

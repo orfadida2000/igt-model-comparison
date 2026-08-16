@@ -1,0 +1,3 @@
+criterion,difference_definition,n_subjects,mean_difference,mean_ci_lower,mean_ci_upper,median_difference,median_ci_lower,median_ci_upper,confidence_level,bootstrap_resamples,bootstrap_seed,bootstrap_method,wilcoxon_statistic,wilcoxon_p_value,wilcoxon_alternative,wilcoxon_zero_method,n_nonzero_differences
+AIC,AIC(Q-learning) - AIC(PVL-Delta),617,27.2510112542647,24.74025023039821,30.438308229003205,16.249804685270846,13.50058346358081,18.88207692725456,0.95,10000,42,BCa,9504.0,1.2602786065965818e-83,two-sided,wilcox,617
+BIC,BIC(Q-learning) - BIC(PVL-Delta),617,21.914362353345943,19.402729952348018,25.09391064173645,11.039464313294587,8.290243091604623,13.557166044171936,0.95,10000,42,BCa,30440.0,1.3795991372047306e-48,two-sided,wilcox,617

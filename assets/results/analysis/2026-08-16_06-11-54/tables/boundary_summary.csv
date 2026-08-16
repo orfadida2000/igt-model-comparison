@@ -1,0 +1,9 @@
+model,category,n_fits,count,rate
+pvl_delta,at_least_one_lower_bound,617,254,0.41166936790923825
+pvl_delta,at_least_one_upper_bound,617,236,0.3824959481361426
+pvl_delta,at_least_one_any_bound,617,393,0.6369529983792545
+pvl_delta,no_parameters_at_bound,617,224,0.36304700162074555
+q_learning,at_least_one_lower_bound,617,64,0.10372771474878444
+q_learning,at_least_one_upper_bound,617,358,0.580226904376013
+q_learning,at_least_one_any_bound,617,422,0.6839546191247974
+q_learning,no_parameters_at_bound,617,195,0.3160453808752026

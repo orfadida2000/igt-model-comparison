@@ -10,14 +10,18 @@ from typing import Any, Final
 
 from pandas import DataFrame
 
-from igt.cli_parsing.factory.path import get_type_filters_for_existing_file_with_extensions_path
 from igt.cli_parsing.parser import get_parser
+from igt.cli_parsing.type_filters.factory.path import (
+    get_type_filters_for_existing_file_with_extensions_path,
+)
+from igt.cli_parsing.type_filters.presets import (
+    NumericArgTypeProvider,
+    PathArgTypeProvider,
+    StringArgTypeProvider,
+)
 from igt.cli_parsing.typing import (
     ArgAction,
     ArgSpec,
-    NumericArgType,
-    PathArgType,
-    StringArgType,
 )
 from igt.constants.config import (
     DEFAULT_N_Q_STARTS,
@@ -86,7 +90,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--selection-threshold",),
-            type_filters=(NumericArgType.POSITIVE_FINITE_FLOAT,),
+            type_filters=(NumericArgTypeProvider.POSITIVE_FINITE_FLOAT,),
             default=str(DEFAULT_INVERSE_TEMPERATURE_SELECTION_THRESHOLD),
             help=(
                 "Inverse-temperature threshold for selecting converged Q-learning fits. "
@@ -110,7 +114,7 @@ def _parse_args() -> argparse.Namespace:
         ),
         ArgSpec(
             name_or_flags=("--workers",),
-            type_filters=(NumericArgType.INTEGER,),
+            type_filters=(NumericArgTypeProvider.INTEGER,),
             default=str(DEFAULT_N_WORKERS),
             help=(
                 "Number of worker processes to use for the fitting process; "
@@ -127,7 +131,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--output-dir",),
-                type_filters=(PathArgType.DIR_PATH,),
+                type_filters=(PathArgTypeProvider.DIR_PATH,),
                 default=str(RESULTS_DIR / "q_inverse_temperature_sensitivity"),
                 help="Directory to save the results files (default: %(default)s)",
                 extra_options={
@@ -140,7 +144,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--logging-dir",),
-                type_filters=(PathArgType.DIR_PATH,),
+                type_filters=(PathArgTypeProvider.DIR_PATH,),
                 default=str(LOGS_DIR / "q_inverse_temperature_sensitivity"),
                 help="Directory to save the log files (default: %(default)s)",
                 extra_options={
@@ -152,7 +156,7 @@ def _parse_args() -> argparse.Namespace:
     arg_specs.append(
         ArgSpec(
             name_or_flags=("--log-level",),
-            type_filters=(NumericArgType.INTEGER,),
+            type_filters=(NumericArgTypeProvider.INTEGER,),
             default=str(DEFAULT_ROOT_LOG_LEVEL),
             help="Logging level for the root logger; use negative value to disable logging (default: %(default)s)",
             extra_options={
@@ -165,7 +169,7 @@ def _parse_args() -> argparse.Namespace:
         arg_specs.append(
             ArgSpec(
                 name_or_flags=("--notify-formsubmit-id",),
-                type_filters=(StringArgType.ALPHANUMERIC_STRING,),
+                type_filters=(StringArgTypeProvider.ALPHANUMERIC_STRING,),
                 default=DEFAULT_NOTIFY_FORMSUBMIT_ID,
                 help="FormSubmit ID to send email notifications upon script completion (default: %(default)s)",
                 extra_options={
