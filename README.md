@@ -207,6 +207,18 @@ Start with [`docs/index.md`](docs/index.md) or the [Getting started](docs/gettin
 - Boundary estimates are reported as diagnostics; they are not automatically treated as failed fits.
 - Population-level inferential summaries treat subjects as independent observational units. Source-study heterogeneity is summarized separately rather than modeled hierarchically.
 
+## Hosted site
+
+The project documentation is hosted at:<br>
+**[IGT Model Comparison](https://orfadida2000.github.io/igt-model-comparison)**
+
 ## License
 
-See [`LICENSE`](LICENSE).
+MIT.<br>
+See **[LICENSE](LICENSE)** for details.
+
+## Author
+
+- **Name:** Or Fadida
+- **Email:** [or@fadida.net](mailto:or@fadida.net)
+- **GitHub:** [orfadida2000](https://github.com/orfadida2000)
