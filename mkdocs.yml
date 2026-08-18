@@ -1,5 +1,9 @@
 site_name: IGT Model Comparison
+site_url: https://orfadida2000.github.io/igt-model-comparison/
 site_description: Documentation for the Q-learning and PVL-Delta Iowa Gambling Task model comparison
+
+repo_url: https://github.com/orfadida2000/igt-model-comparison
+repo_name: orfadida2000/igt-model-comparison
 
 theme:
   name: material
@@ -127,8 +131,8 @@ copyright: Copyright &copy; 2026 Or Fadida
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/orfadida2000/igt-model-comparison
-      name: GitHub repository
+      link: https://github.com/orfadida2000
+      name: GitHub profile
 
     - icon: fontawesome/solid/envelope
       link: mailto:or@fadida.net
