@@ -1,8 +1,18 @@
 [project]
 name = "igt-model-comparison"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "Comparison of the Q-learning and PVL-Delta models for the Iowa Gambling Task"
+authors = [{ name = "Or Fadida", email = "or@fadida.net" }]
+license = { file = "LICENSE" }
 readme = "README.md"
+keywords = [
+    "Iowa Gambling Task",
+    "Q-learning",
+    "PVL-Delta",
+    "Reinforcement Learning",
+    "Cognitive Modeling",
+]
+
 requires-python = ">=3.12"
 dependencies = [
     "email-validator>=2.3.0",
@@ -18,6 +28,8 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = ["pathspec>=1.1.1"]
+
 docs = [
     "mkdocs-material>=9,<10",
     "mkdocstrings[python]>=1.0.6",
@@ -26,5 +38,4 @@ docs = [
 
 [tool.uv]
 package        = false
-cache-dir      = "H:/Projects/.uv-cache"
-default-groups = ["docs"]
+default-groups = ["dev", "docs"]

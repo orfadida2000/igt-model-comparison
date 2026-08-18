@@ -1,3 +1,10 @@
+"""Helpers for building argparse parsers from declarative argument specifications.
+
+The public factory functions create project-standard parsers and add collections of
+[`ArgSpec`][igt.cli_parsing.typing.ArgSpec] definitions while centralizing parser
+construction error handling.
+"""
+
 import argparse
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -11,7 +18,21 @@ def get_parser(
     description: str | None = None,
     extra_options: Mapping[str, Any] | None = None,
 ) -> tuple[argparse.ArgumentParser, list[ResolvedArgInfo]]:
-    """Get the argument parser with the given argument specifications."""
+    """Construct an argument parser from declarative argument specifications.
+
+    Args:
+        arg_specs: Argument specifications to add in order.
+        description: Optional parser description.
+        extra_options: Additional keyword options forwarded to
+            `argparse.ArgumentParser`; any `description` entry is ignored in
+            favor of the explicit argument.
+
+    Returns:
+        The configured parser and resolved metadata for each added argument.
+
+    Raises:
+        ValueError: If parser construction or addition of any argument fails.
+    """
 
     resolved_arg_info_list: list[ResolvedArgInfo] = []
 

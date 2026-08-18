@@ -1,3 +1,10 @@
+"""Shared type aliases, enums, and logging configuration structures.
+
+The module centralizes NumPy array shape aliases, path and parameter-bound types,
+line-ending and output-stream enums, and immutable handler configurations used by the
+logging and execution infrastructure.
+"""
+
 import logging
 import sys
 from collections.abc import Mapping, Sequence
@@ -62,7 +69,12 @@ type StrPathLike = str | Path | PathLike[str]
 
 
 class LineEnding(Enum):
-    """Enum for line endings."""
+    """Supported line-ending sequences for project-owned text output.
+
+    Attributes:
+        LF: Unix-style line-feed sequence.
+        CRLF: Windows-style carriage-return plus line-feed sequence.
+    """
 
     LF = "\n"
     CRLF = "\r\n"
@@ -78,7 +90,12 @@ type ModelParameterBounds = Mapping[str, NamedParameterBounds]
 
 
 class StandardOutput(Enum):
-    """Enum for standard output streams."""
+    """Standard process streams accepted by terminal logging configuration.
+
+    Attributes:
+        STDOUT: Standard output stream.
+        STDERR: Standard error stream.
+    """
 
     STDOUT = "stdout"
     STDERR = "stderr"
@@ -86,13 +103,29 @@ class StandardOutput(Enum):
 
 @dataclass(kw_only=True, frozen=True)
 class BaseLogHandlerConfig:
-    """Configuration for a base log handler."""
+    """Base configuration shared by project logging handlers.
+
+    Subclasses implement [`_create_handler`][igt.typing.BaseLogHandlerConfig._create_handler]
+    to construct a concrete handler, while [`create_handler`][igt.typing.BaseLogHandlerConfig.create_handler]
+    applies the optional level and formatter consistently.
+
+    Attributes:
+        level: Optional logging threshold applied to the created handler.
+        log_format: Optional formatter template.
+        datetime_format: Optional datetime format used by the formatter.
+    """
 
     level: int | None = None
     log_format: str | None = None
     datetime_format: str | None = None
 
     def __post_init__(self) -> None:
+        """Validate common logging-handler configuration fields.
+
+        Raises:
+            TypeError: If the abstract base configuration is instantiated
+                directly or a configured field has an invalid type.
+        """
         if type(self) is BaseLogHandlerConfig:
             raise TypeError(
                 "BaseLogHandlerConfig is an abstract class and cannot be instantiated directly."
@@ -112,15 +145,36 @@ class BaseLogHandlerConfig:
             )
 
     def _create_formatter(self) -> logging.Formatter:
-        """Create a logging formatter based on the configuration."""
+        """Create the formatter configured for a log handler.
+
+        Returns:
+            Formatter using the configured message and datetime format strings.
+        """
         return logging.Formatter(self.log_format, datefmt=self.datetime_format)
 
     def _create_handler(self) -> logging.Handler:
-        """Create a logging handler based on the configuration."""
+        """Create the concrete logging handler for this configuration.
+
+        Subclasses must override this factory method; common level and formatter setup is
+        performed later by [`create_handler`][igt.typing.BaseLogHandlerConfig.create_handler].
+
+        Returns:
+            Newly created logging handler.
+
+        Raises:
+            NotImplementedError: Always, when the base implementation is called directly.
+        """
         raise NotImplementedError("Subclasses must implement this method.")
 
     def create_handler(self) -> logging.Handler:
-        """Create a configured logging handler."""
+        """Create and fully configure a logging handler.
+
+        The subclass-specific handler is created first, then the optional handler level and
+        the formatter produced by `_create_formatter` are applied consistently.
+
+        Returns:
+            Configured logging handler ready to attach to a logger.
+        """
         handler = self._create_handler()
 
         if self.level is not None:
@@ -133,22 +187,40 @@ class BaseLogHandlerConfig:
 
 @dataclass(kw_only=True, frozen=True)
 class NullLogHandlerConfig(BaseLogHandlerConfig):
-    """Configuration for a null log handler."""
+    """Configuration for a reusable null logging handler.
+
+    The configuration returns the shared `logging.NullHandler` instance and is
+    useful when a logger should intentionally discard records.
+    """
 
     _null_handler: ClassVar[logging.NullHandler] = logging.NullHandler()
 
     def _create_handler(self) -> logging.Handler:
-        """Create a null log handler."""
+        """Return the shared null handler used to discard log records.
+
+        Returns:
+            Reusable `logging.NullHandler` instance owned by the configuration class.
+        """
         return self._null_handler
 
 
 @dataclass(kw_only=True, frozen=True)
 class TerminalLogHandlerConfig(BaseLogHandlerConfig):
-    """Configuration for a terminal log handler."""
+    """Configuration for a stream handler targeting standard output or error.
+
+    Attributes:
+        stream: Standard stream to which log records are written.
+    """
 
     stream: StandardOutput = StandardOutput.STDERR
 
     def __post_init__(self) -> None:
+        """Validate terminal-handler configuration.
+
+        Raises:
+            TypeError: If the output stream or inherited configuration fields
+                are invalid.
+        """
         super().__post_init__()
 
         if not isinstance(self.stream, StandardOutput):
@@ -157,7 +229,15 @@ class TerminalLogHandlerConfig(BaseLogHandlerConfig):
             )
 
     def _create_handler(self) -> logging.Handler:
-        """Create a terminal log handler based on the configuration."""
+        """Create a stream handler for the configured standard process stream.
+
+        Returns:
+            Stream handler targeting `sys.stdout` or `sys.stderr` according to `stream`.
+
+        Raises:
+            ValueError: If `stream` contains an unsupported enum value despite prior
+                configuration validation.
+        """
         if self.stream == StandardOutput.STDOUT:
             return logging.StreamHandler(sys.stdout)
         elif self.stream == StandardOutput.STDERR:
@@ -168,7 +248,15 @@ class TerminalLogHandlerConfig(BaseLogHandlerConfig):
 
 @dataclass(kw_only=True, frozen=True)
 class FileLogHandlerConfig(BaseLogHandlerConfig):
-    """Configuration for a file log handler."""
+    """Configuration for a file-backed logging handler.
+
+    Attributes:
+        file_path: Destination log-file path.
+        mode: File opening mode passed to the logging handler.
+        encoding: Text encoding used for the log file.
+        delay: Whether file creation is deferred until the first emitted record.
+        errors: Text encoding error-handling policy.
+    """
 
     file_path: StrPathLike
     mode: str = "a"
@@ -177,6 +265,16 @@ class FileLogHandlerConfig(BaseLogHandlerConfig):
     errors: str | None = None
 
     def __post_init__(self) -> None:
+        """Validate and normalize file-handler configuration.
+
+        The path is converted to `Path` after rejecting empty strings. File mode, encoding,
+        delay, and encoding-error settings are type-checked after the common handler
+        configuration fields are validated.
+
+        Raises:
+            TypeError: If the path or any file-handler option has an unsupported type.
+            ValueError: If the path string is empty or cannot be converted to a `Path`.
+        """
         super().__post_init__()
 
         file_path = self.file_path
@@ -212,7 +310,17 @@ class FileLogHandlerConfig(BaseLogHandlerConfig):
             raise TypeError(f"'errors' must be a str or None, got {type(self.errors).__name__}")
 
     def _create_handler(self) -> logging.Handler:
-        """Create a file log handler based on the configuration."""
+        """Create the configured file-backed logging handler.
+
+        The destination parent directory is created automatically. An already-existing
+        filesystem object is accepted only when it is a regular file.
+
+        Returns:
+            Configured `logging.FileHandler` for the normalized destination path.
+
+        Raises:
+            ValueError: If the configured destination already exists but is not a file.
+        """
         file_path = cast(Path, self.file_path)
         if file_path.exists() and not file_path.is_file():
             raise ValueError(f"The specified path '{file_path}' exists and is not a file.")
@@ -229,6 +337,10 @@ class FileLogHandlerConfig(BaseLogHandlerConfig):
 
 
 class CustomTypeError(TypeError):
-    """Custom TypeError class for easy identification of type errors raised explicitly."""
+    """Marker subclass for type errors raised explicitly by project validation code.
+
+    The dedicated subclass makes it possible for callers to distinguish deliberate
+    argument-type validation failures from unrelated `TypeError` exceptions.
+    """
 
     pass

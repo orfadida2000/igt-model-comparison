@@ -1,3 +1,10 @@
+"""Preset numeric validators and argparse-compatible type filters.
+
+This module defines reusable integer, floating-point, and general-number validation
+functions together with `NumericArgTypeProvider`, whose members register common
+numeric parsing chains for declarative CLI arguments.
+"""
+
 import argparse
 from math import isfinite, isnan
 
@@ -9,7 +16,19 @@ from igt.typing import PrimitiveNumber
 
 
 def validate_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
-    """Parse and validate an integer."""
+    """Parse and validate an integer.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated int.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     if isinstance(value, int):
         if isinstance(value, bool):
@@ -32,13 +51,35 @@ def validate_int(value: str | int, label: str, err_class: type[BaseException]) -
 
 
 def int_type(value: str) -> int:
-    """Parse and validate a integer for the argument parser."""
+    """Parse an integer for argparse.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated int value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_int(value, label="Integer", err_class=argparse.ArgumentTypeError)
 
 
 def validate_non_negative_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
-    """Parse and validate a non-negative integer."""
+    """Parse and validate a non-negative integer.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non negative int.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     n = validate_int(value, label=label, err_class=err_class)
 
@@ -49,7 +90,17 @@ def validate_non_negative_int(value: str | int, label: str, err_class: type[Base
 
 
 def non_negative_int_type(value: str) -> int:
-    """Parse and validate a non-negative integer for the argument parser."""
+    """Parse and validate a non-negative integer for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non negative int value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_negative_int(
         value, label="Non-negative integer", err_class=argparse.ArgumentTypeError
@@ -57,7 +108,19 @@ def non_negative_int_type(value: str) -> int:
 
 
 def validate_positive_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
-    """Parse and validate a positive integer."""
+    """Parse and validate a positive integer.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated positive int.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     n = validate_non_negative_int(value, label=label, err_class=err_class)
 
@@ -68,7 +131,17 @@ def validate_positive_int(value: str | int, label: str, err_class: type[BaseExce
 
 
 def positive_int_type(value: str) -> int:
-    """Parse and validate a positive integer for the argument parser."""
+    """Parse and validate a positive integer for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated positive int value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_positive_int(
         value, label="Positive integer", err_class=argparse.ArgumentTypeError
@@ -76,7 +149,19 @@ def positive_int_type(value: str) -> int:
 
 
 def validate_non_positive_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
-    """Parse and validate a non-positive integer."""
+    """Parse and validate a non-positive integer.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non positive int.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     n = validate_int(value, label=label, err_class=err_class)
 
@@ -87,7 +172,17 @@ def validate_non_positive_int(value: str | int, label: str, err_class: type[Base
 
 
 def non_positive_int_type(value: str) -> int:
-    """Parse and validate a non-positive integer for the argument parser."""
+    """Parse and validate a non-positive integer for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non positive int value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_positive_int(
         value, label="Non-positive integer", err_class=argparse.ArgumentTypeError
@@ -95,7 +190,19 @@ def non_positive_int_type(value: str) -> int:
 
 
 def validate_negative_int(value: str | int, label: str, err_class: type[BaseException]) -> int:
-    """Parse and validate a negative integer."""
+    """Parse and validate a negative integer.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated negative int.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     n = validate_non_positive_int(value, label=label, err_class=err_class)
 
@@ -106,7 +213,17 @@ def validate_negative_int(value: str | int, label: str, err_class: type[BaseExce
 
 
 def negative_int_type(value: str) -> int:
-    """Parse and validate a negative integer for the argument parser."""
+    """Parse and validate a negative integer for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated negative int value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_negative_int(
         value, label="Negative integer", err_class=argparse.ArgumentTypeError
@@ -116,6 +233,19 @@ def negative_int_type(value: str) -> int:
 def validate_float(
     value: str | PrimitiveNumber, label: str, err_class: type[BaseException]
 ) -> float:
+    """Parse a floating-point value while rejecting booleans and NaN.
+
+    Args:
+        value: Raw or already numeric value to parse.
+        label: Human-readable value name used in error messages.
+        err_class: Exception class used for validation failures.
+
+    Returns:
+        The parsed floating-point value.
+
+    Raises:
+        err_class: If the value cannot be converted or is NaN.
+    """
     if not isinstance(value, (str, int, float)):
         raise err_class(
             f"Invalid {label.lower()}: expected a string or number, got {type(value).__name__}"
@@ -136,7 +266,17 @@ def validate_float(
 
 
 def float_type(value: str) -> float:
-    """Parse and validate a float for the argument parser."""
+    """Parse and validate a float for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_float(value, label="Floating-point value", err_class=argparse.ArgumentTypeError)
 
@@ -144,7 +284,19 @@ def float_type(value: str) -> float:
 def validate_finite_float(
     value: str | PrimitiveNumber, label: str, err_class: type[BaseException]
 ) -> float:
-    """Parse and validate a finite floating-point value."""
+    """Parse and validate a finite floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated finite float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_float(value, label=label, err_class=err_class)
 
@@ -155,7 +307,17 @@ def validate_finite_float(
 
 
 def finite_float_type(value: str) -> float:
-    """Parse and validate a finite float for the argument parser."""
+    """Parse and validate a finite float for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated finite float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_finite_float(
         value, label="Finite floating-point value", err_class=argparse.ArgumentTypeError
@@ -167,7 +329,19 @@ def validate_non_negative_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a non-negative floating-point value."""
+    """Parse and validate a non-negative floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non negative float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_float(value, label=label, err_class=err_class)
 
@@ -178,7 +352,17 @@ def validate_non_negative_float(
 
 
 def non_negative_float_type(value: str) -> float:
-    """Parse and validate a non-negative floating-point value for the argument parser."""
+    """Parse and validate a non-negative floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non negative float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_negative_float(
         value, label="Non-negative floating-point value", err_class=argparse.ArgumentTypeError
@@ -190,7 +374,19 @@ def validate_positive_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a positive floating-point value."""
+    """Parse and validate a positive floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated positive float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_non_negative_float(value, label=label, err_class=err_class)
 
@@ -201,7 +397,17 @@ def validate_positive_float(
 
 
 def positive_float_type(value: str) -> float:
-    """Parse and validate a positive floating-point value for the argument parser."""
+    """Parse and validate a positive floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated positive float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_positive_float(
         value, label="Positive floating-point value", err_class=argparse.ArgumentTypeError
@@ -213,7 +419,19 @@ def validate_non_positive_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a non-positive floating-point value."""
+    """Parse and validate a non-positive floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non positive float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_float(value, label=label, err_class=err_class)
 
@@ -224,7 +442,17 @@ def validate_non_positive_float(
 
 
 def non_positive_float_type(value: str) -> float:
-    """Parse and validate a non-positive floating-point value for the argument parser."""
+    """Parse and validate a non-positive floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non positive float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_positive_float(
         value, label="Non-positive floating-point value", err_class=argparse.ArgumentTypeError
@@ -236,7 +464,19 @@ def validate_negative_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a negative floating-point value."""
+    """Parse and validate a negative floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated negative float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_non_positive_float(value, label=label, err_class=err_class)
 
@@ -247,7 +487,17 @@ def validate_negative_float(
 
 
 def negative_float_type(value: str) -> float:
-    """Parse and validate a negative floating-point value for the argument parser."""
+    """Parse and validate a negative floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated negative float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_negative_float(
         value, label="Negative floating-point value", err_class=argparse.ArgumentTypeError
@@ -259,7 +509,19 @@ def validate_non_negative_finite_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a finite non-negative floating-point value."""
+    """Parse and validate a finite non-negative floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non negative finite float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_finite_float(value, label=label, err_class=err_class)
 
@@ -270,7 +532,17 @@ def validate_non_negative_finite_float(
 
 
 def non_negative_finite_float_type(value: str) -> float:
-    """Parse and validate a finite non-negative floating-point value for the argument parser."""
+    """Parse and validate a finite non-negative floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non negative finite float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_negative_finite_float(
         value,
@@ -284,7 +556,19 @@ def validate_positive_finite_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a finite positive floating-point value."""
+    """Parse and validate a finite positive floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated positive finite float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_non_negative_finite_float(value, label=label, err_class=err_class)
 
@@ -295,7 +579,17 @@ def validate_positive_finite_float(
 
 
 def positive_finite_float_type(value: str) -> float:
-    """Parse and validate a finite positive floating-point value for the argument parser."""
+    """Parse and validate a finite positive floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated positive finite float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_positive_finite_float(
         value, label="Positive finite floating-point value", err_class=argparse.ArgumentTypeError
@@ -307,7 +601,19 @@ def validate_non_positive_finite_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a finite non-positive floating-point value."""
+    """Parse and validate a finite non-positive floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non positive finite float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_finite_float(value, label=label, err_class=err_class)
 
@@ -318,7 +624,17 @@ def validate_non_positive_finite_float(
 
 
 def non_positive_finite_float_type(value: str) -> float:
-    """Parse and validate a finite non-positive floating-point value for the argument parser."""
+    """Parse and validate a finite non-positive floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non positive finite float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_positive_finite_float(
         value,
@@ -332,7 +648,19 @@ def validate_negative_finite_float(
     label: str,
     err_class: type[BaseException],
 ) -> float:
-    """Parse and validate a finite negative floating-point value."""
+    """Parse and validate a finite negative floating-point value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated negative finite float.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     parsed_value = validate_non_positive_finite_float(value, label=label, err_class=err_class)
 
@@ -343,7 +671,17 @@ def validate_negative_finite_float(
 
 
 def negative_finite_float_type(value: str) -> float:
-    """Parse and validate a finite negative floating-point value for the argument parser."""
+    """Parse and validate a finite negative floating-point value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated negative finite float value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_negative_finite_float(
         value, label="Negative finite floating-point value", err_class=argparse.ArgumentTypeError
@@ -353,6 +691,19 @@ def negative_finite_float_type(value: str) -> float:
 def validate_number(
     value: str | PrimitiveNumber, label: str, err_class: type[BaseException]
 ) -> PrimitiveNumber:
+    """Parse a value as an integer when possible, otherwise as a float.
+
+    Args:
+        value: Raw or already numeric value to parse.
+        label: Human-readable value name used in error messages.
+        err_class: Exception class used for validation failures.
+
+    Returns:
+        The parsed integer or floating-point value.
+
+    Raises:
+        err_class: If neither integer nor floating-point parsing succeeds.
+    """
     clean_error_messages: list[str] = []
 
     if isinstance(value, (str, int)):
@@ -379,7 +730,17 @@ def validate_number(
 
 
 def number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a number for the argument parser."""
+    """Parse and validate a number for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_number(value, label="Number value", err_class=argparse.ArgumentTypeError)
 
@@ -387,7 +748,19 @@ def number_type(value: str) -> PrimitiveNumber:
 def validate_finite_number(
     value: str | PrimitiveNumber, label: str, err_class: type[BaseException]
 ) -> PrimitiveNumber:
-    """Parse and validate a finite number."""
+    """Parse and validate a finite number.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated finite number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_number(value, label=label, err_class=err_class)
 
@@ -401,7 +774,17 @@ def validate_finite_number(
 
 
 def finite_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a finite number for the argument parser."""
+    """Parse and validate a finite number for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated finite number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_finite_number(
         value, label="Finite number value", err_class=argparse.ArgumentTypeError
@@ -413,7 +796,19 @@ def validate_non_negative_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a non-negative number value."""
+    """Parse and validate a non-negative number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non negative number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_number(value, label=label, err_class=err_class)
 
@@ -424,7 +819,17 @@ def validate_non_negative_number(
 
 
 def non_negative_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a non-negative number value for the argument parser."""
+    """Parse and validate a non-negative number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non negative number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_negative_number(
         value, label="Non-negative number value", err_class=argparse.ArgumentTypeError
@@ -436,7 +841,19 @@ def validate_positive_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a positive number value."""
+    """Parse and validate a positive number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated positive number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_non_negative_number(value, label=label, err_class=err_class)
 
@@ -447,7 +864,17 @@ def validate_positive_number(
 
 
 def positive_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a positive number value for the argument parser."""
+    """Parse and validate a positive number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated positive number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_positive_number(
         value, label="Positive number value", err_class=argparse.ArgumentTypeError
@@ -459,7 +886,19 @@ def validate_non_positive_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a non-positive number value."""
+    """Parse and validate a non-positive number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non positive number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_number(value, label=label, err_class=err_class)
 
@@ -470,7 +909,17 @@ def validate_non_positive_number(
 
 
 def non_positive_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a non-positive number value for the argument parser."""
+    """Parse and validate a non-positive number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non positive number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_positive_number(
         value, label="Non-positive number value", err_class=argparse.ArgumentTypeError
@@ -482,7 +931,19 @@ def validate_negative_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a negative number value."""
+    """Parse and validate a negative number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated negative number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_non_positive_number(value, label=label, err_class=err_class)
 
@@ -493,7 +954,17 @@ def validate_negative_number(
 
 
 def negative_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a negative number value for the argument parser."""
+    """Parse and validate a negative number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated negative number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_negative_number(
         value, label="Negative number value", err_class=argparse.ArgumentTypeError
@@ -505,7 +976,19 @@ def validate_non_negative_finite_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a finite non-negative number value."""
+    """Parse and validate a finite non-negative number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non negative finite number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_finite_number(value, label=label, err_class=err_class)
 
@@ -516,7 +999,17 @@ def validate_non_negative_finite_number(
 
 
 def non_negative_finite_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a finite non-negative number value for the argument parser."""
+    """Parse and validate a finite non-negative number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non negative finite number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_negative_finite_number(
         value,
@@ -530,7 +1023,19 @@ def validate_positive_finite_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a finite positive number value."""
+    """Parse and validate a finite positive number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated positive finite number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_non_negative_finite_number(value, label=label, err_class=err_class)
 
@@ -541,7 +1046,17 @@ def validate_positive_finite_number(
 
 
 def positive_finite_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a finite positive number value for the argument parser."""
+    """Parse and validate a finite positive number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated positive finite number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_positive_finite_float(
         value, label="Positive finite number value", err_class=argparse.ArgumentTypeError
@@ -553,7 +1068,19 @@ def validate_non_positive_finite_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a finite non-positive number value."""
+    """Parse and validate a finite non-positive number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated non positive finite number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_finite_number(value, label=label, err_class=err_class)
 
@@ -564,7 +1091,17 @@ def validate_non_positive_finite_number(
 
 
 def non_positive_finite_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a finite non-positive number value for the argument parser."""
+    """Parse and validate a finite non-positive number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated non positive finite number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_non_positive_finite_number(
         value,
@@ -578,7 +1115,19 @@ def validate_negative_finite_number(
     label: str,
     err_class: type[BaseException],
 ) -> PrimitiveNumber:
-    """Parse and validate a finite negative number value."""
+    """Parse and validate a finite negative number value.
+
+    Args:
+        value: Raw string or already-parsed value to validate.
+        label: Human-readable label used in validation error messages.
+        err_class: Exception class used when validation fails.
+
+    Returns:
+        The parsed and validated negative finite number.
+
+    Raises:
+        BaseException: The exception class supplied by `err_class` if validation fails.
+    """
 
     number = validate_non_positive_finite_number(value, label=label, err_class=err_class)
 
@@ -589,7 +1138,17 @@ def validate_negative_finite_number(
 
 
 def negative_finite_number_type(value: str) -> PrimitiveNumber:
-    """Parse and validate a finite negative number value for the argument parser."""
+    """Parse and validate a finite negative number value for the argument parser.
+
+    Args:
+        value: Raw command-line string supplied by argparse.
+
+    Returns:
+        The parsed and validated negative finite number value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+    """
 
     return validate_negative_finite_number(
         value, label="Negative finite number value", err_class=argparse.ArgumentTypeError
@@ -597,7 +1156,13 @@ def negative_finite_number_type(value: str) -> PrimitiveNumber:
 
 
 class NumericArgTypeProvider(TypeFilterChainDefinition):
-    """Enumeration of argument types for command-line argument parsing."""
+    """Named numeric type-filter chains registered for command-line parsing.
+
+    Each enum member resolves through
+    [`TypeFilterRegistry`][igt.cli_parsing.type_filters.core.registry.TypeFilterRegistry]
+    to an argparse-compatible parser for an integer, floating-point value, or
+    number with the member's sign and finiteness constraints.
+    """
 
     NUMBER = (number_type,)
     NON_NEGATIVE_NUMBER = (non_negative_number_type,)

@@ -1,4 +1,9 @@
-"""Validation for result-analysis input tables."""
+"""Cross-table validation and normalization for analysis inputs.
+
+The validation layer enforces the expected schema, model set, participant coverage,
+source-study consistency, numerical agreement between fit and comparison tables,
+and consistency of the aggregate summary before downstream analysis is allowed.
+"""
 
 from collections.abc import Sequence
 
@@ -114,7 +119,18 @@ SUMMARY_INTEGER_COLUMNS = (
 
 
 def _require_dataframe(data: object, *, name: str) -> DataFrame:
-    """Validate that a value is a pandas DataFrame."""
+    """Require an analysis input to be a pandas DataFrame.
+
+    Args:
+        data: Candidate table object.
+        name: Human-readable input name used in the diagnostic.
+
+    Returns:
+        The same object, narrowed to a DataFrame after validation.
+
+    Raises:
+        TypeError: If `data` is not a pandas DataFrame.
+    """
 
     if not isinstance(data, pd.DataFrame):
         raise TypeError(f"{name} must be a pandas DataFrame, got {type(data).__name__}.")
@@ -128,7 +144,17 @@ def _validate_columns(
     *,
     table_name: str,
 ) -> None:
-    """Validate required and duplicate column names."""
+    """Validate required columns and reject duplicate column labels.
+
+    Args:
+        data: Table whose schema is checked.
+        required_columns: Column names that must be present.
+        table_name: Human-readable table name included in diagnostics.
+
+    Raises:
+        ValueError: If the table contains duplicate labels or omits any required
+            column.
+    """
 
     if data.columns.has_duplicates:
         duplicates = data.columns[data.columns.duplicated(keep=False)].tolist()
@@ -147,7 +173,17 @@ def _normalize_float_columns(
     *,
     table_name: str,
 ) -> None:
-    """Normalize required finite numeric columns in place."""
+    """Normalize selected columns to finite floating-point values in place.
+
+    Args:
+        data: Table modified in place.
+        columns: Columns that must contain numeric finite values.
+        table_name: Human-readable table name included in diagnostics.
+
+    Raises:
+        ValueError: If numeric conversion fails or any converted value is missing or
+            non-finite.
+    """
 
     for column_name in columns:
         try:
@@ -179,7 +215,21 @@ def _normalize_integer_columns(
     *,
     table_name: str,
 ) -> None:
-    """Normalize required integer columns in place."""
+    """Normalize selected integer columns in place.
+
+    Each column is delegated to
+    [`normalize_integer_series`][igt.utils.tabular.normalize_integer_series] using a
+    qualified table/column name for diagnostics.
+
+    Args:
+        data: Table modified in place.
+        columns: Columns that must contain exact integer values.
+        table_name: Human-readable table name included in validation diagnostics.
+
+    Raises:
+        ValueError: If any selected column contains missing, nonnumeric, non-integral,
+            or out-of-range values.
+    """
 
     for column_name in columns:
         data[column_name] = normalize_integer_series(
@@ -194,7 +244,21 @@ def _normalize_boolean_columns(
     *,
     table_name: str,
 ) -> None:
-    """Normalize required Boolean columns in place."""
+    """Normalize selected Boolean columns in place.
+
+    Each column is delegated to
+    [`normalize_boolean_series`][igt.utils.tabular.normalize_boolean_series] using a
+    qualified table/column name for diagnostics.
+
+    Args:
+        data: Table modified in place.
+        columns: Columns whose values must normalize to Boolean values.
+        table_name: Human-readable table name included in validation diagnostics.
+
+    Raises:
+        ValueError: If any selected column contains a value that cannot be normalized
+            as Boolean.
+    """
 
     for column_name in columns:
         data[column_name] = normalize_boolean_series(
@@ -209,7 +273,25 @@ def _normalize_fit_like_table(
     table_name: str,
     include_comparison_columns: bool,
 ) -> DataFrame:
-    """Normalize one fit or model-comparison result table."""
+    """Normalize one fit or model-comparison result table.
+
+    Participant keys, model/study labels, fit metrics, integer diagnostics, and Boolean
+    flags are normalized on a copy. Comparison-specific metric and winner columns are
+    also normalized when requested, and participant-model keys must remain unique.
+
+    Args:
+        data: Fit-like input table.
+        table_name: Human-readable table name included in diagnostics.
+        include_comparison_columns: Whether comparison-specific columns should also be
+            normalized.
+
+    Returns:
+        Normalized copy of the input table.
+
+    Raises:
+        ValueError: If any required value cannot be normalized or duplicate
+            participant-model keys are present.
+    """
 
     normalized = data.copy()
     normalized_keys = normalize_subject_key_columns(normalized)
@@ -273,7 +355,19 @@ def _normalize_fit_like_table(
 
 
 def _normalize_summary_table(summary: DataFrame) -> DataFrame:
-    """Normalize the aggregate model-summary table."""
+    """Normalize the aggregate model-summary table on a copy.
+
+    Args:
+        summary: Aggregate summary table to normalize.
+
+    Returns:
+        Copy with normalized model labels, finite floating-point metrics, and integer
+        count columns.
+
+    Raises:
+        ValueError: If summary values cannot be normalized or a model appears in more
+            than one row.
+    """
 
     normalized = summary.copy()
     normalized[MODEL_COLUMN] = normalize_nonempty_string_series(
@@ -306,7 +400,16 @@ def _normalize_summary_table(summary: DataFrame) -> DataFrame:
 
 
 def _validate_models(data: DataFrame, *, table_name: str) -> None:
-    """Validate that exactly the two expected models are present."""
+    """Require exactly the canonical Q-learning and PVL-Delta model set.
+
+    Args:
+        data: Table containing the canonical model column.
+        table_name: Human-readable table name included in diagnostics.
+
+    Raises:
+        ValueError: If either expected model is missing or an unexpected model name is
+            present.
+    """
 
     expected_models = {
         Q_LEARNING_MODEL_NAME,
@@ -333,7 +436,15 @@ def _validate_subject_model_coverage(
     *,
     table_name: str,
 ) -> None:
-    """Ensure each participant has exactly one row for each model."""
+    """Require both model rows for every participant key.
+
+    Args:
+        data: Fit-like table containing participant and model columns.
+        table_name: Human-readable table name included in diagnostics.
+
+    Raises:
+        ValueError: If any participant does not have results for both expected models.
+    """
 
     model_counts = data.groupby(
         list(PARTICIPANT_KEY_COLUMNS),
@@ -354,7 +465,15 @@ def _validate_source_study_consistency(
     *,
     table_name: str,
 ) -> None:
-    """Ensure both model rows assign each participant to one study."""
+    """Require one source-study label per participant across model rows.
+
+    Args:
+        data: Fit-like table containing participant and source-study columns.
+        table_name: Human-readable table name included in diagnostics.
+
+    Raises:
+        ValueError: If the two model rows for any participant disagree on source study.
+    """
 
     study_counts = data.groupby(
         list(PARTICIPANT_KEY_COLUMNS),
@@ -377,7 +496,21 @@ def _validate_fits_and_comparison_alignment(
     *,
     config: AnalysisConfig,
 ) -> None:
-    """Validate that fit values are preserved in the comparison table."""
+    """Verify that the comparison table preserves the underlying fit-result rows.
+
+    The two tables must have identical participant-model keys and row counts. All columns
+    shared by the tables, other than the key columns, are compared using the configured
+    absolute and relative numerical tolerance.
+
+    Args:
+        fits: Normalized model-fit table.
+        comparison: Normalized model-comparison table.
+        config: Numerical tolerance configuration.
+
+    Raises:
+        ValueError: If row counts or keys differ, or any common fit value differs beyond
+            the configured tolerance.
+    """
 
     if len(fits) != len(comparison):
         raise ValueError(
@@ -422,7 +555,20 @@ def _validate_summary(
     *,
     config: AnalysisConfig,
 ) -> None:
-    """Validate the summary table against the comparison table."""
+    """Recompute and verify the aggregate model summary from comparison results.
+
+    Expected fit counts, convergence metrics, mean NLL/AIC/BIC values, comparison counts,
+    and criterion-win counts are rebuilt independently for each model and compared with
+    the supplied summary using the configured numerical tolerance.
+
+    Args:
+        comparison: Normalized model-comparison table.
+        summary: Normalized aggregate model-summary table.
+        config: Numerical tolerance configuration.
+
+    Raises:
+        ValueError: If the supplied summary differs from the recomputed values.
+    """
 
     eligible = comparison.loc[comparison["comparison_eligible"]]
     expected_rows: list[dict[str, float | int | str]] = []
@@ -475,7 +621,24 @@ def validate_result_tables(
     tables: ResultTables,
     config: AnalysisConfig,
 ) -> ResultTables:
-    """Validate and normalize all result tables."""
+    """Validate and normalize the complete analysis input bundle.
+
+    The function enforces required schemas, normalizes all three tables, validates the
+    expected model set and participant coverage, checks source-study consistency, verifies
+    fit/comparison alignment, and independently validates the aggregate summary.
+
+    Args:
+        tables: Loaded fit, comparison, and summary tables.
+        config: Analysis validation configuration.
+
+    Returns:
+        New `ResultTables` containing normalized, mutually consistent table copies.
+
+    Raises:
+        TypeError: If any supplied table object is not a pandas DataFrame.
+        ValueError: If any schema, value, participant/model relationship, cross-table
+            alignment, or summary consistency check fails.
+    """
 
     fits_input = _require_dataframe(tables.fits, name="fits")
     comparison_input = _require_dataframe(

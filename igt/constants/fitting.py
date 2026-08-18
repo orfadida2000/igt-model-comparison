@@ -1,4 +1,9 @@
-"""Stable defaults and tolerances for model fitting."""
+"""Stable defaults and numerical tolerances for model fitting.
+
+This module centralizes optimizer iteration limits, starting-point counts, and
+floating-point tolerances used when assessing fitted parameters and optimizer
+results.
+"""
 
 from typing import Final
 

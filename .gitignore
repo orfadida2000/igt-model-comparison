@@ -16,6 +16,7 @@ tests/
 backup/
 tmp/
 igt/constants/secrets.py
+scripts/compare_directories.py
 
 # Documentation
 site/

@@ -1,3 +1,10 @@
+"""Factories for filesystem-path command-line validation.
+
+The helpers normalize path-like input and build validators for existence, file versus
+directory expectations, and allowed file extensions. Named path presets are defined
+in `igt.cli_parsing.type_filters.presets.path`.
+"""
+
 import argparse
 from collections.abc import Iterable
 from pathlib import Path
@@ -11,6 +18,18 @@ from igt.typing import StrPathLike
 
 
 def _filter_file_path_by_extension(file_path: StrPathLike, extension_set: set[str]) -> StrPathLike:
+    """Require a file path to use one of the allowed extensions.
+
+    Args:
+        file_path: Path to validate.
+        extension_set: Normalized allowed file extensions.
+
+    Returns:
+        The unchanged path when its suffix is allowed.
+
+    Raises:
+        ArgumentTypeError: If the file suffix is not in the allowed set.
+    """
     file_path = Path(file_path)
 
     file_extension = file_path.suffix.lower()
@@ -29,14 +48,21 @@ def get_type_filters_for_file_with_extensions_path(
     PathArgTypeProvider | TypeFilter,
     *tuple[PathArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for file paths with the given extension.
+    """Build a type-filter chain for a file with an allowed extension.
+
+    Extension strings are stripped, lowercased, and normalized to a leading dot before
+    the suffix validator is created. Empty extension entries are ignored.
 
     Args:
-        extensions: The file extensions to filter by (e.g., ['.csv', '.json']).
+        extensions: One extension string or an iterable of extension strings.
 
     Returns:
-        A tuple containing the type filters for file paths with the specified suffix.
+        A chain beginning with the project file-path parser followed by a suffix validator.
+
+    Raises:
+        TypeError: If `extensions` is neither a string nor iterable, or an iterable
+            element is not a string.
+        ValueError: If no nonempty extension remains after normalization.
     """
 
     if isinstance(extensions, str):
@@ -69,14 +95,21 @@ def get_type_filters_for_file_with_extensions_path(
 def get_type_filters_for_existing_file_with_extensions_path(
     extensions: str | Iterable[str],
 ) -> tuple[PathArgTypeProvider | TypeFilter, *tuple[PathArgTypeProvider | GenericTypeFilter, ...]]:
-    """
-    Returns a tuple of type filters for existing file paths with the given extension.
+    """Build a type-filter chain for a existing file with an allowed extension.
+
+    Extension strings are stripped, lowercased, and normalized to a leading dot before
+    the suffix validator is created. Empty extension entries are ignored.
 
     Args:
-        extensions: The file extensions to filter by (e.g., ['.csv', '.json']).
+        extensions: One extension string or an iterable of extension strings.
 
     Returns:
-        A tuple containing the type filters for existing file paths with the specified suffix.
+        A chain beginning with the project existing-file path parser followed by a suffix validator.
+
+    Raises:
+        TypeError: If `extensions` is neither a string nor iterable, or an iterable
+            element is not a string.
+        ValueError: If no nonempty extension remains after normalization.
     """
 
     if isinstance(extensions, str):

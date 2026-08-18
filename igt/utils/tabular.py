@@ -1,4 +1,8 @@
-"""General validation and normalization helpers for tabular values."""
+"""General validation and normalization helpers for pandas Series values.
+
+The module provides strict integer, Boolean, and nonempty-string normalization used
+by result validation, participant selection, and other table-processing workflows.
+"""
 
 import numpy as np
 import pandas as pd
@@ -11,7 +15,23 @@ def normalize_integer_series(
     *,
     column_name: str,
 ) -> Series:
-    """Validate and convert a Series to NumPy int64 values."""
+    """Validate a Series as exact signed 64-bit integers while preserving its index.
+
+    Numeric strings and integral floating-point representations are accepted, but
+    Boolean, missing, non-finite, fractional, and out-of-range values are rejected.
+
+    Args:
+        series: Series containing values to normalize.
+        column_name: Human-readable column name used in validation messages.
+
+    Returns:
+        A Series with NumPy `int64` values, preserving the original index and name.
+
+    Raises:
+        TypeError: If `series` is not a Series or `column_name` is not a string.
+        ValueError: If the column name is empty or any value cannot be represented
+            exactly as a signed 64-bit integer.
+    """
 
     if not isinstance(series, Series):
         raise TypeError(f"series must be a pandas Series, got {type(series).__name__}.")
@@ -82,7 +102,23 @@ def normalize_boolean_series(
     *,
     column_name: str,
 ) -> Series:
-    """Parse a strict Boolean Series from common CSV representations."""
+    """Normalize a required Series to strict Boolean values.
+
+    Native Boolean values and the case-insensitive CSV representations `true`,
+    `false`, `1`, and `0` are accepted after surrounding whitespace is removed.
+
+    Args:
+        series: Series containing Boolean-like values.
+        column_name: Human-readable column name used in validation messages.
+
+    Returns:
+        Boolean Series preserving the original index.
+
+    Raises:
+        TypeError: If `series` is not a Series or `column_name` is not a string.
+        ValueError: If the column name is empty, values are missing, or a value is
+            not one of the supported Boolean representations.
+    """
 
     if not isinstance(series, Series):
         raise TypeError(f"series must be a pandas Series, got {type(series).__name__}.")
@@ -131,7 +167,20 @@ def normalize_nonempty_string_series(
     *,
     column_name: str,
 ) -> Series:
-    """Validate and trim a Series of required nonempty strings."""
+    """Normalize a required Series to trimmed, nonempty strings.
+
+    Args:
+        series: Series containing required string values.
+        column_name: Human-readable column name used in validation messages.
+
+    Returns:
+        Pandas string Series with surrounding whitespace removed.
+
+    Raises:
+        TypeError: If `series` is not a Series or `column_name` is not a string.
+        ValueError: If the column name is empty or any normalized value is missing
+            or empty.
+    """
 
     if not isinstance(series, Series):
         raise TypeError(f"series must be a pandas Series, got {type(series).__name__}.")

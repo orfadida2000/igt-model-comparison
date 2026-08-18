@@ -1,3 +1,3 @@
-# RData Preprocessing API
+# Data preprocessing API
 
 ::: igt.rdata_preprocessing

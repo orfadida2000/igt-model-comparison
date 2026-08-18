@@ -1,3 +1,10 @@
+"""FormSubmit-backed email notifications for project command-line workflows.
+
+The module builds multipart form submissions for completion and failure messages,
+formats elapsed execution time, and exposes a context manager that can notify on
+ordinary exceptions before re-raising them.
+"""
+
 import io
 import logging
 import time
@@ -18,9 +25,22 @@ def validate_normalize_email(
     *,
     check_deliverability: bool = True,
 ) -> str:
-    """
-    Validates an email address, checks DNS deliverability (if check_deliverability is True),
-    and returns the safely normalized version.
+    """Validate an email address and return its normalized representation.
+
+    Validation is delegated to `email_validator.validate_email`; DNS-based
+    deliverability checks can be disabled for environments where they are undesirable.
+
+    Args:
+        email_address: Address to validate and normalize.
+        check_deliverability: Whether the validator should perform DNS deliverability
+            checks.
+
+    Returns:
+        Safely normalized email address.
+
+    Raises:
+        ValueError: If the address is syntactically invalid or, when requested, fails
+            deliverability validation.
     """
     try:
         # check_deliverability=True performs the DNS lookup to verify MX records exist
@@ -46,9 +66,29 @@ def send_formsubmit_email_notification(
     file_paths: Sequence[StrPathLike] | None = None,
     zip_filename: str | None = None,
 ) -> dict:
-    """
-    Sends an email notification via FormSubmit.
-    If file_paths is provided and not empty, it zips the files and attaches the archive.
+    """Send a success or failure notification through FormSubmit.
+
+    When attachment paths are supplied, the referenced files are collected into an
+    in-memory ZIP archive and uploaded with the form submission. Otherwise the
+    notification is sent as a normal AJAX form request.
+
+    Args:
+        formsubmit_id: FormSubmit endpoint identifier.
+        subject: Email subject line.
+        message: Notification message body.
+        success: Whether the reported workflow completed successfully.
+        status: Optional human-readable status text.
+        duration_seconds: Optional elapsed workflow duration in seconds.
+        script_name: Optional script filename or label included in the message.
+        file_paths: Optional files to package into a ZIP attachment.
+        zip_filename: Optional filename for the generated ZIP archive.
+
+    Returns:
+        Decoded JSON response returned by FormSubmit.
+
+    Raises:
+        requests.RequestException: If the FormSubmit HTTP request fails.
+        OSError: If an attachment file cannot be read.
     """
 
     ajax_url = f"https://formsubmit.co/ajax/{formsubmit_id}"
@@ -177,8 +217,18 @@ def send_formsubmit_email_script_success_notification(
     file_paths: Sequence[StrPathLike] | None = None,
     zip_filename: str | None = None,
 ) -> dict:
-    """
-    Sends a success notification email via FormSubmit.
+    """Send the standard successful-script notification through FormSubmit.
+
+    Args:
+        formsubmit_id: FormSubmit endpoint identifier.
+        message: Success message body.
+        duration_seconds: Optional elapsed script duration in seconds.
+        script_name: Optional script filename or label.
+        file_paths: Optional files to include in a ZIP attachment.
+        zip_filename: Optional filename for the generated archive.
+
+    Returns:
+        Decoded FormSubmit response for the success notification.
     """
 
     return send_formsubmit_email_notification(
@@ -203,8 +253,18 @@ def send_formsubmit_email_script_error_notification(
     file_paths: Sequence[StrPathLike] | None = None,
     zip_filename: str | None = None,
 ) -> dict:
-    """
-    Sends an error notification email via FormSubmit.
+    """Send the standard failed-script notification through FormSubmit.
+
+    Args:
+        formsubmit_id: FormSubmit endpoint identifier.
+        message: Failure message or traceback body.
+        duration_seconds: Optional elapsed script duration in seconds.
+        script_name: Optional script filename or label.
+        file_paths: Optional files to include in a ZIP attachment.
+        zip_filename: Optional filename for the generated archive.
+
+    Returns:
+        Decoded FormSubmit response for the failure notification.
     """
 
     return send_formsubmit_email_notification(
@@ -227,10 +287,26 @@ def error_email_notifier(
     script_name: str | None = None,
     start_counter: float | None = None,
 ) -> Generator[None]:
-    """
-    A context manager that runs a block of code. If an exception occurs
-    (other than KeyboardInterrupt or SystemExit), it sends an email with
-    the traceback and then re-raises the error.
+    """Send an error notification when a managed script block raises an exception.
+
+    When no FormSubmit identifier is supplied, the context manager simply yields
+    control. Otherwise it measures elapsed time, captures the traceback for ordinary
+    exceptions, sends the standard failure notification, and then re-raises the original
+    exception. `KeyboardInterrupt` and `SystemExit` are not intercepted.
+
+    Args:
+        formsubmit_id: Optional FormSubmit endpoint identifier. `None` disables error
+            notifications.
+        script_name: Optional script name included in the notification.
+        start_counter: Optional performance-counter value captured before entering the
+            context; the current counter is used when omitted.
+
+    Yields:
+        Control to the body of the managed `with` statement.
+
+    Raises:
+        Exception: Re-raises any ordinary exception raised inside the managed block
+            after attempting to send its failure notification.
     """
 
     if formsubmit_id is None:

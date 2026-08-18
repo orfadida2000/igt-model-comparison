@@ -1,4 +1,9 @@
-"""Shared root-logger configuration for application entry points."""
+"""Shared root-logger configuration for project entry points.
+
+The helpers configure terminal, file, or null handlers from typed handler
+configuration objects, capture the resulting application logging state, and provide a
+matching cleanup operation for scripts and the main fitting workflow.
+"""
 
 import logging
 from pathlib import Path
@@ -25,11 +30,16 @@ def configure_root_logger(
     level: int | None = None,
     handler_configs: list[BaseLogHandlerConfig] | None = None,
 ) -> None:
-    """Replace the root logger's handlers with configured handlers.
+    """Replace root-logger handlers with handlers created from project configurations.
 
-    A null handler is installed when no effective handler configuration is
-    supplied. Entry-point modules should call this function before starting
-    work that may create worker processes.
+    If no effective non-null handler configuration is supplied, a null handler is
+    installed so library logging remains silent. Existing root handlers are removed
+    and closed before the new handlers are attached.
+
+    Args:
+        level: Optional root-logger level to set before replacing handlers.
+        handler_configs: Optional handler configurations used to construct the new
+            root handlers.
     """
 
     handler_configs = handler_configs or []
@@ -67,20 +77,28 @@ def configure_application_logging(
     terminal_stream: StandardOutput = StandardOutput.STDERR,
     log_file_path: StrPathLike | None = None,
 ) -> Path | None:
-    """Configure terminal and file logging for a top-level application.
+    """Configure terminal and optional file logging for a top-level workflow.
+
+    When logging is disabled, the root logger is reset to a null handler. Otherwise
+    a terminal handler is always configured and a file handler is added when a log
+    path is supplied.
 
     Args:
-        disabled: Whether all effective logging handlers should be disabled.
-        root_logger_level: Root logger level when logging is enabled.
-        terminal_handler_level: Level for the terminal handler when logging is enabled.
-        file_handler_level: Level for the file handler when logging is enabled.
-        log_format: Log message format for all handlers when logging is enabled.
-        datetime_format: Datetime format for all handlers when logging is enabled.
-        terminal_stream: Destination for the terminal handler when logging is enabled.
-        log_file_path: Destination for the file handler when logging is enabled.
+        disabled: Whether application logging should be disabled.
+        root_logger_level: Root-logger level used when logging is enabled.
+        terminal_handler_level: Minimum level emitted by the terminal handler.
+        file_handler_level: Minimum level emitted by the optional file handler.
+        log_format: Format string used by configured handlers.
+        datetime_format: Datetime format used by configured handlers.
+        terminal_stream: Standard stream targeted by the terminal handler.
+        log_file_path: Optional destination of the file handler.
 
     Returns:
-        The configured log-file path, or `None` when logging is disabled or no log file path is provided.
+        The normalized log-file path when file logging is enabled; otherwise `None`.
+
+    Raises:
+        ValueError: If logging is enabled without a root logger level or if the log
+            path cannot be normalized.
     """
 
     if disabled:
@@ -120,10 +138,10 @@ def configure_application_logging(
 
 
 def application_logging_cleanup() -> None:
-    """Perform any necessary cleanup for application logging.
+    """Reset application logging to a minimal default state.
 
-    This function should be called at the end of an application's execution
-    to ensure that all logging resources are properly released.
+    The root logger is restored to the standard warning level with a null handler,
+    which closes any terminal or file handlers created for the completed workflow.
     """
 
     default_root_logger_level = logging.WARNING

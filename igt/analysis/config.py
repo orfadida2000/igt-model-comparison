@@ -1,4 +1,9 @@
-"""Configuration for result analysis and visualization."""
+"""Configuration objects and normalization helpers for result analysis.
+
+This module defines [`AnalysisConfig`][igt.analysis.config.AnalysisConfig], which
+centralizes plotting, bootstrap, numerical-tolerance, and parameter-bound settings
+used throughout the `igt.analysis` subpackage.
+"""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -18,7 +23,22 @@ def _normalize_parameter_bound(
     model_name: str,
     parameter_name: str,
 ) -> ParameterBound:
-    """Validate and normalize one parameter-bound pair."""
+    """Validate and normalize the lower and upper bounds of one model parameter.
+
+    Args:
+        bound: Candidate `(lower, upper)` bound pair.
+        model_name: Model owning the parameter, included in validation diagnostics.
+        parameter_name: Parameter whose bound is being normalized.
+
+    Returns:
+        Finite floating-point lower and upper bounds.
+
+    Raises:
+        TypeError: If the bound is not a two-item tuple or either endpoint is not a
+            non-Boolean real number.
+        ValueError: If either endpoint is non-finite or the lower bound exceeds the
+            upper bound.
+    """
 
     if not isinstance(bound, tuple) or len(bound) != 2:
         raise TypeError(
@@ -60,7 +80,25 @@ def _normalize_parameter_bound(
 def _normalize_parameter_bounds(
     parameter_bounds: ModelParameterBounds,
 ) -> ModelParameterBounds:
-    """Validate and freeze model-to-parameter bound mappings."""
+    """Validate and freeze the complete model-to-parameter bound mapping.
+
+    Model and parameter names are stripped, every model must define at least one
+    parameter bound, and each bound is normalized by
+    [`_normalize_parameter_bound`][igt.analysis.config._normalize_parameter_bound].
+    Nested mappings and the outer mapping are returned as read-only proxies.
+
+    Args:
+        parameter_bounds: Candidate mapping from model names to parameter-bound mappings.
+
+    Returns:
+        Immutable normalized model and parameter bound mappings.
+
+    Raises:
+        TypeError: If the outer or nested values are not mappings, names are not
+            strings, or an individual bound has an invalid endpoint type.
+        ValueError: If a normalized name is empty, a model defines no parameters,
+            the outer mapping is empty, or an individual bound is invalid.
+    """
 
     if not isinstance(parameter_bounds, Mapping):
         raise TypeError("parameter_bounds must be a mapping.")
@@ -109,7 +147,25 @@ def _normalize_parameter_bounds(
 
 @dataclass(frozen=True, slots=True)
 class AnalysisConfig:
-    """Configuration controlling result validation, tables, and figures."""
+    """Configuration for validation, statistical inference, tables, and figures.
+
+    Attributes:
+        figure_formats: File formats written for every generated figure.
+        figure_dpi: Resolution used when saving raster figures.
+        histogram_bins: Bin count or NumPy histogram strategy used by
+            distribution plots.
+        confidence_level: Confidence level used for bootstrap and exact
+            binomial intervals.
+        bootstrap_resamples: Number of BCa bootstrap resamples used for AIC and
+            BIC difference estimates.
+        bootstrap_seed: Seed used to make bootstrap intervals reproducible.
+        numeric_tolerance: Absolute tolerance used by cross-table numerical
+            validation.
+        boundary_tolerance: Absolute tolerance used when identifying parameter
+            estimates at configured bounds.
+        parameter_bounds: Model-to-parameter bound mapping used by parameter
+            summaries and boundary diagnostics.
+    """
 
     figure_formats: tuple[str, ...] = ("png",)
     figure_dpi: int = 300
@@ -122,7 +178,19 @@ class AnalysisConfig:
     parameter_bounds: ModelParameterBounds = DEFAULT_MODEL_PARAMETER_BOUNDS
 
     def __post_init__(self) -> None:
-        """Validate and normalize configuration values."""
+        """Validate and normalize analysis configuration fields.
+
+        Figure formats are stripped and de-dotted, integer settings are normalized from
+        NumPy/Python integral values, confidence and tolerance settings are converted to
+        finite floats, and the parameter-bound mapping is frozen after validation.
+
+        Raises:
+            TypeError: If a field has an unsupported type, including Boolean values where
+                numeric settings are expected.
+            ValueError: If a required collection is empty, figure formats are duplicated,
+                a positive/nonnegative setting violates its range, the confidence level is
+                outside `(0, 1)`, or configured parameter bounds are invalid.
+        """
 
         if not isinstance(self.figure_formats, tuple):
             raise TypeError("figure_formats must be a tuple of strings.")

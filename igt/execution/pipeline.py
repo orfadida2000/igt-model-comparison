@@ -1,4 +1,9 @@
-"""Shared orchestration for loading, selecting, and fitting IGT subjects."""
+"""High-level orchestration for loading, selecting, and fitting IGT participants.
+
+`FittingPipelineConfig` captures one run's data source, models, optimizer settings,
+participant subset, and optional warm-start provider. `run_fitting_pipeline` then
+loads the data, applies selection, executes fitting, and returns the flat result table.
+"""
 
 import logging
 from collections.abc import Sequence
@@ -20,7 +25,23 @@ from .typing import SubjectModelWarmStartsProvider
 
 @dataclass(frozen=True, slots=True)
 class FittingPipelineConfig:
-    """Resolved inputs for one fitting pipeline execution."""
+    """Configuration for one complete subject-level fitting pipeline run.
+
+    The configuration specifies the source data, models, optimizer execution
+    settings, optional participant subset, and optional warm-start provider used by
+    [`run_fitting_pipeline`][igt.execution.pipeline.run_fitting_pipeline].
+
+    Attributes:
+        rdata_path: Source RData file containing the IGT dataset.
+        models: Computational models fitted to each selected participant.
+        max_iterations: Maximum optimizer iterations per starting point.
+        n_workers: Number of worker processes used for fitting.
+        show_progress: Whether fitting progress is displayed.
+        n_subjects: Optional cap on the number of participants processed.
+        subject_keys: Optional explicit participant-key subset.
+        subject_model_warm_starts_provider: Optional callback supplying additional
+            model-specific starting points for individual participants.
+    """
 
     rdata_path: StrPathLike
     models: Sequence[ComputationalModel] = field(repr=False)
@@ -37,7 +58,19 @@ class FittingPipelineConfig:
     )
 
     def __post_init__(self) -> None:
-        """Validate and freeze configuration values."""
+        """Validate and normalize one fitting-pipeline configuration.
+
+        The RData path is normalized, the model collection is frozen as a tuple, numeric
+        execution limits are validated, and an explicit participant-key table is copied.
+        `subject_keys` and `n_subjects` are mutually exclusive selection mechanisms.
+
+        Raises:
+            TypeError: If a configuration field has an unsupported type or the warm-start
+                provider is not callable.
+            ValueError: If no model is supplied, an integer limit is outside its allowed
+                range, `subject_keys` is empty, or both participant-selection mechanisms
+                are configured simultaneously.
+        """
 
         object.__setattr__(
             self, "rdata_path", normalize_path(self.rdata_path, parameter_name="rdata_path")
@@ -88,7 +121,24 @@ class FittingPipelineConfig:
 
 
 def run_fitting_pipeline(config: FittingPipelineConfig) -> pd.DataFrame:
-    """Load data, optionally filter participants, fit models, and return a table."""
+    """Load IGT data, apply participant selection, fit models, and return result rows.
+
+    The dataset is loaded from `config.rdata_path`; an explicit participant-key table
+    is applied when configured. Model fitting is delegated to
+    [`fit_all_subjects`][igt.execution.manager.fit_all_subjects] with the configured
+    iteration limit, worker count, and optional warm-start provider. Completed records
+    are converted to the project's sorted fit-result DataFrame.
+
+    Args:
+        config: Validated configuration for the complete fitting run.
+
+    Returns:
+        Sorted per-participant, per-model fit-result table.
+
+    Raises:
+        ValueError: If an explicitly supplied participant-key table is empty or
+            downstream data, participant, or model validation fails.
+    """
 
     if config.subject_keys is not None and config.subject_keys.empty:
         raise ValueError("subject_keys was provided but contains no subjects.")

@@ -1,8 +1,8 @@
-"""Preprocessing utilities for the Steingroever et al. IGT dataset.
+"""Preprocessing utilities for the Steingroever et al. Iowa Gambling Task dataset.
 
-This module reads the original `IGTdata.rdata` file directly with
-`pyreadr` and converts the contained wide-format objects into one clean
-long-format pandas DataFrame suitable for model fitting.
+The module reads the original `IGTdata.rdata` bundle with `pyreadr`, validates aligned
+wide-format choice/win/loss/study objects, converts them to the project's long-format
+trial schema, and yields participant groups for model fitting.
 """
 
 import re
@@ -40,7 +40,15 @@ OBJECT_NAME_RE = re.compile(
 
 @dataclass(frozen=True)
 class IGTBundle:
-    """In-memory data objects for one trial-count group."""
+    """Aligned wide-format objects for one IGT trial-count condition.
+
+    Attributes:
+        n_trials: Number of trials represented by the bundle.
+        choice: Trial-by-subject deck-choice table.
+        wi: Trial-by-subject win table.
+        lo: Trial-by-subject loss table.
+        index: Participant metadata table aligned with the data columns.
+    """
 
     n_trials: int
     choice: pd.DataFrame
@@ -50,7 +58,23 @@ class IGTBundle:
 
 
 def load_rdata_objects(rdata_path: StrPathLike) -> dict[str, pd.DataFrame]:
-    """Load all pandas DataFrames from the IGT RData file."""
+    """Load DataFrame objects from the source IGT RData file.
+
+    Objects whose value is `None` are ignored. Every remaining object must be a
+    pandas DataFrame and is copied before being returned.
+
+    Args:
+        rdata_path: Path to the source `IGTdata.rdata` file.
+
+    Returns:
+        Mapping from R object names to independent DataFrame copies.
+
+    Raises:
+        FileNotFoundError: If the RData path does not exist.
+        ValueError: If the path is not a file or the RData file contains no
+            DataFrame objects.
+        TypeError: If a non-`None` R object is not represented as a DataFrame.
+    """
 
     rdata_path = normalize_path(rdata_path)
 
@@ -84,7 +108,22 @@ def load_rdata_objects(rdata_path: StrPathLike) -> dict[str, pd.DataFrame]:
 def collect_bundles(
     objects: Mapping[str, pd.DataFrame],
 ) -> dict[int, IGTBundle]:
-    """Group loaded R objects into complete trial-count bundles."""
+    """Group supported RData objects into complete trial-count bundles.
+
+    Object names matching `choice_<n>`, `wi_<n>`, `lo_<n>`, and `index_<n>` are
+    grouped by their numeric trial count. Unrecognized object names are ignored.
+
+    Args:
+        objects: Mapping of R object names to loaded DataFrames.
+
+    Returns:
+        Trial-count keyed mapping of complete [`IGTBundle`][igt.rdata_preprocessing.IGTBundle]
+        instances, ordered by trial count.
+
+    Raises:
+        ValueError: If no supported object names are found or a discovered
+            trial-count group is missing one of the four required objects.
+    """
 
     grouped: dict[int, dict[str, pd.DataFrame]] = {}
 
@@ -127,7 +166,20 @@ def collect_bundles(
 
 
 def validate_bundle(bundle: IGTBundle) -> None:
-    """Validate the structure and alignment of one IGT bundle."""
+    """Validate shape, metadata, choices, and outcomes for one IGT bundle.
+
+    The choice, win, and loss matrices must align; their trial dimension must match
+    `bundle.n_trials`; participant metadata must align with the matrix rows; choices
+    must be valid integer deck codes; outcomes must be finite; participant IDs must
+    be unique; and study labels must be present.
+
+    Args:
+        bundle: Trial-count-specific bundle to validate.
+
+    Raises:
+        ValueError: If matrix dimensions, participant metadata, deck choices,
+            monetary outcomes, subject IDs, or study labels fail validation.
+    """
 
     choice_shape = bundle.choice.shape
 
@@ -221,7 +273,21 @@ def validate_bundle(bundle: IGTBundle) -> None:
 
 
 def bundle_to_long_table(bundle: IGTBundle) -> pd.DataFrame:
-    """Convert one validated IGT bundle to long trial-level format."""
+    """Convert one validated wide-format IGT bundle to long trial-level form.
+
+    The returned table contains participant and study metadata, one-based trial
+    numbers, numeric and letter deck identifiers, wins, losses, and net outcomes.
+
+    Args:
+        bundle: Trial-count-specific bundle to validate and reshape.
+
+    Returns:
+        Long-format table with one row per participant trial.
+
+    Raises:
+        ValueError: If `bundle` fails [`validate_bundle`][igt.rdata_preprocessing.validate_bundle]
+            or its participant metadata cannot be interpreted as required.
+    """
 
     validate_bundle(bundle)
 
@@ -274,7 +340,19 @@ def bundle_to_long_table(bundle: IGTBundle) -> pd.DataFrame:
 
 
 def load_igt_long_table(rdata_path: StrPathLike) -> pd.DataFrame:
-    """Load the RData file and return one combined long-format table."""
+    """Load the source RData file and combine all trial-count groups into one long table.
+
+    Args:
+        rdata_path: Path to the source IGT RData file.
+
+    Returns:
+        Combined long-format table sorted by participant key and trial number.
+
+    Raises:
+        FileNotFoundError: If the RData file does not exist.
+        TypeError: If loaded R objects have unsupported representations.
+        ValueError: If the RData structure or any trial-count bundle is invalid.
+    """
 
     objects = load_rdata_objects(rdata_path)
     bundles = collect_bundles(objects)
@@ -294,7 +372,20 @@ def save_igt_long_table(
     rdata_path: StrPathLike,
     output_csv: StrPathLike,
 ) -> pd.DataFrame:
-    """Load, preprocess, and save the complete IGT long-format table."""
+    """Preprocess the source IGT dataset and write the combined long-format CSV.
+
+    Args:
+        rdata_path: Path to the source IGT RData file.
+        output_csv: Destination path for the processed long-format CSV.
+
+    Returns:
+        The combined long-format DataFrame that was written to disk.
+
+    Raises:
+        FileNotFoundError: If the source RData file does not exist.
+        TypeError: If source data or output arguments have invalid types.
+        ValueError: If preprocessing validation fails or a path cannot be normalized.
+    """
 
     data = load_igt_long_table(rdata_path)
     write_csv(
@@ -311,7 +402,23 @@ def iter_subject_trials(
     data: pd.DataFrame,
     n_subjects: int | None = None,
 ) -> Iterator[tuple[tuple[int, int], pd.DataFrame]]:
-    """Yield each subject's trials in chronological order."""
+    """Yield chronologically ordered trial rows for each participant.
+
+    Participants are grouped by the canonical participant-key columns and yielded in
+    sorted key order. When `n_subjects` is provided, iteration stops after that many
+    participants; a value of zero yields nothing.
+
+    Args:
+        data: Long-format IGT table containing participant keys and trial numbers.
+        n_subjects: Optional maximum number of participants to yield.
+
+    Yields:
+        A participant-key tuple and that participant's trial rows sorted by trial.
+
+    Raises:
+        ValueError: If `n_subjects` is negative or required participant/trial columns
+            are missing.
+    """
     if n_subjects is not None:
         if n_subjects < 0:
             raise ValueError("n_subjects must be greater than or equal to zero.")
@@ -357,7 +464,11 @@ def iter_subject_trials(
 
 
 def main() -> None:
-    """Run preprocessing with the default project paths."""
+    """Preprocess the configured IGT RData dataset using the project default paths.
+
+    The resulting long-format trial table is written to the canonical processed-data
+    location configured in `igt.constants.path`.
+    """
 
     rdata_path = DATA_DIR / "IGTdata.rdata"
     output_csv = DATA_DIR / "processed" / "igt_long.csv"

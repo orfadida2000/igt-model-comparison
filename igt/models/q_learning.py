@@ -1,4 +1,9 @@
-"""Two-parameter Q-learning model for the Iowa Gambling Task."""
+"""Two-parameter Q-learning model for the Iowa Gambling Task.
+
+The model learns chosen-deck action values with a delta rule and maps them to choice
+probabilities through a softmax inverse temperature. Its multistart initialization
+uses a regular parameter grid and selects distinct grid-local likelihood minima.
+"""
 
 from collections.abc import Iterable
 from math import ceil
@@ -36,15 +41,16 @@ from .typing import SubjectData
 
 
 class QLearningModel(ComputationalModel):
-    """Four-deck delta-rule Q-learning model with a softmax choice rule.
+    """Delta-rule Q-learning model with a softmax choice rule for the IGT.
 
-    Parameters, in optimizer-array order:
+    The model maintains one learned value for each of the four decks. After a
+    choice, only the selected deck is updated using the scaled objective outcome
+    and the learning-rate prediction error. Choice probabilities are produced
+    by a softmax parameterized by inverse temperature.
 
-    1. `learning_rate`
-    2. `inverse_temperature`
-
-    The model evaluates a parameter grid and selects up to `n_starts`
-    distinct grid-local minima as local-optimizer starting points.
+    Parameters are ordered as `learning_rate` and `inverse_temperature`.
+    Starting points are selected from distinct local minima on a model-specific
+    objective grid before L-BFGS-B optimization.
     """
 
     def __init__(
@@ -56,6 +62,27 @@ class QLearningModel(ComputationalModel):
         max_inverse_temperature: float = DEFAULT_MAX_INVERSE_TEMPERATURE,
         payoff_scale: float = PAYOFF_SCALE,
     ) -> None:
+        """Initialize Q-learning bounds and the objective-screening grid.
+
+        Args:
+            n_starts: Maximum number of distinct grid-local minima retained as
+                optimizer starting points.
+            learning_rate_grid_size: Number of points in the quadratic base
+                learning-rate grid before low-value refinements are appended.
+            inverse_temperature_grid_size: Optional number of points in the
+                linear base inverse-temperature grid. When omitted, the size is
+                chosen to keep approximately unit spacing.
+            max_inverse_temperature: Upper bound and grid maximum for inverse
+                temperature.
+            payoff_scale: Divisor applied to monetary outcomes before the
+                Q-value update.
+
+        Raises:
+            TypeError: If a grid-size or start-count argument has an invalid
+                type.
+            ValueError: If a count, bound, or payoff scale is invalid, or if
+                `n_starts` exceeds the number of grid points.
+        """
         if not isinstance(n_starts, int) or isinstance(n_starts, bool):
             raise TypeError("n_starts must be an integer.")
 
@@ -192,19 +219,34 @@ class QLearningModel(ComputationalModel):
 
     @classmethod
     def get_name(cls) -> str:
-        """Return the model name."""
+        """Return the canonical Q-learning model name.
+
+        Returns:
+            Stable Q-learning model identifier used throughout the project.
+        """
 
         return Q_LEARNING_MODEL_NAME
 
     @classmethod
     def get_parameter_names(cls) -> tuple[str, ...]:
-        """Return parameter names in optimizer-array order."""
+        """Return Q-learning parameter names in optimizer-array order.
+
+        Returns:
+            `learning_rate` followed by `inverse_temperature`.
+        """
 
         return Q_LEARNING_PARAMETER_NAMES
 
     @property
     def parameter_bounds(self) -> ParameterBounds:
-        """Return the parameter bounds."""
+        """Return the Q-learning parameter bounds.
+
+        The learning-rate interval is fixed by the project constants, while the upper
+        inverse-temperature bound is the value configured for this model instance.
+
+        Returns:
+            Bounds aligned with `learning_rate` and `inverse_temperature`.
+        """
 
         return (
             DEFAULT_Q_LEARNING_PARAMETER_BOUNDS[0],
@@ -219,13 +261,21 @@ class QLearningModel(ComputationalModel):
         parameters: Float1DArray,
         data: SubjectData,
     ) -> float:
-        """Calculate the subject's negative log-likelihood.
+        """Compute the Q-learning negative log-likelihood for one subject.
 
-        On each trial:
+        On each trial, the current deck values define softmax choice
+        probabilities; the observed choice contributes its negative
+        log-probability; and only the chosen deck is updated by the scaled
+        outcome prediction error.
 
-        1. Compute softmax choice probabilities from the current deck values.
-        2. Add the observed choice's negative log-probability.
-        3. Update only the chosen deck using its prediction error.
+        Args:
+            parameters: Learning rate and inverse temperature in optimizer
+                order.
+            data: Validated subject choices and outcomes.
+
+        Returns:
+            Negative log-likelihood of the observed choice sequence, or
+            positive infinity when the parameter vector is outside bounds.
         """
 
         parameter_array = self.validate_parameters(parameters)
@@ -260,15 +310,17 @@ class QLearningModel(ComputationalModel):
         return negative_log_likelihood
 
     def starting_points(self, data: SubjectData) -> Float2DArray:
-        """Return up to `n_starts` distinct grid-local NLL minima.
+        """Select distinct grid-local NLL minima as Q-learning optimizer starts.
 
-        Every selected point is no worse than its immediate horizontal,
-        vertical, and diagonal grid neighbors. Connected tied minima are
-        collapsed to one representative so a flat plateau does not supply
-        redundant starts.
+        Connected tied minima are represented by one point so a flat plateau
+        does not contribute redundant starts. Fewer than the configured maximum
+        may be returned when fewer distinct local-minimum regions exist.
 
-        Fewer than `n_starts` points are returned when the grid contains
-        fewer distinct local-minimum regions.
+        Args:
+            data: Subject data used to evaluate every grid point.
+
+        Returns:
+            Selected parameter vectors ordered from lower to higher grid NLL.
         """
 
         nll_values = np.fromiter(

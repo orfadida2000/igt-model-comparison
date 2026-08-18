@@ -1,4 +1,9 @@
-"""Application, execution, and logging defaults."""
+"""Application, execution, logging, and notification defaults.
+
+The values in this module define stable runtime defaults used by the main fitting
+entry point and auxiliary scripts, including worker counts, random seeds, logging
+behavior, and output naming conventions.
+"""
 
 import logging
 from collections.abc import Mapping

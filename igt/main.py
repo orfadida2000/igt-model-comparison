@@ -1,4 +1,9 @@
-"""Command-line entry point for fitting and comparing IGT models."""
+"""Primary command-line workflow for fitting and comparing IGT models.
+
+The entry point parses project-standard CLI arguments, configures logging and optional
+notifications, preprocesses and fits the configured models, writes fit/comparison/
+summary CSV files, and performs cleanup after successful or failed runs.
+"""
 
 import argparse
 import logging
@@ -58,7 +63,17 @@ LOGGER_NAME: Final[str] = "igt.main"
 
 
 def _n_pvl_starts_power_of_two(n_starts: int) -> int:
-    """Parse and validate the number of PVL-Delta Sobol starts for the argument parser."""
+    """Require the requested PVL-Delta Sobol start count to be a power of two.
+
+    Args:
+        n_starts: Positive start count parsed by the preceding CLI filter.
+
+    Returns:
+        The unchanged count when it is a power of two.
+
+    Raises:
+        ArgumentTypeError: If the count is not a power of two.
+    """
 
     if (n_starts & (n_starts - 1)) != 0:
         raise argparse.ArgumentTypeError(
@@ -69,15 +84,14 @@ def _n_pvl_starts_power_of_two(n_starts: int) -> int:
 
 
 def _parse_args() -> argparse.Namespace:
-    """
-    Create the argument parser, parse the command-line arguments and return the namespace.
+    """Parse command-line options for the primary fitting workflow.
 
-    Some arguments are only added to the parser if certain conditions are met,
-    such as whether a fixed seed or fixed FormSubmit ID is used. The parser is configured
-    with appropriate type filters, default values, and help messages for each argument.
+    Options exposed conditionally by project constants, such as random seed or
+    FormSubmit configuration, are added only when their values are not fixed by
+    configuration.
 
     Returns:
-        The parsed command-line arguments namespace.
+        Parsed command-line arguments.
     """
 
     arg_specs: list[ArgSpec] = [
@@ -262,14 +276,14 @@ def _parse_args() -> argparse.Namespace:
 def _normalize_args(
     args: argparse.Namespace,
 ) -> argparse.Namespace:
-    """
-    Normalize the parsed command-line arguments namespace and return a new namespace with resolved runtime values.
+    """Normalize parsed fitting arguments into runtime values.
 
     Args:
-        args: The parsed command-line arguments namespace.
+        args: Parsed command-line arguments.
 
     Returns:
-        The normalized command-line arguments namespace.
+        Namespace containing resolved worker counts, subject limits, paths,
+        logging settings, seed configuration, and analysis flag.
     """
 
     normalized_args: dict[str, Any] = {
@@ -313,7 +327,12 @@ def _normalize_args(
 
 
 def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, Path | None]:
-    """Parse command-line arguments, configure logging, and return runtime values."""
+    """Prepare a timestamped fitting run and configure application logging.
+
+    Returns:
+        Parsed arguments, normalized runtime arguments, run timestamp, and the
+        optional log-file path.
+    """
 
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
 
@@ -344,7 +363,17 @@ def _run(
     start_datetime_str: str,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> Sequence[str | Path]:
-    """Run the IGT model fitting and comparison pipeline based on command-line arguments."""
+    """Fit both models, compare them, save results, and optionally run analysis.
+
+    Args:
+        normalized_args: Normalized runtime arguments.
+        start_datetime_str: Timestamp embedded in result filenames.
+        logger: Logger instance or logger name.
+
+    Returns:
+        Paths to generated result artifacts, including analysis artifacts when
+        `--analyze` is enabled.
+    """
 
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
@@ -433,7 +462,16 @@ def _cleanup(
     *,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
-    """Perform any necessary cleanup after the script has finished running."""
+    """Release application logging resources after the primary fitting workflow.
+
+    Args:
+        logger: Logger instance or logger name used to record cleanup progress.
+
+    Notes:
+        Cleanup delegates to
+        [`application_logging_cleanup`][igt.logging.application_logging_cleanup], which
+        closes configured handlers and restores the minimal root-logger state.
+    """
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     logger.info("Cleaning up application logging...")
@@ -441,7 +479,12 @@ def _cleanup(
 
 
 def main() -> None:
-    """Main entry point for the IGT model fitting and comparison script."""
+    """Run the primary IGT model-fitting and comparison workflow.
+
+    The entry point parses and normalizes command-line arguments, configures
+    logging and optional notifications, executes the fitting pipeline, writes fit,
+    comparison, and summary result tables, and performs final cleanup.
+    """
 
     start_counter = time.perf_counter()
 

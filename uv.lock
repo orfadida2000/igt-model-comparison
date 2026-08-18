@@ -293,7 +293,7 @@ wheels = [
 
 [[package]]
 name = "igt-model-comparison"
-version = "0.1.0"
+version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "email-validator" },
@@ -309,6 +309,9 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+dev = [
+    { name = "pathspec" },
+]
 docs = [
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
@@ -330,6 +333,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
+dev = [{ name = "pathspec", specifier = ">=1.1.1" }]
 docs = [
     { name = "mkdocs-material", specifier = ">=9,<10" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.6" },

@@ -1,4 +1,9 @@
-"""Prospect Valence Learning model with the delta update rule."""
+"""Prospect Valence Learning Delta model for the Iowa Gambling Task.
+
+The model transforms monetary outcomes with outcome sensitivity and loss aversion,
+updates the chosen deck with a delta rule, and converts learned expectancies to choice
+probabilities using response consistency. Sobol points provide multistart initialization.
+"""
 
 from collections.abc import Iterable
 from typing import cast
@@ -26,22 +31,15 @@ from .typing import SubjectData
 
 
 class PVLDeltaModel(ComputationalModel):
-    """Four-parameter PVL-Delta model for the Iowa Gambling Task.
+    """Prospect Valence Learning Delta model for the Iowa Gambling Task.
 
-    Parameters, in optimizer-array order:
+    Monetary outcomes are transformed by subjective outcome sensitivity and
+    loss aversion before a delta-rule update of the chosen deck. Choice
+    consistency is mapped to the softmax sensitivity used for deck selection.
 
-    1. `learning_rate` (A)
-    2. `outcome_sensitivity` (alpha)
-    3. `loss_aversion` (lambda)
-    4. `response_consistency` (c)
-
-    Subjective utility is calculated from the net outcome. Only the chosen
-    deck expectancy is updated. Choice probabilities use a softmax rule with:
-
-        theta = 3**c - 1
-
-    Sobol points are generated once when the model object is created and are
-    reused as the local-optimizer starting points for every subject.
+    Parameters are ordered as `learning_rate`, `outcome_sensitivity`,
+    `loss_aversion`, and `response_consistency`. Sobol points provide the
+    multi-start initialization set.
     """
 
     def __init__(
@@ -52,6 +50,21 @@ class PVLDeltaModel(ComputationalModel):
         scramble: bool = True,
         payoff_scale: float = PAYOFF_SCALE,
     ) -> None:
+        """Initialize PVL-Delta fitting configuration and Sobol starting points.
+
+        Args:
+            n_starts: Number of Sobol starting points. The initializer requires
+                a positive power of two.
+            rng: Random generator or seed used by the scrambled Sobol sequence.
+            scramble: Whether to scramble the Sobol sequence.
+            payoff_scale: Divisor applied to monetary outcomes before utility
+                transformation.
+
+        Raises:
+            TypeError: If the Sobol-start configuration has an invalid type.
+            ValueError: If the payoff scale or Sobol-start configuration is
+                invalid.
+        """
         if not np.isfinite(payoff_scale):
             raise ValueError("payoff_scale must be finite.")
 
@@ -69,19 +82,35 @@ class PVLDeltaModel(ComputationalModel):
 
     @classmethod
     def get_name(cls) -> str:
-        """Return the model name."""
+        """Return the canonical PVL-Delta model name.
+
+        Returns:
+            Stable PVL-Delta model identifier used throughout the project.
+        """
 
         return PVL_DELTA_MODEL_NAME
 
     @classmethod
     def get_parameter_names(cls) -> tuple[str, ...]:
-        """Return parameter names in optimizer-array order."""
+        """Return PVL-Delta parameter names in optimizer-array order.
+
+        Returns:
+            `learning_rate`, `outcome_sensitivity`, `loss_aversion`, and
+            `response_consistency`, in that order.
+        """
 
         return PVL_DELTA_PARAMETER_NAMES
 
     @property
     def parameter_bounds(self) -> ParameterBounds:
-        """Return numerically closed approximations of the model bounds."""
+        """Return the numerical bounds used for PVL-Delta optimization.
+
+        The learning-rate endpoints use the project's small open-bound approximation;
+        the remaining bounds come directly from the model constants.
+
+        Returns:
+            Bounds aligned with the PVL-Delta parameter order.
+        """
 
         return PVL_DELTA_PARAMETER_BOUNDS
 
@@ -90,14 +119,21 @@ class PVLDeltaModel(ComputationalModel):
         parameters: Float1DArray,
         data: SubjectData,
     ) -> float:
-        """Calculate the subject's negative log-likelihood.
+        """Compute the PVL-Delta negative log-likelihood for one subject.
 
-        On each trial:
+        On each trial, response consistency determines softmax sensitivity,
+        the observed choice contributes its negative log-probability, the net
+        outcome is transformed by outcome sensitivity and loss aversion, and
+        only the chosen deck expectancy is updated.
 
-        1. Compute choice probabilities from the current deck expectancies.
-        2. Add the observed choice's negative log-probability.
-        3. Transform the trial's net payoff into subjective utility.
-        4. Update only the chosen deck with the delta rule.
+        Args:
+            parameters: Learning rate, outcome sensitivity, loss aversion, and
+                response consistency in optimizer order.
+            data: Validated subject choices and outcomes.
+
+        Returns:
+            Negative log-likelihood of the observed choice sequence, or
+            positive infinity when the parameter vector is outside bounds.
         """
 
         parameter_array = self.validate_parameters(parameters)
@@ -146,11 +182,17 @@ class PVLDeltaModel(ComputationalModel):
         self,
         data: SubjectData,
     ) -> Float2DArray:
-        """Return all Sobol starting points.
+        """Return the precomputed Sobol optimizer starting points.
 
-        `data` is accepted to satisfy the common model interface. PVL-Delta
-        starting points depend only on the parameter bounds, not on a
-        particular subject.
+        The subject data argument is accepted to satisfy the common
+        [ComputationalModel][igt.models.base.ComputationalModel] interface;
+        PVL-Delta starts depend only on parameter bounds and Sobol settings.
+
+        Args:
+            data: Subject data required by the shared model interface.
+
+        Returns:
+            A copy of the Sobol starting-point matrix.
         """
 
         _ = data

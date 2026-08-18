@@ -1,4 +1,9 @@
-"""General file input and output utilities."""
+"""General filesystem input and output utilities.
+
+The helpers normalize path-like values, read CSV files with project-compatible
+encoding behavior, and write CSV or text artifacts while creating parent directories
+and applying explicit line-ending conventions.
+"""
 
 from os import PathLike
 from pathlib import Path
@@ -14,7 +19,23 @@ def normalize_path(
     *,
     parameter_name: str = "path",
 ) -> Path:
-    """Validate and convert a filesystem path."""
+    """Validate a path-like value and convert it to `pathlib.Path`.
+
+    The helper trims string paths but intentionally does not require the resulting
+    path to exist.
+
+    Args:
+        path: String or path-like value to normalize.
+        parameter_name: Human-readable argument name used in validation messages.
+
+    Returns:
+        The normalized `Path` object.
+
+    Raises:
+        TypeError: If `parameter_name` is not a string or `path` is not path-like.
+        ValueError: If `parameter_name` or a string path is empty, or if conversion
+            to `Path` fails.
+    """
 
     if not isinstance(parameter_name, str):
         raise TypeError("parameter_name must be a string.")
@@ -49,7 +70,25 @@ def read_csv(
     encoding: str = "utf-8-sig",
     table_name: str = "CSV",
 ) -> DataFrame:
-    """Read a CSV file into a DataFrame."""
+    """Read a required CSV file into a pandas DataFrame.
+
+    The default UTF-8-with-signature encoding accepts both ordinary UTF-8 files and
+    UTF-8 files containing a byte-order mark.
+
+    Args:
+        path: Path of the CSV file to read.
+        encoding: Text encoding passed to `pandas.read_csv`.
+        table_name: Human-readable table name used in error messages.
+
+    Returns:
+        The parsed DataFrame.
+
+    Raises:
+        TypeError: If `table_name` or the path argument has an invalid type.
+        ValueError: If the table name is empty, the path cannot be normalized, or
+            the CSV cannot be decoded or parsed.
+        FileNotFoundError: If the normalized path is not an existing file.
+    """
 
     csv_path = normalize_path(path)
 
@@ -86,7 +125,21 @@ def write_csv(
     encoding: str = "utf-8",
     newline: LineEnding = LineEnding.LF,
 ) -> None:
-    """Write a DataFrame as a UTF-8 CSV with LF line endings."""
+    """Write a DataFrame to CSV using an explicit line-ending policy.
+
+    Parent directories are created automatically before the file is written.
+
+    Args:
+        data: DataFrame to serialize.
+        path: Destination CSV path.
+        index: Whether to include the DataFrame index.
+        encoding: Text encoding used for the output file.
+        newline: Line-ending sequence supplied to pandas as the CSV line terminator.
+
+    Raises:
+        TypeError: If `data` is not a DataFrame or the destination is not path-like.
+        ValueError: If the destination path cannot be normalized.
+    """
 
     if not isinstance(data, DataFrame):
         raise TypeError(f"data must be a pandas DataFrame, got {type(data).__name__}.")
@@ -108,7 +161,21 @@ def write_text(
     encoding: str = "utf-8",
     newline: LineEnding = LineEnding.LF,
 ) -> None:
-    """Write UTF-8 text with exactly one final LF line ending."""
+    """Write text with exactly one configured trailing line ending.
+
+    Existing trailing carriage returns and line feeds are removed before one final
+    line ending is appended. Parent directories are created automatically.
+
+    Args:
+        text: Text content to write.
+        path: Destination text-file path.
+        encoding: Text encoding used for the output file.
+        newline: Line-ending sequence used both by `Path.write_text` and at EOF.
+
+    Raises:
+        TypeError: If `text` is not a string or the destination is not path-like.
+        ValueError: If the destination path cannot be normalized.
+    """
 
     if not isinstance(text, str):
         raise TypeError(f"text must be a string, got {type(text).__name__}.")

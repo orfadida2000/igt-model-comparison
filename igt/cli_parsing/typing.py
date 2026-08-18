@@ -1,3 +1,10 @@
+"""Typed metadata and declarative specifications for command-line arguments.
+
+`ArgSpec` validates argparse options, resolves named type filters, and adds arguments
+to parsers. Supporting enums and data structures represent parser actions and the
+resolved namespace metadata used during argument construction.
+"""
+
 import argparse
 import keyword
 import logging
@@ -20,7 +27,12 @@ NOTSET: Final[object] = object()
 
 
 class ArgAction(Enum):
-    """Enumeration of argument actions for command-line argument parsing."""
+    """Supported argparse actions for declarative argument specifications.
+
+    Each enum value corresponds to an action accepted by `ArgumentParser.add_argument`
+    and is used by [`ArgSpec`][igt.cli_parsing.typing.ArgSpec] when validating
+    which options are meaningful for a particular argument.
+    """
 
     STORE = "store"
     STORE_TRUE = "store_true"
@@ -36,7 +48,14 @@ class ArgAction(Enum):
 
 @dataclass(kw_only=True, frozen=True)
 class ResolvedArgInfo:
-    """Resolved specification for a command-line argument."""
+    """Resolved parser metadata for one argument specification.
+
+    Attributes:
+        effective_name_or_flags: Normalized positional name or optional flags
+            passed to `ArgumentParser.add_argument`.
+        dest_identifier: Attribute name used in the parsed namespace.
+        is_positional: Whether the argument is positional.
+    """
 
     effective_name_or_flags: tuple[str, *tuple[str, ...]] = field(
         metadata={
@@ -57,7 +76,24 @@ class ResolvedArgInfo:
 
 @dataclass(kw_only=True, frozen=True)
 class ArgSpec:
-    """Specification for a command-line argument."""
+    """Declarative specification for one command-line argument.
+
+    The specification validates action-dependent options, resolves any named type
+    filters through the global registry, and ultimately adds one argument to an
+    `argparse.ArgumentParser` via
+    [`add_to_parser`][igt.cli_parsing.typing.ArgSpec.add_to_parser].
+
+    Attributes:
+        name_or_flags: Positional name or optional flag strings supplied by the caller.
+        action: Optional argparse action controlling how values are stored.
+        type_filters: Ordered named filters used to parse and validate values.
+        required: Optional required flag for compatible argument actions.
+        default: Optional default value passed to argparse.
+        choices: Optional finite set of values accepted by argparse.
+        help: Optional help text displayed by argparse.
+        extra_options: Additional validated keyword options forwarded to
+            `ArgumentParser.add_argument`.
+    """
 
     _USED_ADD_ARG_PARAMS: ClassVar[tuple[str, ...]] = (
         "action",
@@ -141,6 +177,17 @@ class ArgSpec:
     )
 
     def __post_init__(self) -> None:
+        """Validate and normalize the declarative argument specification.
+
+        Normalization freezes sequence-like inputs, validates action-specific
+        options, resolves type filters, and prepares the callable passed to
+        `argparse.ArgumentParser.add_argument`.
+
+        Raises:
+            TypeError: If a specification field has an unsupported value.
+            ValueError: If fields form an invalid or contradictory argument
+                specification.
+        """
         name_or_flags = self.name_or_flags
 
         if not isinstance(name_or_flags, (str, Sequence)):
@@ -270,7 +317,20 @@ class ArgSpec:
             object.__setattr__(self, "_argparse_type", argparse_type)
 
     def _create_aggregated_argparse_type_filter(self) -> Callable[[str], Any]:
-        """Final type callable for argparse, applying all type filters in order."""
+        """Compose the specification's normalized type filters into one argparse callable.
+
+        The returned callable applies each resolved filter sequentially, feeding each
+        intermediate result to the next filter in the chain.
+
+        Returns:
+            Callable suitable for the `type=` argument of `ArgumentParser.add_argument`.
+
+        Raises:
+            RuntimeError: If the specification does not contain the nonempty tuple of type
+                filters guaranteed by normal `ArgSpec` initialization.
+            TypeError: If a resolved filter is neither a registered definition nor a
+                callable filter object.
+        """
 
         if (
             self.type_filters is None
@@ -309,6 +369,17 @@ class ArgSpec:
                 )
 
         def _aggregated_argparse_type(value: str) -> Any:
+            """Apply all normalized type filters in sequence.
+
+            Args:
+                value: Raw command-line string supplied by argparse.
+
+            Returns:
+                The value produced by the final filter.
+
+            Raises:
+                argparse.ArgumentTypeError: If the command-line value does not satisfy the required constraints.
+            """
             current_value: Any = value
 
             for filter in normalized_type_filters:
@@ -322,6 +393,21 @@ class ArgSpec:
         self, prefix_chars: str
     ) -> ResolvedArgInfo:
 
+        """Resolve parser-facing names and the namespace destination.
+
+        Args:
+            prefix_chars: Characters recognized by argparse as optional-argument
+                prefixes.
+
+        Returns:
+            Normalized argument names, destination identifier, and positional
+            status.
+
+        Raises:
+            TypeError: If parser naming inputs have invalid types.
+            ValueError: If the configured names cannot form a valid argparse
+                argument or Python namespace identifier.
+        """
         if not isinstance(prefix_chars, str):
             raise TypeError(f"'prefix_chars' must be a str, got {type(prefix_chars).__name__}")
 
@@ -437,13 +523,28 @@ class ArgSpec:
         )
 
     def _clear_effective_name_or_flags_and_dest_identifier(self) -> None:
-        """Clear the internal fields `_effective_name_or_flags` and `_dest_identifier`."""
+        """Clear parser-derived naming metadata cached on the specification.
+
+        The effective positional/flag tuple and namespace destination identifier are reset
+        to `None`. This is used before resolving the same declarative specification against
+        a parser configuration again.
+        """
 
         object.__setattr__(self, "_effective_name_or_flags", None)
         object.__setattr__(self, "_dest_identifier", None)
 
     def _clean_extra_options(self, strict: bool) -> None:
 
+        """Remove or reject duplicate `add_argument` options.
+
+        Args:
+            strict: Whether duplicated options should raise instead of being
+                removed with a warning.
+
+        Raises:
+            ValueError: If `strict` is enabled and `extra_options` repeats an
+                option represented by a dedicated field.
+        """
         extra_options = dict(self.extra_options)
 
         for param in self._USED_ADD_ARG_PARAMS:
@@ -468,7 +569,17 @@ class ArgSpec:
         *,
         label: str | None = None,
     ) -> None:
-        """Validate if the given name is a valid Python identifier and not a keyword."""
+        """Validate a Python identifier used as an argparse namespace destination.
+
+        Args:
+            identifier: Candidate identifier.
+            label: Optional human-readable label used in validation messages.
+
+        Raises:
+            TypeError: If the identifier or label has an invalid type.
+            ValueError: If the identifier is syntactically invalid or is a
+                Python keyword.
+        """
 
         if label is not None and not isinstance(label, str):
             raise TypeError(f"'label' must be a str or None, got {type(label).__name__}")
@@ -490,7 +601,19 @@ class ArgSpec:
 
     @staticmethod
     def _get_non_positional_prefix(name: str, prefix_chars: str = "-") -> str | None:
-        """Get the prefix characters for this argument if it is a non-positional argument (has leading hyphen), otherwise return None."""
+        """Return the leading argparse prefix for an optional argument.
+
+        Args:
+            name: Argument name or flag to inspect.
+            prefix_chars: Characters recognized as optional-argument prefixes.
+
+        Returns:
+            The complete leading prefix, or `None` for a positional argument.
+
+        Raises:
+            TypeError: If `prefix_chars` is not a string.
+            ValueError: If `prefix_chars` is empty.
+        """
 
         if not isinstance(prefix_chars, str):
             raise TypeError(f"'prefix_chars' must be a str, got {type(prefix_chars).__name__}")
@@ -508,7 +631,14 @@ class ArgSpec:
         return None
 
     def is_positional(self, prefix_chars: str = "-") -> bool:
-        """Check if this argument is a positional argument (doesn't have leading hyphen)."""
+        """Return whether this specification resolves to a positional argument.
+
+        Args:
+            prefix_chars: Characters recognized as optional-argument prefixes.
+
+        Returns:
+            `True` for a positional argument and `False` for optional flags.
+        """
 
         effective_name_or_flags = self.get_effective_name_or_flags()
 
@@ -520,7 +650,11 @@ class ArgSpec:
         return False
 
     def _has_store_append_extend_action(self) -> bool:
-        """Check if this argument has an action that stores, appends, or extends values."""
+        """Return whether the configured action consumes and stores argument values.
+
+        Returns:
+            `True` when the action is `store`, `append`, or `extend`; otherwise `False`.
+        """
 
         return (
             self.action is ArgAction.STORE
@@ -529,12 +663,28 @@ class ArgSpec:
         )
 
     def _has_version_help_action(self) -> bool:
-        """Check if this argument has an action that is version or help."""
+        """Return whether the configured action is a parser meta-action.
+
+        Returns:
+            `True` when the action is `help` or `version`; otherwise `False`.
+        """
 
         return self.action is ArgAction.VERSION or self.action is ArgAction.HELP
 
     def add_to_parser(self, parser: argparse.ArgumentParser) -> ResolvedArgInfo:
-        """Add this argument specification to the given argument parser."""
+        """Add this specification to an argparse parser.
+
+        Args:
+            parser: Parser that should receive the argument.
+
+        Returns:
+            Resolved parser-facing names and namespace metadata.
+
+        Raises:
+            TypeError: If the parser or specification contains invalid values.
+            ValueError: If the argument cannot be represented consistently in
+                argparse.
+        """
 
         self._clear_effective_name_or_flags_and_dest_identifier()
         self._clean_extra_options(strict=True)
@@ -622,7 +772,14 @@ class ArgSpec:
         return resolved_info
 
     def get_effective_name_or_flags(self) -> tuple[str]:
-        """Get the effective name or flags for this argument (to be used in the 'add_argument' method)."""
+        """Return normalized names or flags resolved for argparse.
+
+        Returns:
+            The positional name or optional flags used by `add_argument`.
+
+        Raises:
+            RuntimeError: If the specification has not yet been resolved.
+        """
 
         if self._effective_name_or_flags is None:
             raise ValueError(
@@ -648,7 +805,14 @@ class ArgSpec:
         return self._effective_name_or_flags
 
     def get_namespace_identifier(self) -> str:
-        """Get the identifier name for this argument in the parsed Namespace."""
+        """Return the namespace destination identifier resolved for argparse.
+
+        Returns:
+            Attribute name used in the parsed namespace.
+
+        Raises:
+            RuntimeError: If the specification has not yet been resolved.
+        """
 
         if self._dest_identifier is None:
             raise ValueError(

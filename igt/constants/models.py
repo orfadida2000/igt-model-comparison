@@ -1,4 +1,9 @@
-"""Stable constants for model definitions and parameter initialization."""
+"""Stable constants for model definitions and parameter initialization.
+
+The module defines canonical model and parameter names, parameter ranges, IGT payoff
+scaling, Q-learning grid defaults, and the immutable default parameter-bound mapping
+used by fitting and analysis.
+"""
 
 from types import MappingProxyType
 from typing import Final

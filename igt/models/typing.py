@@ -1,3 +1,10 @@
+"""Validated subject-level arrays consumed by computational models.
+
+`SubjectData` stores choices, gains, and losses for one participant, enforces shape
+and value invariants, and exposes total outcomes and trial count used by model
+likelihood functions.
+"""
+
 from dataclasses import dataclass
 from typing import cast
 
@@ -10,17 +17,17 @@ from igt.typing import Float1DArray, Int1DArray
 
 @dataclass(frozen=True, slots=True)
 class SubjectData:
-    """Trial-level Iowa Gambling Task data for one subject.
+    """Validated subject-level choices and monetary outcomes for model fitting.
 
-    Choices use the dataset's deck coding:
+    All arrays must be one-dimensional, have equal length, contain finite numeric
+    values, and encode deck choices as integers from 1 through 4. The immutable
+    container is the common input representation for
+    [`ComputationalModel`][igt.models.base.ComputationalModel] likelihood methods.
 
-    - 1: deck A
-    - 2: deck B
-    - 3: deck C
-    - 4: deck D
-
-    Wins are expected to be non-negative and losses are expected to be
-    non-positive.
+    Attributes:
+        choices: Chosen deck number for each trial.
+        wins: Monetary win observed on each trial.
+        losses: Monetary loss observed on each trial.
     """
 
     choices: Int1DArray
@@ -28,7 +35,17 @@ class SubjectData:
     losses: Float1DArray
 
     def __post_init__(self) -> None:
-        """Validate the subject arrays."""
+        """Validate and normalize the subject-level model input arrays.
+
+        The three arrays must be one-dimensional, equal in length, nonempty, and finite.
+        Choices must be integer-valued deck identifiers from 1 through 4. Validated
+        arrays are stored as independent NumPy arrays with the project's canonical
+        dtypes.
+
+        Raises:
+            ValueError: If the arrays have incompatible shapes or lengths, are empty,
+                contain non-finite values, or contain an invalid deck choice.
+        """
 
         if self.choices.ndim != 1:
             raise ValueError("choices must be a one-dimensional array.")
@@ -71,12 +88,20 @@ class SubjectData:
 
     @property
     def outcomes(self) -> Float1DArray:
-        """Return the net outcome for every trial."""
+        """Return net monetary outcome on each trial.
+
+        Returns:
+            Elementwise wins plus losses for the participant.
+        """
 
         return self.wins + self.losses
 
     @property
     def n_trials(self) -> int:
-        """Return the number of trials."""
+        """Return the number of trials represented by the subject data.
+
+        Returns:
+            Number of choice observations.
+        """
 
         return int(self.choices.size)

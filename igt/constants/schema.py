@@ -1,4 +1,9 @@
-"""Shared tabular-schema definitions."""
+"""Canonical column names and participant keys for project result tables.
+
+The schema constants identify model, study, convergence, likelihood, trial-count,
+and subject columns and define the compound participant and participant-model keys
+used throughout fitting, selection, correction, and analysis.
+"""
 
 from typing import Final
 

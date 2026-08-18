@@ -1,4 +1,9 @@
-"""Derived analysis tables built from model-fit results."""
+"""Derived descriptive tables for post-fit model analysis.
+
+This module reshapes paired subject results, summarizes model preference by source
+study, quantifies parameter-boundary behavior, summarizes fitted parameters, and
+builds aggregate model-win tables consumed by figures and reports.
+"""
 
 from collections.abc import Iterable
 
@@ -28,7 +33,17 @@ METRIC_COLUMNS = (
 
 
 def _model_prefix(model_name: str) -> str:
-    """Return the stable output prefix for one supported model."""
+    """Return the stable paired-table prefix for a supported model.
+
+    Args:
+        model_name: Canonical model name.
+
+    Returns:
+        `"q"` for Q-learning or `"pvl"` for PVL-Delta.
+
+    Raises:
+        ValueError: If `model_name` is not one of the two supported models.
+    """
 
     if model_name == Q_LEARNING_MODEL_NAME:
         return "q"
@@ -42,7 +57,24 @@ def _model_prefix(model_name: str) -> str:
 def build_subject_comparison_table(
     comparison: DataFrame,
 ) -> DataFrame:
-    """Build one paired model-comparison row per eligible subject."""
+    """Pair eligible Q-learning and PVL-Delta results into one row per participant.
+
+    Only rows marked `comparison_eligible` are used. Model-specific fit metrics and
+    winner flags are renamed with stable prefixes, source-study labels are checked for
+    agreement, and signed Q-minus-PVL NLL/AIC/BIC differences plus the corresponding
+    uniform-choice-improvement difference are derived.
+
+    Args:
+        comparison: Validated model-comparison result table.
+
+    Returns:
+        Participant-key-sorted paired comparison table with one row per eligible
+        participant.
+
+    Raises:
+        ValueError: If the paired model rows assign different source studies to the
+            same participant.
+    """
 
     key_columns = list(PARTICIPANT_KEY_COLUMNS)
     common_columns = [*key_columns, SOURCE_STUDY_COLUMN]
@@ -145,7 +177,14 @@ def build_subject_comparison_table(
 def build_study_preference_table(
     subject_comparison: DataFrame,
 ) -> DataFrame:
-    """Summarize subject-level model preference within each source study."""
+    """Summarize subject-level model preference within each source study.
+
+    Args:
+        subject_comparison: Paired subject-level model-comparison table.
+
+    Returns:
+        Per-study model-preference counts, rates, and signed criterion summaries.
+    """
 
     records: list[dict[str, float | int | str]] = []
 
@@ -190,7 +229,14 @@ def build_study_preference_table(
 
 
 def build_boundary_summary_table(fits: DataFrame) -> DataFrame:
-    """Summarize fit-level parameter-boundary counts by model."""
+    """Summarize fit-level parameter-boundary counts by model.
+
+    Args:
+        fits: Validated model-fit result table.
+
+    Returns:
+        Per-model counts and rates of fits with parameters on bounds.
+    """
 
     records: list[dict[str, float | int | str]] = []
 
@@ -231,7 +277,17 @@ def _parameter_columns_for_model(
     model_name: str,
     config: AnalysisConfig,
 ) -> Iterable[str]:
-    """Yield configured parameter columns containing model values."""
+    """Yield configured parameter columns that contain fitted values for one model.
+
+    Args:
+        fits: Validated per-participant model-fit table.
+        model_name: Canonical model whose parameter columns are requested.
+        config: Analysis configuration containing the model parameter-bound mapping.
+
+    Yields:
+        Configured parameter names that exist in `fits` and contain at least one
+        nonmissing value for the selected model.
+    """
 
     model_bounds = config.parameter_bounds.get(model_name, {})
     model_rows = fits.loc[fits[MODEL_COLUMN].eq(model_name)]
@@ -245,7 +301,20 @@ def build_parameter_summary_table(
     fits: DataFrame,
     config: AnalysisConfig,
 ) -> DataFrame:
-    """Summarize fitted parameter distributions and boundary frequencies."""
+    """Summarize fitted parameter distributions and boundary frequencies.
+
+    For each configured parameter that is present for a supported model, the function
+    computes count, mean, standard deviation, minimum, quartiles, median, and maximum.
+    It also reports the configured bounds and counts/rates of estimates within the
+    configured boundary tolerance of either endpoint.
+
+    Args:
+        fits: Validated per-participant model-fit table.
+        config: Parameter-bound and boundary-tolerance configuration.
+
+    Returns:
+        One descriptive summary row per available model parameter.
+    """
 
     records: list[dict[str, float | int | str]] = []
 
@@ -317,7 +386,22 @@ def build_parameter_summary_table(
 def build_model_win_table(
     subject_comparison: DataFrame,
 ) -> DataFrame:
-    """Build model-win counts and rates for AIC and BIC."""
+    """Build aggregate AIC and BIC win counts and rates for both models.
+
+    Each criterion must assign exactly one winning model to every participant in the
+    paired comparison table; exact ties are therefore rejected in this descriptive win
+    table rather than counted as wins for both models.
+
+    Args:
+        subject_comparison: One-row-per-participant paired model-comparison table.
+
+    Returns:
+        Four-row table containing participant count, win count, and win rate for each
+        criterion/model combination.
+
+    Raises:
+        ValueError: If any participant has zero or multiple winners for AIC or BIC.
+    """
 
     records: list[dict[str, float | int | str]] = []
     n_subjects = len(subject_comparison)

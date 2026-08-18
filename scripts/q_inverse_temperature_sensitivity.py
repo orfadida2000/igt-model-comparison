@@ -1,4 +1,10 @@
-"""Run the targeted Q-learning inverse-temperature sensitivity analysis."""
+"""Targeted sensitivity workflow for the Q-learning inverse-temperature upper bound.
+
+The script selects participants whose fitted Q-learning inverse temperature reaches
+or approaches the configured cap, reruns their fits under alternative maxima, and
+writes timestamped result tables for evaluating whether the bound materially affects
+the fitted solutions.
+"""
 
 import argparse
 import logging
@@ -54,6 +60,17 @@ LOGGER_NAME: Final[str] = "scripts.q_inverse_temperature_sensitivity"
 
 
 def _existing_file_path(value: str) -> Path:
+    """Parse an existing CSV path for the sensitivity-analysis CLI.
+
+    Args:
+        value: Raw command-line path.
+
+    Returns:
+        Validated existing CSV path.
+
+    Raises:
+        ArgumentTypeError: If the command-line value does not satisfy the configured type filter.
+    """
     path = Path(value)
     if not path.is_file():
         raise argparse.ArgumentTypeError(f"File does not exist: {path}")
@@ -61,6 +78,17 @@ def _existing_file_path(value: str) -> Path:
 
 
 def _directory_path(value: str) -> Path:
+    """Parse a directory path for the sensitivity-analysis CLI.
+
+    Args:
+        value: Raw command-line path.
+
+    Returns:
+        Validated directory path.
+
+    Raises:
+        ArgumentTypeError: If the command-line value does not satisfy the configured type filter.
+    """
     path = Path(value)
     if path.exists() and not path.is_dir():
         raise argparse.ArgumentTypeError(f"Path exists but is not a directory: {path}")
@@ -68,15 +96,13 @@ def _directory_path(value: str) -> Path:
 
 
 def _parse_args() -> argparse.Namespace:
-    """
-    Create the argument parser, parse the command-line arguments and return the namespace.
+    """Parse command-line options for Q-learning inverse-temperature sensitivity fitting.
 
-    Some arguments are only added to the parser if certain conditions are met,
-    such as whether a fixed seed or fixed FormSubmit ID is used. The parser is configured
-    with appropriate type filters, default values, and help messages for each argument.
+    The parser uses shared project type filters and conditionally exposes seed and
+    FormSubmit options when those values are not fixed by configuration.
 
     Returns:
-        The parsed command-line arguments namespace.
+        Raw argparse namespace containing the sensitivity-workflow options.
     """
 
     arg_specs: list[ArgSpec] = [
@@ -201,14 +227,17 @@ def _parse_args() -> argparse.Namespace:
 def _normalize_args(
     args: argparse.Namespace,
 ) -> argparse.Namespace:
-    """
-    Normalize the parsed command-line arguments namespace and return a new namespace with resolved runtime values.
+    """Resolve raw sensitivity-script arguments into normalized runtime values.
+
+    Configured defaults and fixed values are applied and path-like inputs are normalized
+    before the fitting workflow begins.
 
     Args:
-        args: The parsed command-line arguments namespace.
+        args: Raw namespace returned by `_parse_args`.
 
     Returns:
-        The normalized command-line arguments namespace.
+        Namespace containing normalized input/output paths, fitting settings,
+        inverse-temperature maxima, seed, and optional notification configuration.
     """
 
     normalized_args: dict[str, Any] = {
@@ -240,10 +269,28 @@ def _normalize_args(
 
 
 def _format_numeric_filename_value(value: float) -> str:
+    """Format a numeric value for stable use in an output filename.
+
+    Args:
+        value: Numeric value to format.
+
+    Returns:
+        Compact decimal text with the decimal point replaced by `p`.
+    """
     return f"{value:g}".replace(".", "p")
 
 
 def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, DataFrame, Path | None]:
+    """Prepare one sensitivity-analysis run.
+
+    Parses and normalizes CLI arguments, creates the timestamped output
+    directory path, selects qualifying subjects from the previous fit table,
+    and configures application logging.
+
+    Returns:
+        Parsed arguments, normalized arguments, run timestamp, selected subject
+        keys, and the optional log-file path.
+    """
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
     args = _parse_args()
     normalized_args = _normalize_args(args)
@@ -276,6 +323,17 @@ def _run(
     subject_keys: DataFrame,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> Sequence[str | Path]:
+    """Run all configured Q-learning inverse-temperature sensitivity fits.
+
+    Args:
+        normalized_args: Normalized command-line arguments.
+        start_datetime_str: Timestamp embedded in output filenames.
+        subject_keys: Participant keys selected for sensitivity refitting.
+        logger: Logger instance or logger name.
+
+    Returns:
+        Paths to the generated Q-learning sensitivity fit tables.
+    """
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     output_paths: list[Path] = []
@@ -345,7 +403,15 @@ def _cleanup(
     *,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
-    """Perform any necessary cleanup after the script has finished running."""
+    """Release application logging resources after the sensitivity workflow.
+
+    Args:
+        logger: Logger instance or logger name used to record cleanup progress.
+
+    Notes:
+        The function delegates handler teardown and root-logger reset to the shared
+        application logging cleanup helper.
+    """
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     logger.info("Cleaning up application logging...")
@@ -353,7 +419,12 @@ def _cleanup(
 
 
 def main() -> None:
-    """Select capped subjects and run the three Q-learning sensitivity fits."""
+    """Run the targeted Q-learning inverse-temperature sensitivity workflow.
+
+    The script selects participants whose fitted inverse temperature is near the
+    configured cap, refits them under the sensitivity bounds, writes the resulting
+    fit tables, and performs notification and logging cleanup.
+    """
     start_counter = time.perf_counter()
 
     (

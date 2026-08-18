@@ -1,12 +1,8 @@
-"""Utilities for generating optimizer starting points.
+"""Generic utilities for generating optimizer starting points.
 
-This module contains generic starting-point generation methods. It does not
-decide which method a model should use.
-
-Current usage:
-
-- Q-learning evaluates a Cartesian grid and selects distinct local minima.
-- PVL-Delta uses Sobol starting points distributed across its parameter bounds.
+The module converts parameter bounds to arrays, builds Cartesian grids, identifies
+distinct local minima on regular grids, scales unit-hypercube samples, and generates
+Sobol starts. Individual model classes decide which strategy and defaults to use.
 """
 
 from collections.abc import Sequence

@@ -1,3 +1,0 @@
-# Typing API
-
-::: igt.typing

@@ -1,5 +1,5 @@
 site_name: IGT Model Comparison
-site_description: Comparison of Q-learning and PVL-Delta models for the Iowa Gambling Task
+site_description: Documentation for the Q-learning and PVL-Delta Iowa Gambling Task model comparison
 
 theme:
   name: material
@@ -11,7 +11,7 @@ theme:
       accent: pink
       toggle:
         icon: material/weather-night
-        name: Switch to Dracula mode
+        name: Switch to dark mode
 
     - media: "(prefers-color-scheme: dark)"
       scheme: dracula
@@ -23,43 +23,58 @@ theme:
     - navigation.sections
     - navigation.indexes
     - navigation.instant
+    - navigation.instant.progress
     - navigation.top
     - navigation.tracking
-
+    - navigation.path
+    - navigation.footer
+    - toc.follow
     - search.suggest
     - search.highlight
-
     - content.code.copy
     - content.code.select
     - content.code.annotate
-
     - content.tabs.link
-
-    - toc.follow
 
 nav:
   - Home: index.md
+  - Getting started: getting-started.md
+  - Project structure: project-structure.md
+  - Data: data.md
 
   - Models:
       - Overview: models/index.md
-      - Q-learning: models/q_learning.md
-      - PVL-Delta: models/pvl_delta.md
+      - Q-learning: models/q-learning.md
+      - PVL-Delta: models/pvl-delta.md
+
+  - Scripts:
+      - Overview: scripts/index.md
+      - PVL-Delta fit correction: scripts/correct-pvl-delta-fits.md
+      - Q inverse-temperature sensitivity: scripts/q-inverse-temperature-sensitivity.md
+      - Final result analysis: scripts/results-analysis.md
+
+  - Workflows:
+      - Fitting and comparison: workflow/fitting.md
+      - PVL-Delta correction: workflow/correction.md
+      - Q inverse-temperature sensitivity: workflow/sensitivity.md
+      - Final result analysis: workflow/analysis.md
+
+  - Statistical inference: statistical-inference.md
+  - Result files: results.md
+  - Final results: final-results.md
+  - Reproducibility: reproducibility.md
 
   - API Reference:
       - Overview: api/index.md
-
-      - Models:
-          - Overview: api/models/index.md
-          - Base model: api/models/base.md
-          - Q-learning: api/models/q_learning.md
-          - PVL-Delta: api/models/pvl_delta.md
-
-      - Fitting: api/fitting.md
-      - Initialization: api/initialization.md
-      - Comparison: api/comparison.md
-      - Main workflow: api/main.md
-      - RData preprocessing: api/rdata_preprocessing.md
-      - Typing: api/typing.md
+      - Models: api/models.md
+      - Execution: api/execution.md
+      - Analysis: api/analysis.md
+      - Comparison, initialization, and selection: api/comparison-selection.md
+      - Data preprocessing: api/data.md
+      - CLI parsing: api/cli-parsing.md
+      - Infrastructure and utilities: api/infrastructure.md
+      - Constants: api/constants.md
+      - Entry points and scripts: api/entry-points.md
 
 plugins:
   - search
@@ -69,6 +84,9 @@ plugins:
           paths:
             - .
           options:
+            filters:
+              - "!^__weakref__$"
+              - "!^__dict__$"
             docstring_style: google
             members_order: source
             show_root_heading: true
@@ -80,6 +98,7 @@ plugins:
             scoped_crossrefs: true
             relative_crossrefs: true
             signature_crossrefs: true
+            show_if_no_docstring: false
 
 markdown_extensions:
   - admonition
@@ -94,11 +113,23 @@ markdown_extensions:
 
 extra_css:
   - https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap
-  - stylesheets/extra.css
-  - stylesheets/catppuccin-latte.css
-  - stylesheets/catppuccin-mocha.css
-  - stylesheets/dracula.css
+  - assets/stylesheets/extra.css
+  - assets/stylesheets/catppuccin-latte.css
+  - assets/stylesheets/catppuccin-mocha.css
+  - assets/stylesheets/dracula.css
 
 extra_javascript:
-  - scripts/mathjax.js
+  - assets/scripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+copyright: Copyright &copy; 2026 Or Fadida
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/orfadida2000/igt-model-comparison
+      name: GitHub repository
+
+    - icon: fontawesome/solid/envelope
+      link: mailto:or@fadida.net
+      name: Email

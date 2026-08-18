@@ -1,3 +1,10 @@
+"""Enum-based definitions for named command-line type-filter chains and choices.
+
+`TypeFilterChainDefinition` composes validators sequentially, whereas
+`TypeFilterChoiceDefinition` tries alternative parsers until one succeeds. Both are
+resolved through the shared type-filter registry.
+"""
+
 from __future__ import annotations
 
 from argparse import ArgumentTypeError
@@ -24,6 +31,19 @@ type ProviderTypeFilterRegistryView = MappingProxyType[TypeFilterDefinition, Typ
 def _validate_definition_value(
     member: TypeFilterDefinition,
 ) -> TypeFilterTupleDefinition:
+    """Validate and normalize one enum member's type-filter definition.
+
+    Args:
+        member: Definition member whose value should represent one filter or a
+            non-empty chain of filters.
+
+    Returns:
+        The normalized non-empty tuple of callables.
+
+    Raises:
+        TypeError: If the member value is neither a callable nor a tuple of
+            callables, or if any tuple element is not callable.
+    """
     if not callable(member.value) and not isinstance(member.value, tuple):
         raise TypeError(
             f"The value of the member {member.name!r} of {member.__class__.__name__!r} is not a callable or a tuple of callables"
@@ -50,6 +70,21 @@ def _validate_definition_class(
     *,
     allow_memberless: bool = False,
 ) -> TypeFilterProvider:
+    """Validate a type-filter definition provider class.
+
+    Args:
+        candidate: Object expected to be a concrete subclass of
+            [TypeFilterDefinition][igt.cli_parsing.type_filters.core.definitions.TypeFilterDefinition].
+        allow_memberless: Whether the class may define no enum members.
+
+    Returns:
+        The validated provider class.
+
+    Raises:
+        TypeError: If the candidate is not a valid provider class, overrides
+            equality or hashing, fails to implement `get_type_filter`, has an
+            invalid member definition, or is unexpectedly memberless.
+    """
     if not isinstance(candidate, type):
         raise TypeError(f"A class must be of type 'type', got {type(candidate).__name__!r}.")
 
@@ -85,21 +120,29 @@ def _validate_definition_class(
 
 
 class TypeFilterDefinition(Enum):
-    """
-    Base class for named type filter chains to be used in command line parsing.
+    """Base enum for named command-line type-filter definitions.
 
-    A subclass of this class must not override the `__eq__` or `__hash__` methods.
+    Provider subclasses define enum members whose values are either one
+    callable or a non-empty tuple of callables. Concrete subclasses implement
+    `get_type_filter` to interpret those callables, for example as a sequential
+    chain or as alternative choices.
 
-    Each subclass of this class must define at least one named type filter chain member, where each member's value must be either a callable or a non-empty tuple of callables,
-    where for members with a single callable value, their value is treated as a 1 element type filters chain.
-    Each member represents an equivalent type filter callable, which receives a string argument and chains the callables in the tuple together.
-    Its string argument being the input to the first callable in the tuple, the output of each callable besides the last one being the input to the next callable in the tuple, and the output of the last callable being the output of the equivalent type filter itself.
-
-    The equivalent type filter callable is meant to be used as a type filter for an argument in a command line parser, therefore it's the responsibility of programmer to ensure that for each member,its value will be equivalent to a callable that can be used as such
-    (i.e. it must be able to accept a single positional string argument and return a value of the desired type, or raise an exception for invalid input where the exception's type is appropriate for command line parsing).
+    Provider classes must preserve the base equality and hashing behavior so
+    members remain stable registry keys.
     """
 
     def __init_subclass__(cls, *, _allow_memberless: bool = True, **kwargs: Any) -> None:
+        """Validate every subclass when it is created.
+
+        Args:
+            _allow_memberless: Whether the subclass may define no members.
+            **kwargs: Additional subclass-creation arguments forwarded to
+                `Enum.__init_subclass__`.
+
+        Raises:
+            TypeError: If the subclass violates the definition-class
+                invariants.
+        """
         super().__init_subclass__(**kwargs)
 
         _validate_definition_class(cls, allow_memberless=_allow_memberless)
@@ -109,6 +152,18 @@ class TypeFilterDefinition(Enum):
         *,
         is_validated: bool = False,
     ) -> TypeFilter:
+        """Resolve this definition member to an argparse-compatible filter.
+
+        Args:
+            is_validated: Whether the member definition has already been
+                validated by its provider class.
+
+        Returns:
+            A callable that validates and converts one command-line value.
+
+        Raises:
+            NotImplementedError: Always for the abstract base definition.
+        """
         raise NotImplementedError(
             f"The method 'get_type_filter' must be implemented in a non-concrete subclass of {__class__.__name__!r}."
         )
@@ -119,25 +174,37 @@ class TypeFilterDefinition(Enum):
         *,
         validate_members: bool = False,
     ) -> ProviderTypeFilterRegistry:
+        """Build the type-filter registry for all members of this provider.
+
+        Args:
+            validate_members: Whether to revalidate each member while
+                resolving its callable.
+
+        Returns:
+            A mapping from definition members to their resolved callables.
+        """
         return {member: member.get_type_filter(is_validated=not validate_members) for member in cls}
 
 
 class TypeFilterChainDefinition(TypeFilterDefinition):
-    """
-    Base class for named type filter chains to be used in command line parsing.
+    """Definition provider whose member callables are applied as a chain.
 
-    A subclass of this class must not override the `__eq__` or `__hash__` methods.
-
-    Each subclass of this class must define at least one named type filter chain member, where each member's value must be either a callable or a non-empty tuple of callables,
-    where for members with a single callable value, their value is treated as a 1 element type filters chain.
-    Each member represents an equivalent type filter callable, which receives a string argument and chains the callables in the tuple together.
-    Its string argument being the input to the first callable in the tuple, the output of each callable besides the last one being the input to the next callable in the tuple, and the output of the last callable being the output of the equivalent type filter itself.
-
-    The equivalent type filter callable is meant to be used as a type filter for an argument in a command line parser, therefore it's the responsibility of programmer to ensure that for each member,its value will be equivalent to a callable that can be used as such
-    (i.e. it must be able to accept a single positional string argument and return a value of the desired type, or raise an exception for invalid input where the exception's type is appropriate for command line parsing).
+    Each enum member resolves to one argparse-compatible callable. The raw
+    command-line string enters the first callable, and each intermediate result
+    is passed to the next callable.
     """
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Validate creation of a concrete chain-definition provider.
+
+        Args:
+            **kwargs: Subclass-creation arguments forwarded to the base
+                definition class.
+
+        Raises:
+            TypeError: If the reserved `_allow_memberless` option is supplied
+                or the provider does not satisfy the required invariants.
+        """
         if "_allow_memberless" in kwargs:
             raise TypeError(
                 f"The '_allow_memberless' keyword argument cannot be used when subclassing {__class__.__name__!r} as it is always set to False."
@@ -146,6 +213,16 @@ class TypeFilterChainDefinition(TypeFilterDefinition):
         super().__init_subclass__(_allow_memberless=False, **kwargs)
 
     def get_type_filter(self, *, is_validated: bool = False) -> TypeFilter:
+        """Create a filter that applies this member's callables sequentially.
+
+        Args:
+            is_validated: Whether the member definition has already been
+                validated.
+
+        Returns:
+            A callable whose output from each filter becomes the input to the
+            next filter in the chain.
+        """
         if not is_validated:
             tuple_definition = _validate_definition_value(self)
         else:
@@ -155,6 +232,14 @@ class TypeFilterChainDefinition(TypeFilterDefinition):
             )
 
         def chained_type_filter(s: str) -> Any:
+            """Apply the configured type filters sequentially to one value.
+
+            Args:
+                s: Raw command-line value.
+
+            Returns:
+                The output produced by the final filter in the chain.
+            """
             current_value = s
 
             for _callable in tuple_definition:
@@ -166,21 +251,25 @@ class TypeFilterChainDefinition(TypeFilterDefinition):
 
 
 class TypeFilterChoiceDefinition(TypeFilterDefinition):
-    """
-    Base class for named type filter chains to be used in command line parsing.
+    """Definition provider whose member callables are alternative parsers.
 
-    A subclass of this class must not override the `__eq__` or `__hash__` methods.
-
-    Each subclass of this class must define at least one named type filter chain member, where each member's value must be either a callable or a non-empty tuple of callables,
-    where for members with a single callable value, their value is treated as a 1 element type filters chain.
-    Each member represents an equivalent type filter callable, which receives a string argument and chains the callables in the tuple together.
-    Its string argument being the input to the first callable in the tuple, the output of each callable besides the last one being the input to the next callable in the tuple, and the output of the last callable being the output of the equivalent type filter itself.
-
-    The equivalent type filter callable is meant to be used as a type filter for an argument in a command line parser, therefore it's the responsibility of programmer to ensure that for each member,its value will be equivalent to a callable that can be used as such
-    (i.e. it must be able to accept a single positional string argument and return a value of the desired type, or raise an exception for invalid input where the exception's type is appropriate for command line parsing).
+    Each enum member resolves to one argparse-compatible callable that tries
+    its configured alternatives in order and returns the first successful
+    conversion. If every alternative fails, their validation messages are
+    combined into one `ArgumentTypeError`.
     """
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Validate creation of a concrete choice-definition provider.
+
+        Args:
+            **kwargs: Subclass-creation arguments forwarded to the base
+                definition class.
+
+        Raises:
+            TypeError: If the reserved `_allow_memberless` option is supplied
+                or the provider does not satisfy the required invariants.
+        """
         if "_allow_memberless" in kwargs:
             raise TypeError(
                 f"The '_allow_memberless' keyword argument cannot be used when subclassing {__class__.__name__!r} as it is always set to False."
@@ -189,6 +278,20 @@ class TypeFilterChoiceDefinition(TypeFilterDefinition):
         super().__init_subclass__(_allow_memberless=False, **kwargs)
 
     def get_type_filter(self, *, is_validated: bool = False) -> TypeFilter:
+        """Build the callable that tries this choice definition's alternative filters.
+
+        Each candidate filter is attempted in declaration order. The first successful
+        conversion is returned. If every candidate rejects a command-line value, the
+        returned callable combines their validation messages into one
+        `argparse.ArgumentTypeError`.
+
+        Args:
+            is_validated: Whether registry/member validation has already been completed by
+                the caller.
+
+        Returns:
+            Argparse-compatible callable implementing the alternative-filter choice.
+        """
         if not is_validated:
             tuple_definition = _validate_definition_value(self)
         else:
@@ -198,6 +301,16 @@ class TypeFilterChoiceDefinition(TypeFilterDefinition):
             )
 
         def _get_callable_name(type_filter: TypeFilter | GenericTypeFilter) -> str:
+            """Return a readable name for a type-filter callable.
+
+            Args:
+                type_filter: Callable whose name should appear in an aggregate
+                    validation error.
+
+            Returns:
+                A qualified function name, partial-function description, or
+                callable-class name.
+            """
             name = getattr(type_filter, "__qualname__", None)
 
             if isinstance(name, str):
@@ -214,6 +327,18 @@ class TypeFilterChoiceDefinition(TypeFilterDefinition):
             return type(type_filter).__qualname__
 
         def choice_type_filter(value: str) -> Any:
+            """Try each alternative type filter until one succeeds.
+
+            Args:
+                value: Raw command-line value.
+
+            Returns:
+                The converted value from the first successful filter.
+
+            Raises:
+                ArgumentTypeError: If every configured alternative rejects the
+                    value.
+            """
             failures: list[tuple[TypeFilter | GenericTypeFilter, Exception]] = []
 
             for type_filter in tuple_definition:

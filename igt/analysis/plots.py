@@ -1,4 +1,9 @@
-"""Matplotlib figures for model-fit and model-comparison results."""
+"""Matplotlib figure generation for model-fit and model-comparison results.
+
+The module contains focused plotting helpers for criterion differences, model wins,
+fit metrics, source-study preferences, boundary diagnostics, uniform-choice
+improvement, parameter distributions, and inferential confidence intervals.
+"""
 
 from pathlib import Path
 
@@ -25,7 +30,20 @@ def _save_figure(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Save one figure in all configured formats."""
+    """Save and close one Matplotlib figure in every configured format.
+
+    The parent directory of `output_stem` is created when needed. Each configured
+    format is written with the configured DPI and a tight bounding box before the
+    figure is closed.
+
+    Args:
+        figure: Figure to persist.
+        output_stem: Destination path without a suffix.
+        config: Figure formats and raster DPI settings.
+
+    Returns:
+        Paths of all figure files written, in configured format order.
+    """
 
     output_stem = normalize_path(output_stem, parameter_name="output_stem")
     output_stem.parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +63,21 @@ def _save_figure(
 
 
 def _finite_values(series: Series, *, name: str) -> Float1DArray:
-    """Return finite float values from one plotting series."""
+    """Convert a plotting Series to finite floating-point values.
+
+    Non-finite values are discarded rather than plotted; at least one finite value must
+    remain.
+
+    Args:
+        series: Source values to convert numerically.
+        name: Human-readable value name included in an empty-result diagnostic.
+
+    Returns:
+        One-dimensional array containing the finite floating-point values.
+
+    Raises:
+        ValueError: If numeric conversion fails or no finite value remains.
+    """
 
     values = pd.to_numeric(series, errors="raise").to_numpy(
         dtype=np.float64,
@@ -66,7 +98,20 @@ def _single_integer_value(
     *,
     description: str,
 ) -> int:
-    """Return one integer selected from a DataFrame."""
+    """Extract exactly one integer from a masked DataFrame column.
+
+    Args:
+        data: Source table.
+        mask: Boolean row mask selecting the expected record.
+        column_name: Integer column to extract.
+        description: Human-readable description included in cardinality diagnostics.
+
+    Returns:
+        The single selected integer value.
+
+    Raises:
+        ValueError: If the mask selects anything other than exactly one value.
+    """
 
     values = data.loc[mask, column_name].to_numpy(dtype=np.int64)
 
@@ -83,7 +128,24 @@ def plot_signed_difference_distribution(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot the distribution of Q-minus-PVL information-criterion values."""
+    """Plot the distribution of signed Q-minus-PVL AIC or BIC differences.
+
+    The zero reference line separates values favoring PVL-Delta (positive) from values
+    favoring Q-learning (negative).
+
+    Args:
+        subject_comparison: Paired participant-level comparison table.
+        criterion: Criterion name, either `"aic"` or `"bic"` case-insensitively.
+        output_stem: Destination path without a figure suffix.
+        config: Plotting and output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If the criterion is unsupported or no finite criterion differences
+            are available.
+    """
 
     normalized_criterion = criterion.lower()
 
@@ -112,7 +174,21 @@ def plot_paired_metric_scatter(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot paired Q-learning and PVL-Delta values for one fit metric."""
+    """Plot paired Q-learning and PVL-Delta values against the identity line.
+
+    Args:
+        subject_comparison: Paired participant-level comparison table.
+        metric: One of negative log-likelihood, AIC, or BIC.
+        output_stem: Destination path without a figure suffix.
+        config: Plotting and output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If `metric` is unsupported, either model has no finite values, or
+            the paired value arrays have different shapes.
+    """
 
     supported_metrics = {
         NLL_COLUMN: "Negative log-likelihood",
@@ -162,7 +238,20 @@ def plot_model_win_counts(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot AIC and BIC model-win counts."""
+    """Plot Q-learning and PVL-Delta AIC/BIC win counts side by side.
+
+    Args:
+        model_win_table: Descriptive criterion/model win-count table.
+        output_stem: Destination path without a figure suffix.
+        config: Figure-output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If any criterion/model combination does not have exactly one win
+            count in `model_win_table`.
+    """
 
     criteria = ("AIC", "BIC")
     q_wins = [
@@ -217,7 +306,19 @@ def plot_study_preference_rates(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot PVL-Delta AIC and BIC win rates by source study."""
+    """Plot PVL-Delta AIC and BIC win rates by source study.
+
+    Studies are ordered by AIC PVL-Delta win rate and labels include the number of
+    eligible participants contributing to each study.
+
+    Args:
+        study_preference: Per-study preference counts, rates, and signed differences.
+        output_stem: Destination path without a figure suffix.
+        config: Figure-output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+    """
 
     sorted_data = study_preference.sort_values(
         by="pvl_aic_win_rate",
@@ -272,7 +373,21 @@ def plot_parameter_distribution(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot one fitted parameter distribution with configured bounds."""
+    """Plot the fitted distribution of one configured model parameter.
+
+    Configured lower and upper parameter bounds are drawn as reference lines when
+    available.
+
+    Args:
+        fits: Validated per-participant model-fit table.
+        model_name: Canonical model whose parameter estimates are plotted.
+        parameter_name: Parameter column to visualize.
+        output_stem: Destination path without a figure suffix.
+        config: Parameter-bound and plotting configuration.
+
+    Returns:
+        Paths of the saved figure files.
+    """
 
     model_rows = fits.loc[fits[MODEL_COLUMN].eq(model_name)]
     values = _finite_values(
@@ -314,7 +429,20 @@ def plot_boundary_rates(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot fit-level rates of boundary solutions by model."""
+    """Plot the proportion of fits with at least one parameter on a bound.
+
+    Args:
+        boundary_summary: Model-level boundary-category count and rate table.
+        output_stem: Destination path without a figure suffix.
+        config: Plotting and output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If a supported model does not have exactly one
+            `at_least_one_any_bound` rate or that rate is non-finite.
+    """
 
     categories = [
         "at_least_one_lower_bound",
@@ -380,7 +508,20 @@ def plot_uniform_improvement_distribution(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot improvement over uniform choice for both models."""
+    """Plot each model's NLL improvement over the uniform-choice baseline.
+
+    Args:
+        fits: Validated per-participant model-fit table.
+        output_stem: Destination path without a figure suffix.
+        config: Histogram and figure-output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If either supported model has no finite uniform-choice improvement
+            values to plot.
+    """
 
     figure, axis = plt.subplots(figsize=(8.0, 5.0))
 
@@ -418,7 +559,20 @@ def plot_uniform_improvement_scatter(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot paired improvement over uniform choice for both models."""
+    """Plot paired model improvement over the uniform-choice negative log-likelihood.
+
+    Args:
+        subject_comparison: Paired participant-level comparison table.
+        output_stem: Destination path without a figure suffix.
+        config: Plotting and output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If either model lacks finite values or the paired arrays have
+            different shapes.
+    """
 
     q_values = _finite_values(
         subject_comparison["q_nll_improvement_over_uniform"],
@@ -457,7 +611,24 @@ def plot_criterion_difference_confidence_intervals(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot mean and median criterion differences with bootstrap intervals."""
+    """Plot mean and median AIC/BIC differences with BCa bootstrap intervals.
+
+    Point estimates and interval limits are read from the criterion-inference table;
+    the zero reference line marks no Q-versus-PVL criterion difference.
+
+    Args:
+        criterion_inference: AIC/BIC population-level difference-inference table.
+        output_stem: Destination path without a figure suffix.
+        config: Confidence-level and figure-output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If a criterion does not have exactly one inference row, an estimate
+            or interval limit is non-finite, or an interval excludes its own point
+            estimate.
+    """
 
     records: list[tuple[str, float, float, float]] = []
 
@@ -529,7 +700,23 @@ def plot_pvl_win_rate_confidence_intervals(
     output_stem: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Plot PVL-Delta non-tied win rates with exact binomial intervals."""
+    """Plot PVL-Delta non-tied AIC/BIC win rates with exact confidence intervals.
+
+    The 50% reference line corresponds to the null win probability used by the exact
+    binomial tests in the model-win inference table.
+
+    Args:
+        model_win_inference: AIC/BIC population-level model-win inference table.
+        output_stem: Destination path without a figure suffix.
+        config: Confidence-level and figure-output configuration.
+
+    Returns:
+        Paths of the saved figure files.
+
+    Raises:
+        ValueError: If required confidence-interval values are non-finite or an
+            interval does not contain its point estimate.
+    """
 
     sorted_rows = model_win_inference.set_index("criterion").loc[["AIC", "BIC"]]
     rates = sorted_rows["pvl_win_rate_non_tied"].to_numpy(
@@ -594,7 +781,28 @@ def generate_all_figures(
     output_directory: StrPathLike,
     config: AnalysisConfig,
 ) -> tuple[Path, ...]:
-    """Generate the complete standard result-visualization set."""
+    """Generate the complete standard figure set for one analysis run.
+
+    The function creates criterion-difference histograms, paired fit-metric scatters,
+    model-win and inference figures, study preference and boundary plots, uniform-choice
+    diagnostics, and one parameter-distribution figure for every configured parameter
+    column present in the fit table.
+
+    Args:
+        fits: Validated model-fit result table.
+        subject_comparison: Paired participant-level model-comparison table.
+        study_preference: Per-study model-preference summary.
+        boundary_summary: Model-level parameter-boundary summary.
+        model_win_table: Descriptive AIC/BIC model-win table.
+        criterion_inference: Population-level AIC/BIC difference-inference table.
+        model_win_inference: Population-level exact model-win inference table.
+        output_directory: Directory that receives all figure files and parameter
+            subdirectories.
+        config: Analysis plotting and output configuration.
+
+    Returns:
+        Paths of every generated figure file, including all configured formats.
+    """
 
     output_directory = normalize_path(output_directory, parameter_name="output_directory")
     generated_paths: list[Path] = []

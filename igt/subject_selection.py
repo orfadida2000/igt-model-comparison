@@ -1,4 +1,9 @@
-"""Select and apply participant keys for targeted fitting analyses."""
+"""Participant-key validation, filtering, and targeted fit-result selection.
+
+The helpers normalize compound `(n_trials, subject_id)` keys, validate model-result
+tables, select participants by likelihood or Q-learning inverse-temperature criteria,
+and filter long-format trial data to explicit participant subsets.
+"""
 
 from collections.abc import Iterable
 from numbers import Real
@@ -220,14 +225,22 @@ def _validate_positive_finite_float(
 def _validate_column_names(
     columns: tuple[str, ...], excluded_columns: set[str] | None = None
 ) -> NonEmptyUniformTuple[str]:
-    """Validate and normalize a collection of column names.
+    """Validate a nonempty tuple of unique, permitted column names.
 
     Args:
-        columns: Column name(s) to validate.
-        excluded_columns: A set of column names that are not allowed.
+        columns: Candidate column names in the order they should be preserved.
+        excluded_columns: Optional set of names that must not appear in `columns`.
 
     Returns:
-        A non-empty tuple of unique column names.
+        The validated column names as a nonempty tuple.
+
+    Raises:
+        TypeError: If `columns` is not a tuple or `excluded_columns` is not a set.
+        CustomTypeError: If any element of `columns` is not a string.
+        ValueError: If `columns` is empty, contains duplicates, or contains a
+            disallowed name.
+        RuntimeError: If iteration over a value already established to be a tuple
+            fails unexpectedly.
     """
 
     if excluded_columns is None:
@@ -280,22 +293,27 @@ def _prepare_fit_results_for_selection(
     *,
     require_converge_column: bool,
 ) -> pd.DataFrame:
-    """Validate and normalize fit-result rows used for comparison-based (using the given comparison columns) subject selection
+    """Validate fit-result rows for comparison-based subject selection.
+
+    The returned table contains only participant keys, model identity, the
+    requested comparison columns, and, when requested, convergence status.
+    Numeric comparison columns are converted to finite floating-point values.
 
     Args:
         fit_results: Per-model fit-results table.
-        comparison_columns: The column(s) to use for comparison, where each value in the tuple is treated as an individual column.
-        require_converge_column: Whether the normalized table must include a `converged` column that can be normalized into boolean type.
+        comparison_columns: Unique numeric columns used for model comparison.
+        require_converge_column: Whether a valid `converged` column is
+            required and normalized.
 
     Returns:
-        A copy containing normalized participant keys, model names,
-        numeric comparison values, and optionally boolean convergence values.
+        A normalized copy containing the columns required for subject
+        selection.
 
     Raises:
-        TypeError: If `fit_results` is not a pandas DataFrame, `comparison_columns` is not an iterable of strings or a single string, or
-            `require_converge_column` is not Boolean.
-        ValueError: If a required column is missing, a value is invalid, duplicate participant-model combinations are present, or
-            a comparison column is missing, is a subject key column, the 'model', the 'converged' column, or can't be converted to a numeric type.
+        TypeError: If an argument has an invalid container or Boolean type.
+        ValueError: If a required column is missing, a comparison column is
+            disallowed or nonnumeric, a value is non-finite, or duplicate
+            participant-model rows are present.
     """
 
     if not isinstance(fit_results, pd.DataFrame):
@@ -520,17 +538,25 @@ def select_subjects_with_target_is_uniquely_nll_best_model(
     atol_per_trial: Real | float = 1e-8,
     fully_converged: bool = True,
 ) -> pd.DataFrame:
-    """Select subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
+    """Select subjects for whom the target model is uniquely NLL-best.
+
+    The target model must beat the best competing model by more than the
+    participant-specific tolerance `n_trials * atol_per_trial`. This makes the
+    comparison tolerance scale with the number of trials contributing to the
+    summed negative log-likelihood.
 
     Args:
         fit_results: Per-model fit-results table.
-        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
-        atol_per_trial: The absolute tolerance for considering two NLL values as equal for 1 trial.
-        fully_converged: Whether every model fit for a subject must
-            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
+        target_model: Target model instance, model class, or registered model
+            name.
+        atol_per_trial: Absolute NLL equality tolerance per trial.
+        fully_converged: Whether to consider only subjects for whom every
+            model fit converged. The `converged` column is validated in either
+            case.
 
     Returns:
-        Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS` representing the selected subjects.
+        Unique selected participant keys ordered by
+        `PARTICIPANT_KEY_COLUMNS`.
 
     Raises:
         TypeError: If an argument has an invalid type.
@@ -641,14 +667,19 @@ def select_subjects_with_target_is_uniquely_nll_best_model_from_csv(
     atol_per_trial: Real | float = 1e-8,
     fully_converged: bool = True,
 ) -> pd.DataFrame:
-    """Read a fit-results CSV and select the subjects for whom the target model is uniquely best regarding negative log-likelihood (NLL).
+    """Read fit results and select subjects for which the target is NLL-best.
+
+    This is the CSV convenience wrapper around
+    [select_subjects_with_target_is_uniquely_nll_best_model][igt.subject_selection.select_subjects_with_target_is_uniquely_nll_best_model].
 
     Args:
         fit_results_csv: Path to the per-model fit-results CSV file.
-        target_model: Target model for the subject selection, either as a model class, model instance or a model name string.
-        atol_per_trial: The absolute tolerance per trial for considering two NLL values as equal for 1 trial.
-        fully_converged: Whether every model fit for a subject must
-            have converged for it to even be considered for selection (the 'converged' column must be present and valid regardless).
+        target_model: Target model instance, model class, or registered model
+            name.
+        atol_per_trial: Absolute NLL equality tolerance per trial.
+        fully_converged: Whether to consider only subjects for whom every
+            model fit converged. The `converged` column is validated in either
+            case.
 
     Returns:
         Unique participant keys ordered by `PARTICIPANT_KEY_COLUMNS`.

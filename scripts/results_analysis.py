@@ -1,4 +1,9 @@
-"""Command-line interface for result analysis."""
+"""Command-line entry point for post-fit model-result analysis.
+
+The script resolves fit, comparison, and summary CSV paths plus analysis options,
+configures logging, and delegates the actual validation, statistics, table creation,
+figure generation, and report writing to the reusable `igt.analysis` subpackage.
+"""
 
 import argparse
 import logging
@@ -44,7 +49,18 @@ LOGGER_NAME: Final[str] = "scripts.results_analysis"
 
 
 def _positive_int(value: str) -> int:
-    """Parse a positive integer for argparse."""
+    """Parse a strictly positive integer command-line value.
+
+    Args:
+        value: Raw command-line token.
+
+    Returns:
+        Parsed positive integer.
+
+    Raises:
+        argparse.ArgumentTypeError: If the token is not an integer or is not greater
+            than zero.
+    """
 
     try:
         parsed = int(value)
@@ -58,7 +74,17 @@ def _positive_int(value: str) -> int:
 
 
 def _nonnegative_int(value: str) -> int:
-    """Parse a non-negative integer for argparse."""
+    """Parse a nonnegative integer command-line value.
+
+    Args:
+        value: Raw command-line token.
+
+    Returns:
+        Parsed integer greater than or equal to zero.
+
+    Raises:
+        argparse.ArgumentTypeError: If the token is not an integer or is negative.
+    """
 
     try:
         parsed = int(value)
@@ -72,7 +98,18 @@ def _nonnegative_int(value: str) -> int:
 
 
 def _confidence_level(value: str) -> float:
-    """Parse a confidence level strictly between zero and one."""
+    """Parse a confidence level strictly between zero and one.
+
+    Args:
+        value: Raw command-line token.
+
+    Returns:
+        Parsed floating-point confidence level.
+
+    Raises:
+        argparse.ArgumentTypeError: If the token is not numeric or does not lie strictly
+            inside `(0, 1)`.
+    """
 
     try:
         parsed = float(value)
@@ -86,7 +123,19 @@ def _confidence_level(value: str) -> float:
 
 
 def _histogram_bins(value: str) -> int | str:
-    """Parse a positive integer or a NumPy histogram strategy name."""
+    """Parse a histogram bin count or NumPy histogram strategy name.
+
+    Args:
+        value: Raw command-line token.
+
+    Returns:
+        Positive integer bin count when the token is integral; otherwise the stripped
+        nonempty strategy string.
+
+    Raises:
+        argparse.ArgumentTypeError: If an integer bin count is not positive or a
+            noninteger strategy string is empty.
+    """
 
     try:
         parsed = int(value)
@@ -105,7 +154,11 @@ def _histogram_bins(value: str) -> int | str:
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
-    """Build the command-line parser."""
+    """Build the command-line parser.
+
+    Returns:
+        The constructed argument parser.
+    """
 
     parser = argparse.ArgumentParser(
         description=(
@@ -151,12 +204,14 @@ def build_argument_parser() -> argparse.ArgumentParser:
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    """
-    Create the argument parser, parse the command-line arguments and return the namespace.
+    """Create the argument parser, parse the command-line arguments and return the namespace.
 
     Some arguments are only added to the parser if certain conditions are met,
     such as whether a fixed seed or fixed FormSubmit ID is used. The parser is configured
     with appropriate type filters, default values, and help messages for each argument.
+
+    Args:
+        argv: Optional argument vector to parse instead of process command-line arguments.
 
     Returns:
         The parsed command-line arguments namespace.
@@ -315,14 +370,18 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def _normalize_args(
     args: argparse.Namespace,
 ) -> argparse.Namespace:
-    """
-    Normalize the parsed command-line arguments namespace and return a new namespace with resolved runtime values.
+    """Resolve raw analysis-script arguments into normalized runtime values.
+
+    The input result paths and output root are normalized, plotting/statistical options
+    are retained in their parsed forms, and configured fixed seed/FormSubmit values are
+    applied when enabled.
 
     Args:
-        args: The parsed command-line arguments namespace.
+        args: Raw namespace produced by the analysis argument parser.
 
     Returns:
-        The normalized command-line arguments namespace.
+        Namespace containing normalized paths and resolved analysis, logging, seed, and
+        notification settings.
     """
 
     normalized_args: dict[str, Any] = {
@@ -352,6 +411,16 @@ def _normalize_args(
 def _setup(
     argv: Sequence[str] | None = None,
 ) -> tuple[argparse.Namespace, argparse.Namespace, str, Path | None]:
+    """Prepare one timestamped result-analysis run.
+
+    Args:
+        argv: Optional argument sequence. When omitted, arguments are read from
+            the process command line.
+
+    Returns:
+        Parsed arguments, normalized arguments, run timestamp, and optional
+        log-file path.
+    """
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
     args = _parse_args(argv)
     normalized_args = _normalize_args(args)
@@ -374,6 +443,16 @@ def _run(
     start_datetime_str: str,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> Sequence[str | Path]:
+    """Generate tables, figures, and the text report for one analysis run.
+
+    Args:
+        normalized_args: Normalized command-line arguments.
+        start_datetime_str: Timestamp identifying the analysis run.
+        logger: Logger instance or logger name.
+
+    Returns:
+        Paths to every generated analysis artifact.
+    """
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     output_paths: list[Path] = []
@@ -413,7 +492,15 @@ def _cleanup(
     *,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
-    """Perform any necessary cleanup after the script has finished running."""
+    """Release application logging resources after the result-analysis workflow.
+
+    Args:
+        logger: Logger instance or logger name used to record cleanup progress.
+
+    Notes:
+        The function delegates handler teardown and root-logger reset to the shared
+        application logging cleanup helper.
+    """
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     logger.info("Cleaning up application logging...")
@@ -421,7 +508,12 @@ def _cleanup(
 
 
 def main(argv: Sequence[str] | None = None) -> None:
-    """Main entry point for the script. Parses command-line arguments, sets up logging, and runs the analysis pipeline."""
+    """Run the result-analysis command-line workflow.
+
+    Args:
+        argv: Optional argument sequence. When omitted, arguments are read from
+            the process command line.
+    """
     start_counter = time.perf_counter()
 
     (

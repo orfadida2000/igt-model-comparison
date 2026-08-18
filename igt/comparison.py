@@ -1,4 +1,9 @@
-"""Compare completed computational-model fits."""
+"""Utilities for comparing completed computational-model fits.
+
+The module converts fit records into stable tables, determines within-participant
+AIC/BIC comparison eligibility and winners, and summarizes convergence and model
+preference by model.
+"""
 
 from collections.abc import Sequence
 
@@ -18,7 +23,15 @@ from igt.execution.typing import ModelFitResult
 def fit_results_to_dataframe(
     results: Sequence[ModelFitResult],
 ) -> pd.DataFrame:
-    """Convert model-fit results into a flat table."""
+    """Convert model-fit result records into a stable flat table.
+
+    Args:
+        results: Completed per-model, per-participant fit records.
+
+    Returns:
+        A DataFrame sorted by source study, participant key, and model, with one
+        row for each supplied fit result.
+    """
 
     if len(results) == 0:
         table = pd.DataFrame(columns=ModelFitResult.get_result_columns())
@@ -34,12 +47,24 @@ def fit_results_to_dataframe(
 def add_model_comparison_columns(
     results: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Add valid within-subject AIC/BIC differences and winner indicators.
+    """Add within-participant information-criterion comparisons to fit results.
 
-    A subject is comparison-eligible only when every fit in the subject group
-    converged, all AIC/BIC values are finite, and there is exactly one row for
-    each of at least two distinct models. Ineligible rows remain in the output
-    for diagnostics but receive no deltas or winner flags.
+    A participant is comparison-eligible only when every model row converged, all
+    AIC and BIC values are finite, at least two distinct models are present, and
+    there is exactly one row per model. Eligible rows receive criterion deltas from
+    the within-participant minimum and Boolean winner indicators; ineligible rows
+    remain available for diagnostics without valid comparison values.
+
+    Args:
+        results: Per-participant model-fit table.
+
+    Returns:
+        A copy of `results` augmented with comparison eligibility, AIC/BIC deltas,
+        and best-model indicators.
+
+    Raises:
+        ValueError: If a required participant, model, convergence, AIC, BIC, or
+            source-study column is missing.
     """
 
     required_columns = {
@@ -104,7 +129,15 @@ def add_model_comparison_columns(
 
 
 def summarize_model_comparison(results: pd.DataFrame) -> pd.DataFrame:
-    """Summarize convergence and valid information-criterion comparisons."""
+    """Summarize convergence and valid model-comparison outcomes by model.
+
+    Args:
+        results: Per-participant model-fit table.
+
+    Returns:
+        One row per model containing fit and convergence counts, mean fit metrics,
+        valid comparison counts, and AIC/BIC win counts.
+    """
 
     summary_columns = [
         MODEL_COLUMN,

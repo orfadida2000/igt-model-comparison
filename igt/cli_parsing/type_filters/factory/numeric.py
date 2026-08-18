@@ -1,3 +1,10 @@
+"""Factories for numeric command-line parsing and validation.
+
+The module builds integer and floating-point filters with configurable sign,
+finiteness, bound, and range constraints. Specialized presets reuse these factories
+to expose consistent numeric argument semantics.
+"""
+
 import argparse
 
 from igt.cli_parsing.type_filters.core.definitions import (
@@ -17,6 +24,21 @@ def _filter_number_by_range[Number: (int, float)](
 ) -> Number:
     # assumes that a float is not NaN.
 
+    """Validate a numeric value against optional lower and upper bounds.
+
+    Args:
+        n: Numeric value to validate.
+        min_value: Optional lower bound.
+        max_value: Optional upper bound.
+        min_inclusive: Whether the lower bound includes equality.
+        max_inclusive: Whether the upper bound includes equality.
+
+    Returns:
+        The unchanged numeric value when it satisfies the requested bounds.
+
+    Raises:
+        ArgumentTypeError: If the value lies outside the requested range.
+    """
     if min_value is not None:
         if n < min_value:
             raise argparse.ArgumentTypeError(
@@ -51,17 +73,16 @@ def get_type_filters_for_number_with_range(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for numbers within the given range.
+    """Create a filter chain for a number constrained by lower and upper bounds.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        max_value: The maximum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
-        max_inclusive: Whether the maximum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for numbers within the specified range.
+        A callable filter chain that parses a number and enforces the configured bounds.
     """
 
     return (
@@ -79,20 +100,30 @@ def get_type_filters_for_finite_number_with_range(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for finite numbers within the given range.
+    """Create a filter chain for a finite number constrained by lower and upper bounds.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        max_value: The maximum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
-        max_inclusive: Whether the maximum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for finite numbers within the specified range.
+        A callable filter chain that parses a finite number and enforces the configured bounds.
     """
 
     def _filter_finite_number[Number: (int, float)](n: Number) -> Number:
+        """Require a numeric value to be finite.
+
+        Args:
+            n: Numeric value to validate.
+
+        Returns:
+            The unchanged value when finite.
+
+        Raises:
+            ArgumentTypeError: If the value is infinite.
+        """
         return _filter_number_by_range(n, min_value, max_value, min_inclusive, max_inclusive)
 
     return (
@@ -110,17 +141,16 @@ def get_type_filters_for_integer_with_range(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for integers within the given range.
+    """Create a filter chain for a integer constrained by lower and upper bounds.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        max_value: The maximum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
-        max_inclusive: Whether the maximum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for integers within the specified range.
+        A callable filter chain that parses a integer and enforces the configured bounds.
     """
 
     return (
@@ -138,17 +168,16 @@ def get_type_filters_for_float_with_range(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for floating-points within the given range.
+    """Create a filter chain for a floating-point value constrained by lower and upper bounds.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        max_value: The maximum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
-        max_inclusive: Whether the maximum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for floating-points within the specified range.
+        A callable filter chain that parses a floating-point value and enforces the configured bounds.
     """
 
     return (
@@ -166,17 +195,16 @@ def get_type_filters_for_finite_float_with_range(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for finite floating-points within the given range.
+    """Create a filter chain for a finite floating-point value constrained by lower and upper bounds.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        max_value: The maximum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
-        max_inclusive: Whether the maximum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for finite floating-points within the specified range.
+        A callable filter chain that parses a finite floating-point value and enforces the configured bounds.
     """
 
     return (
@@ -192,15 +220,14 @@ def get_type_filters_for_number_with_lower_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for numbers within a lower bound range.
+    """Create a filter chain for a number constrained by a lower bound.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
 
     Returns:
-        A tuple containing the type filters for numbers within the specified range.
+        A callable filter chain that parses a number and enforces the configured bounds.
     """
 
     return get_type_filters_for_number_with_range(
@@ -217,15 +244,14 @@ def get_type_filters_for_finite_number_with_lower_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for finite numbers within a lower bound range.
+    """Create a filter chain for a finite number constrained by a lower bound.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
 
     Returns:
-        A tuple containing the type filters for finite numbers within the specified range.
+        A callable filter chain that parses a finite number and enforces the configured bounds.
     """
 
     return get_type_filters_for_finite_number_with_range(
@@ -242,15 +268,14 @@ def get_type_filters_for_integer_with_lower_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for integers within a lower bound range.
+    """Create a filter chain for a integer constrained by a lower bound.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
 
     Returns:
-        A tuple containing the type filters for integers within the specified range.
+        A callable filter chain that parses a integer and enforces the configured bounds.
     """
 
     return get_type_filters_for_integer_with_range(
@@ -267,15 +292,14 @@ def get_type_filters_for_float_with_lower_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for floating-points within a lower bound range.
+    """Create a filter chain for a floating-point value constrained by a lower bound.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
 
     Returns:
-        A tuple containing the type filters for floating-points within the specified range.
+        A callable filter chain that parses a floating-point value and enforces the configured bounds.
     """
 
     return get_type_filters_for_float_with_range(
@@ -292,15 +316,14 @@ def get_type_filters_for_finite_float_with_lower_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for finite floating-points within a lower bound range.
+    """Create a filter chain for a finite floating-point value constrained by a lower bound.
 
     Args:
-        min_value: The minimum value (inclusive or exclusive).
-        min_inclusive: Whether the minimum value is inclusive.
+        min_value: Lower bound.
+        min_inclusive: Whether equality at the lower bound is allowed.
 
     Returns:
-        A tuple containing the type filters for finite floating-points within the specified range.
+        A callable filter chain that parses a finite floating-point value and enforces the configured bounds.
     """
 
     return get_type_filters_for_finite_float_with_range(
@@ -317,15 +340,14 @@ def get_type_filters_for_number_with_upper_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for numbers within an upper bound range.
+    """Create a filter chain for a number constrained by an upper bound.
 
     Args:
-        max_value: The maximum value (inclusive or exclusive).
-        max_inclusive: Whether the maximum value is inclusive.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for numbers within the specified range.
+        A callable filter chain that parses a number and enforces the configured bounds.
     """
 
     return get_type_filters_for_number_with_range(
@@ -342,15 +364,14 @@ def get_type_filters_for_finite_number_with_upper_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for finite numbers within an upper bound range.
+    """Create a filter chain for a finite number constrained by an upper bound.
 
     Args:
-        max_value: The maximum value (inclusive or exclusive).
-        max_inclusive: Whether the maximum value is inclusive.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for finite numbers within the specified range.
+        A callable filter chain that parses a finite number and enforces the configured bounds.
     """
 
     return get_type_filters_for_finite_number_with_range(
@@ -367,15 +388,14 @@ def get_type_filters_for_integer_with_upper_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for integers within an upper bound range.
+    """Create a filter chain for a integer constrained by an upper bound.
 
     Args:
-        max_value: The maximum value (inclusive or exclusive).
-        max_inclusive: Whether the maximum value is inclusive.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for integers within the specified range.
+        A callable filter chain that parses a integer and enforces the configured bounds.
     """
 
     return get_type_filters_for_integer_with_range(
@@ -392,15 +412,14 @@ def get_type_filters_for_float_with_upper_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for floating-points within an upper bound range.
+    """Create a filter chain for a floating-point value constrained by an upper bound.
 
     Args:
-        max_value: The maximum value (inclusive or exclusive).
-        max_inclusive: Whether the maximum value is inclusive.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for floating-points within the specified range.
+        A callable filter chain that parses a floating-point value and enforces the configured bounds.
     """
 
     return get_type_filters_for_float_with_range(
@@ -417,15 +436,14 @@ def get_type_filters_for_finite_float_with_upper_bound(
     NumericArgTypeProvider | TypeFilter,
     *tuple[NumericArgTypeProvider | GenericTypeFilter, ...],
 ]:
-    """
-    Returns a tuple of type filters for finite floating-points within an upper bound range.
+    """Create a filter chain for a finite floating-point value constrained by an upper bound.
 
     Args:
-        max_value: The maximum value (inclusive or exclusive).
-        max_inclusive: Whether the maximum value is inclusive.
+        max_value: Upper bound.
+        max_inclusive: Whether equality at the upper bound is allowed.
 
     Returns:
-        A tuple containing the type filters for finite floating-points within the specified range.
+        A callable filter chain that parses a finite floating-point value and enforces the configured bounds.
     """
 
     return get_type_filters_for_finite_float_with_range(

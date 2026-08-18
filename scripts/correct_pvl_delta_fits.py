@@ -1,4 +1,10 @@
-"""Correct selected PVL-Delta fits using Q-learning-equivalent warm starts."""
+"""Targeted correction workflow for PVL-Delta fits that violate model nesting numerically.
+
+The script identifies participants for whom Q-learning is meaningfully NLL-better,
+maps each fitted Q-learning solution to a theoretically equivalent PVL-Delta warm
+start, refits only those PVL-Delta rows, replaces the corrected results, and writes an
+audit report plus corrected fit/comparison/summary tables.
+"""
 
 import argparse
 import logging
@@ -89,15 +95,14 @@ LOGGER_NAME: Final[str] = "scripts.correct_pvl_delta_fits"
 
 
 def _parse_args() -> argparse.Namespace:
-    """
-    Create the argument parser, parse the command-line arguments and return the namespace.
+    """Parse command-line options for targeted PVL-Delta fit correction.
 
-    Some arguments are only added to the parser if certain conditions are met,
-    such as whether a fixed seed or fixed FormSubmit ID is used. The parser is configured
-    with appropriate type filters, default values, and help messages for each argument.
+    The parser uses the project's declarative argument/type-filter infrastructure and
+    conditionally exposes seed and FormSubmit options according to the corresponding
+    fixed-value configuration flags.
 
     Returns:
-        The parsed command-line arguments namespace.
+        Raw argparse namespace containing the correction-workflow options.
     """
 
     arg_specs: list[ArgSpec] = [
@@ -228,14 +233,17 @@ def _parse_args() -> argparse.Namespace:
 def _normalize_args(
     args: argparse.Namespace,
 ) -> argparse.Namespace:
-    """
-    Normalize the parsed command-line arguments namespace and return a new namespace with resolved runtime values.
+    """Resolve raw correction-script arguments into normalized runtime values.
+
+    Defaults and conditional fixed settings are applied, path-like values are normalized,
+    and the resulting values are copied into a fresh namespace used by the workflow.
 
     Args:
-        args: The parsed command-line arguments namespace.
+        args: Raw namespace returned by `_parse_args`.
 
     Returns:
-        The normalized command-line arguments namespace.
+        Namespace containing normalized paths, execution settings, tolerances, seed, and
+        optional notification configuration.
     """
 
     normalized_args: dict[str, Any] = {
@@ -797,11 +805,16 @@ def _setup() -> tuple[
     SubjectModelWarmStartsProvider,
     Path | None,
 ]:
-    """Resolve inputs, select subjects, and configure logging.
+    """Prepare one timestamped targeted PVL-Delta correction run.
+
+    The setup stage parses and normalizes arguments, reads the original fit table,
+    selects participants exhibiting the target NLL relation, constructs the PVL-Delta
+    model and Q-equivalent warm-start provider, creates the output/logging context, and
+    returns the objects required by the execution stage.
 
     Returns:
-        The parsed arguments, output timestamp, original fit-results
-        table, selected participant keys, PVL-Delta model, warm-start
+        Raw and normalized arguments, run timestamp, original fit table, selected
+        participant keys, configured PVL-Delta model, subject-specific warm-start
         provider, and optional log-file path.
     """
 
@@ -1062,7 +1075,17 @@ def _compare_original_and_corrected_fit_results(
         table_name: str,
         model_name: str,
     ) -> None:
-        """Validate that every selected subject has one row for a model."""
+        """Require one selected participant row for a specified model.
+
+        Args:
+            table: Original or corrected fit-results table.
+            table_name: Human-readable table label used in diagnostics.
+            model_name: Canonical model whose selected rows are required.
+
+        Raises:
+            ValueError: If any selected participant lacks exactly one row for the requested
+                model in the supplied table.
+        """
 
         model_subject_keys = table.loc[
             table[MODEL_COLUMN].eq(model_name),
@@ -1141,7 +1164,18 @@ def _compare_original_and_corrected_fit_results(
         raise ValueError("Rows outside the targeted PVL-Delta fits were modified.") from error
 
     def format_report_value(value: Any) -> str:
-        """Format a scalar value for the text report."""
+        """Format one scalar value for the plain-text correction report.
+
+        Missing values are represented as `"NA"`, floating-point values use a compact
+        12-significant-digit format, integer-like values are rendered without a decimal
+        point, and all remaining values use their string representation.
+
+        Args:
+            value: Scalar diagnostic value to format.
+
+        Returns:
+            Human-readable report representation.
+        """
 
         try:
             if pd.isna(value):
@@ -1185,7 +1219,21 @@ def _compare_original_and_corrected_fit_results(
         model_name: str,
         subject_key_values: tuple[int, ...],
     ) -> Series:
-        """Return exactly one model-fit row for a participant."""
+        """Return the unique fit-result row for one model and participant key.
+
+        Args:
+            table: Original or corrected fit-results table.
+            table_name: Human-readable table label used in diagnostics.
+            model_name: Canonical model to select.
+            subject_key_values: Values aligned with `PARTICIPANT_KEY_COLUMNS` for one
+                participant.
+
+        Returns:
+            The single matching model-fit row.
+
+        Raises:
+            ValueError: If the model/participant key selects zero or multiple rows.
+        """
 
         row_mask = table[MODEL_COLUMN].eq(model_name)
 
@@ -1379,6 +1427,17 @@ def _compare_original_and_corrected_fit_results(
         indent_size: int = 2,
         base_indent_level: int = 0,
     ) -> list[str]:
+        """Format per-trial-count audit counts for the correction report.
+
+        Args:
+            status_name: Label describing the counted correction status.
+            count_per_n_trials: Counts keyed by subject trial count.
+            indent_size: Number of spaces in one indentation level.
+            base_indent_level: Initial indentation level for generated lines.
+
+        Returns:
+            Report lines describing the total and the breakdown by trial count.
+        """
         lines: list[str] = [f"{' ' * (base_indent_level * indent_size)}{status_name} subjects"]
 
         max_n_trials_width = max((len(str(n_trials)) for n_trials in count_per_n_trials), default=0)
@@ -1621,11 +1680,11 @@ def _cleanup(
     logger: logging.Logger | str = LOGGER_NAME,
     output_dir: Path | None = None,
 ) -> None:
-    """Perform cleanup after the script has finished.
+    """Clean up application logging after the correction workflow.
 
     Args:
         logger: Logger instance or logger name.
-        output_dir: Path to the output directory.
+        output_dir: Optional run-output directory to remove when it is empty.
     """
 
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
@@ -1652,7 +1711,17 @@ def _cleanup(
 
 
 def main() -> None:
-    """Correct selected PVL-Delta fits and regenerate all result tables."""
+    """Run the complete targeted PVL-Delta correction workflow.
+
+    The entry point resolves command-line inputs, selects apparent nesting violations,
+    builds Q-equivalent PVL warm starts, refits the targeted participants, regenerates
+    corrected fit/comparison/summary outputs, writes the correction audit report, sends
+    optional notifications, and cleans up logging.
+
+    Raises:
+        Exception: Propagates setup, fitting, validation, output, or notification errors
+            after the failure-notification context has had an opportunity to report them.
+    """
 
     start_counter = time.perf_counter()
 

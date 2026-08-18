@@ -1,3 +1,9 @@
+"""Factories for string command-line validation and normalization.
+
+The module provides reusable filters for string conversion, whitespace handling,
+nonempty constraints, and other string-specific checks used by project CLI presets.
+"""
+
 import argparse
 import re
 
@@ -7,23 +13,22 @@ from igt.cli_parsing.type_filters.core.definitions import (
 
 
 def _filter_string_by_regex(arg_value: str, regex_pattern: str, *, flags: int = 0) -> str:
-    """
-    Filter a string argument value by a regular expression pattern. Raises an ArgumentTypeError if the pattern isn't found in the argument value.
+    """Validate a string with `re.search`.
 
-    This function uses the re.search() method to check if the provided regex pattern is found anywhere in the argument value.
-    The pattern is taken as is, so any anchoring (like ^ or $) should be included in the pattern if needed.
+    The regular expression is used as supplied, so callers should include
+    anchors when full-string matching is required.
 
     Args:
-        arg_value: The string argument value to be filtered.
-        regex_pattern: The regular expression pattern to match against the argument value.
-        flags: The flags to pass to the re.search() function.
+        arg_value: String value to validate.
+        regex_pattern: Pattern searched within the value.
+        flags: Regular-expression flags passed to `re.search`.
 
     Returns:
-        The filtered string argument value if it matches the regex pattern.
+        The unchanged string when the pattern matches.
 
     Raises:
-        - argparse.ArgumentTypeError: If the regex pattern is not found in the argument value.
-        - TypeError: If the argument value is not a string.
+        ArgumentTypeError: If the pattern is not found.
+        TypeError: If the argument value is not a string.
     """
 
     if not isinstance(arg_value, str):
@@ -42,21 +47,18 @@ def _filter_string_by_regex(arg_value: str, regex_pattern: str, *, flags: int = 
 
 
 def get_type_filter_for_string_matching_regex(regex_pattern: str, *, flags: int = 0) -> TypeFilter:
-    """
-    Returns a function that can be used as a type filter for argparse arguments. The returned function will filter string argument values by the provided regex pattern.
-
-    The filter function will use the re.search() method to check if the provided regex pattern is found anywhere in the argument value.
-    The pattern is taken as is, so any anchoring (like ^ or $) should be included in the pattern if needed.
+    """Create an argparse-compatible regular-expression string filter.
 
     Args:
-        regex_pattern: The regular expression pattern to match against the argument value.
-        flags: The flags to pass to the re.search() function.
+        regex_pattern: Pattern searched within each candidate value.
+        flags: Regular-expression flags passed to `re.search`.
 
     Returns:
-        A filter function that takes a string argument value and raises an ArgumentTypeError if the value does not match the regex pattern, otherwise returns the value.
+        A callable that returns matching strings unchanged and rejects
+        non-matching values.
 
     Raises:
-        TypeError: If the regex_pattern is not a string or if the flags are not an integer.
+        TypeError: If the pattern or flags have invalid types.
     """
 
     if not isinstance(regex_pattern, str):
@@ -71,6 +73,17 @@ def get_type_filter_for_string_matching_regex(regex_pattern: str, *, flags: int 
         )
 
     def _filter(arg_value: str) -> str:
+        """Apply the configured regular-expression string filter.
+
+        Args:
+            arg_value: String value to validate.
+
+        Returns:
+            The validated string.
+
+        Raises:
+            ArgumentTypeError: If the configured pattern does not match.
+        """
         return _filter_string_by_regex(arg_value, regex_pattern, flags=flags)
 
     return _filter

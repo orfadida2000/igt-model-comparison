@@ -1,3 +1,9 @@
+"""Canonical filesystem paths derived from the repository layout.
+
+The constants identify project assets, source data, processed data, generated model
+results, analysis outputs, and logs so entry points can share one path convention.
+"""
+
 from pathlib import Path
 from typing import Final
 

@@ -1,3 +1,10 @@
+"""Process-wide registration and resolution of named command-line type filters.
+
+The registry associates concrete `TypeFilterDefinition` subclasses with providers
+that construct their argparse-compatible callables, and supports explicit provider
+registration and member resolution.
+"""
+
 from types import MappingProxyType
 from typing import ClassVar, Never
 
@@ -13,20 +20,56 @@ type TypeFilterProviderRegistry = dict[TypeFilterProvider, ProviderTypeFilterReg
 
 
 class TypeFilterRegistry:
-    """"""
+    """Process-wide registry of resolved named type filters.
+
+    Provider classes derived from
+    [`TypeFilterDefinition`][igt.cli_parsing.type_filters.core.definitions.TypeFilterDefinition]
+    are registered once and mapped to immutable views of their resolved member
+    callables. The class is a static namespace: it cannot be instantiated or
+    subclassed.
+
+    Attributes:
+        PROVIDER_REGISTRY: Mutable backing mapping from provider classes to their
+            immutable member-to-filter registries.
+    """
 
     PROVIDER_REGISTRY: ClassVar[TypeFilterProviderRegistry] = {}
 
     def __new__(cls) -> Never:
+        """Prevent instantiation of the registry utility class.
+
+        Raises:
+            TypeError: Always, because the registry is static process-wide
+                state.
+        """
         raise TypeError(f"The class {__class__.__name__!r} cannot be instantiated.")
 
     def __init_subclass__(cls) -> Never:
+        """Prevent subclassing of the registry utility class.
+
+        Raises:
+            TypeError: Always, because the registry is not an extension point.
+        """
         raise TypeError(f"The class {__class__.__name__!r} cannot be subclassed.")
 
     @staticmethod
     def _validate_provider_class_get_registration_status(
         type_filter_provider: TypeFilterProvider,
     ) -> bool:
+        """Validate a provider and report whether it is already registered.
+
+        Args:
+            type_filter_provider: Provider class to validate and inspect.
+
+        Returns:
+            `True` when the provider is registered consistently; otherwise
+            `False`.
+
+        Raises:
+            TypeError: If the provider class is invalid.
+            RuntimeError: If the stored registry no longer matches the
+                provider's enum members.
+        """
         _validate_definition_class(type_filter_provider, allow_memberless=False)
 
         if type_filter_provider not in __class__.PROVIDER_REGISTRY:
@@ -57,6 +100,17 @@ class TypeFilterRegistry:
         *,
         update: bool = False,
     ) -> None:
+        """Register or refresh one type-filter provider.
+
+        Args:
+            type_filter_provider: Provider class whose members should be
+                resolved and stored.
+            update: Whether to rebuild an already registered provider.
+
+        Raises:
+            TypeError: If the provider class is invalid.
+            RuntimeError: If an existing registration is inconsistent.
+        """
         is_provider_registered = __class__._validate_provider_class_get_registration_status(
             type_filter_provider
         )
@@ -72,6 +126,15 @@ class TypeFilterRegistry:
 
     @staticmethod
     def unregister_provider(type_filter_provider: TypeFilterProvider) -> None:
+        """Remove one provider from the global registry if present.
+
+        Args:
+            type_filter_provider: Provider class to unregister.
+
+        Raises:
+            TypeError: If the provider class is invalid.
+            RuntimeError: If an existing registration is inconsistent.
+        """
         is_provider_registered = __class__._validate_provider_class_get_registration_status(
             type_filter_provider
         )
@@ -85,6 +148,20 @@ class TypeFilterRegistry:
     def resolve_type_filter(
         type_filter_member: TypeFilterDefinition,
     ) -> TypeFilter:
+        """Resolve a registered definition member to its type-filter callable.
+
+        Args:
+            type_filter_member: Named member to resolve.
+
+        Returns:
+            The callable registered for the member.
+
+        Raises:
+            TypeError: If the argument is not a type-filter definition member.
+            KeyError: If the member's provider class is not registered.
+            RuntimeError: If the provider is registered but the requested
+                member is missing from its registry.
+        """
         if not isinstance(type_filter_member, TypeFilterDefinition):
             raise TypeError(
                 f"The 'type_filter_member' argument must be an instance of {TypeFilterDefinition.__name__!r}, got {type(type_filter_member).__name__!r}."

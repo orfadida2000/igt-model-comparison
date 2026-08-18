@@ -1,7 +1,9 @@
-"""Execute model fitting across IGT subjects.
+"""Subject-level orchestration for serial and multiprocessing model fitting.
 
-This module owns dataset-to-subject conversion and subject-level scheduling.
-The statistical comparison of completed fits belongs in `comparison.py`.
+The module converts long-format trial rows into validated `SubjectData`, constructs
+serializable subject tasks, dispatches every requested model fit, and preserves task
+ordering across worker processes. Statistical comparison of completed fits is handled
+separately by `igt.comparison`.
 """
 
 import logging
@@ -45,7 +47,23 @@ _WORKER_LOGGER: logging.Logger | None = None
 
 
 def _compute_subject_data_from_trials(subject_trials: pd.DataFrame) -> SubjectData:
-    """Convert one subject's long-format trial rows into model input arrays."""
+    """Convert one participant's trial rows to validated model input arrays.
+
+    The function requires source-study, choice, win, and loss columns. Choice and
+    outcome columns are copied into NumPy arrays and passed to
+    [`SubjectData`][igt.models.typing.SubjectData], which performs the remaining
+    shape and value validation.
+
+    Args:
+        subject_trials: Long-format trial rows for one participant, in trial order.
+
+    Returns:
+        Validated choices, wins, and losses for model likelihood evaluation.
+
+    Raises:
+        ValueError: If a required trial column is missing or `SubjectData`
+            validation rejects the extracted values.
+    """
 
     missing_columns = _REQUIRED_TRIAL_COLUMNS - set(subject_trials.columns)
 
@@ -70,7 +88,18 @@ def _compute_subject_data_from_trials(subject_trials: pd.DataFrame) -> SubjectDa
 
 
 def _get_subject_study(subject_trials: pd.DataFrame) -> str:
-    """Return and validate the unique source study for one subject."""
+    """Extract and validate the unique source-study label for one participant.
+
+    Args:
+        subject_trials: Long-format trial rows for one participant.
+
+    Returns:
+        The participant's stripped, nonempty source-study name.
+
+    Raises:
+        ValueError: If the rows contain zero or multiple nonmissing source-study
+            values, or if the unique normalized value is empty.
+    """
 
     studies = subject_trials[SOURCE_STUDY_COLUMN].astype("string").str.strip().dropna().unique()
 
@@ -90,7 +119,18 @@ def _get_subject_study(subject_trials: pd.DataFrame) -> str:
 def _validate_models(
     models: Sequence[ComputationalModel],
 ) -> tuple[ComputationalModel, ...]:
-    """Validate and freeze the supplied model sequence as a tuple."""
+    """Validate the model collection used for participant fitting.
+
+    Args:
+        models: Models that will be fitted to every selected participant.
+
+    Returns:
+        The supplied models materialized as an immutable tuple.
+
+    Raises:
+        ValueError: If no model is supplied or two supplied models share the same
+            canonical model name.
+    """
 
     model_tuple = tuple(models)
 
@@ -111,7 +151,27 @@ def _build_subject_tasks(
     n_subjects: int | None = None,
     subject_model_warm_starts_provider: SubjectModelWarmStartsProvider | None = None,
 ) -> list[SubjectFitTask]:
-    """Create one serializable fitting task per subject."""
+    """Build serializable fitting tasks from the long-format IGT table.
+
+    Participant groups are obtained from
+    [`iter_subject_trials`][igt.rdata_preprocessing.iter_subject_trials]. For each
+    participant, the function validates the source study and trial arrays and, when
+    a provider is supplied, attaches any model-specific warm-start matrices.
+
+    Args:
+        data: Long-format IGT trial table.
+        models: Models for which optional warm starts should be requested.
+        n_subjects: Optional maximum number of participant groups to include.
+        subject_model_warm_starts_provider: Optional callback returning additional
+            starting points for a model and participant key.
+
+    Returns:
+        One `SubjectFitTask` per selected participant, in dataset iteration order.
+
+    Raises:
+        ValueError: If participant rows are invalid or no participant task can be
+            built when at least one participant was requested.
+    """
 
     tasks: list[SubjectFitTask] = []
 
@@ -157,7 +217,21 @@ def _fit_models_for_subject(
     optimizer_options: Mapping[str, object] | None = None,
     logger: logging.Logger | None = None,
 ) -> list[ModelFitResult]:
-    """Fit every supplied model to one subject."""
+    """Fit every requested model to one participant task.
+
+    Warm starts attached to the task are matched by canonical model name and passed
+    to [`fit_model`][igt.execution.fitting.fit_model]. Results are returned in the
+    same order as the validated model sequence.
+
+    Args:
+        models: Models to fit to the participant.
+        task: Serializable participant task containing data and optional warm starts.
+        optimizer_options: Optional SciPy optimizer options forwarded to every fit.
+        logger: Optional logger used for subject- and model-level diagnostics.
+
+    Returns:
+        One completed `ModelFitResult` for each model.
+    """
 
     model_tuple = _validate_models(models)
 
@@ -208,20 +282,23 @@ def _worker_logger_initialization(
     proxy_queue: Queue[logging.LogRecord] | None,
     manager_logger_name: str | None,
 ) -> None:
-    """
-    Initialize the logger for a worker process.
+    """Initialize logging inside a spawned worker process.
 
-    This function is called in the context of a worker process, and it sets up the logging configuration for that process.
-    It first applies the captured logging context of the main process, then if `proxy_queue` is not None, it creates a QueueHandler that sends log records to the provided proxy queue and adds it to the root logger.
-    Finally, it creates a specific child logger for the worker process and assigns it to the global _WORKER_LOGGER variable.
+    The captured main-process logging state is applied first. When a proxy
+    queue is supplied, a `QueueHandler` forwards worker records to the parent
+    process. The function then creates the process-specific worker logger used
+    by fitting helpers.
 
     Args:
-        logging_context (LoggingContext): The logging context to apply.
-        proxy_queue (Queue[logging.LogRecord] | None): A multiprocessing proxy queue that will receive log records from the worker process or None if no multiprocessing logging is desired.
-        manager_logger_name (str | None): The name of the manager logger in which the worker logger will be nested. If None or empty, the worker logger will be a top-level logger.
+        logging_context: Captured logging state from the parent process.
+        proxy_queue: Optional multiprocessing queue that receives worker log
+            records.
+        manager_logger_name: Optional parent logger name used to namespace the
+            worker logger.
 
-    Note:
-        This function assumes that the worker process was created using the start method 'spawn', other start methods may produce unexpected behavior.
+    Notes:
+        The fitting manager uses the `spawn` start method. Other process start
+        methods are outside the assumptions of this initialization routine.
     """
     global _WORKER_LOGGER
 
@@ -257,7 +334,20 @@ def _initialize_worker(
     proxy_queue: Queue[logging.LogRecord] | None = None,
     manager_logger_name: str | None = None,
 ) -> None:
-    """Store read-only fitting configuration once in each worker process."""
+    """Initialize process-global fitting state inside a spawned worker.
+
+    The model tuple and optimizer options are stored in worker globals so individual
+    submitted tasks remain small. Worker logging is initialized from the captured
+    parent-process logging context.
+
+    Args:
+        models: Validated models shared by all tasks executed in the worker.
+        logging_context: Parent-process logging state to reproduce in the worker.
+        optimizer_options: Optional optimizer options shared by worker fits.
+        proxy_queue: Optional queue used to forward worker log records to the parent.
+        manager_logger_name: Optional parent logger name used to namespace the
+            process-specific worker logger.
+    """
 
     global _WORKER_MODELS
     global _WORKER_OPTIMIZER_OPTIONS
@@ -274,7 +364,18 @@ def _initialize_worker(
 
 
 def _fit_models_for_subject_using_worker(task: SubjectFitTask) -> list[ModelFitResult]:
-    """Fit one subject inside a worker initialized by the process pool."""
+    """Fit one participant using process-global worker configuration.
+
+    Args:
+        task: Serializable participant-fitting task submitted to the process pool.
+
+    Returns:
+        One fit result per worker-configured model for the participant.
+
+    Raises:
+        RuntimeError: If the process-pool initializer did not populate the worker
+            model tuple before the task is executed.
+    """
 
     if _WORKER_MODELS is None:
         raise RuntimeError("Worker process was not initialized with models.")
@@ -295,7 +396,18 @@ def _fit_all_subjects_serial(
     show_progress: bool,
     manager_logger_name: str | None = None,
 ) -> list[ModelFitResult]:
-    """Fit subject tasks sequentially."""
+    """Fit all participant tasks sequentially in the current process.
+
+    Args:
+        tasks: Participant tasks to execute in order.
+        models: Validated models fitted to every task.
+        optimizer_options: Optional optimizer options forwarded to each model fit.
+        show_progress: Whether to display the subject-level progress bar.
+        manager_logger_name: Optional logger name used for fitting diagnostics.
+
+    Returns:
+        Flattened model-fit results in participant-task order and model order.
+    """
     manager_logger = logging.getLogger(manager_logger_name)
 
     manager_logger.info(
@@ -342,6 +454,27 @@ def _multi_worker_subjects_fittig(
     proxy_queue: Queue[logging.LogRecord] | None = None,
     manager_logger_name: str | None = None,
 ) -> None:
+    """Submit participant tasks to a process pool and collect results by task position.
+
+    Futures may complete in arbitrary order, so each result is written into the
+    preallocated slot associated with its original task position. This preserves
+    deterministic output ordering after parallel execution.
+
+    Args:
+        tasks: Participant tasks to submit.
+        models: Validated models installed in each worker process.
+        optimizer_options: Optional optimizer options shared by worker fits.
+        show_progress: Whether to display completion progress.
+        n_workers: Requested process-pool size, or `None` for the executor default.
+        results_by_position: Preallocated result slots indexed by task position.
+        logging_context: Parent-process logging state reproduced in workers.
+        mp_context: Optional multiprocessing context used by the executor.
+        proxy_queue: Optional queue forwarding worker log records to the parent.
+        manager_logger_name: Optional logger name restored in worker processes.
+
+    Raises:
+        RuntimeError: If any submitted participant task raises while being fitted.
+    """
     with ProcessPoolExecutor(
         max_workers=n_workers,
         mp_context=mp_context,
@@ -389,7 +522,28 @@ def _fit_all_subjects_parallel(
     n_workers: int | None,
     manager_logger_name: str | None = None,
 ) -> list[ModelFitResult]:
-    """Fit independent subjects using separate Python processes."""
+    """Fit participant tasks in spawned worker processes while preserving result order.
+
+    The function captures the current logging configuration and uses the `spawn`
+    multiprocessing context. When the root logger has active non-null handlers,
+    worker records are forwarded through a multiprocessing queue and handled in the
+    parent process.
+
+    Args:
+        tasks: Participant tasks to execute.
+        models: Validated models fitted to every task.
+        optimizer_options: Optional optimizer options forwarded to each model fit.
+        show_progress: Whether to display subject-level progress.
+        n_workers: Worker-process count, or `None` to use the executor default.
+        manager_logger_name: Optional logger name used by the manager and workers.
+
+    Returns:
+        Flattened model-fit results in original participant-task order.
+
+    Raises:
+        RuntimeError: If a worker task fails or a completed task does not populate
+            its expected result slot.
+    """
     logging_context = LoggingContext()
 
     manager_logger = logging.getLogger(manager_logger_name)
@@ -486,19 +640,32 @@ def fit_all_subjects(
     n_subjects: int | None = None,
     subject_model_warm_starts_provider: SubjectModelWarmStartsProvider | None = None,
 ) -> list[ModelFitResult]:
-    """Fit every model to every subject, serially or in parallel.
+    """Fit every requested model to every selected participant.
+
+    The function validates model identities, converts the long-format dataset to
+    participant tasks, and dispatches those tasks either sequentially (`n_workers=1`)
+    or through spawned worker processes. Optional warm starts are requested while
+    tasks are built in the main process.
 
     Args:
-        data: Complete long-format IGT table.
-        models: Models to fit to every subject.
-        optimizer_options: Options passed to every L-BFGS-B run.
-        show_progress: Whether to display a subject progress bar.
-        n_workers: Number of worker processes. Use `1` for serial fitting.
-        n_subjects: Number of subjects to fit. If None, fit all subjects.
-        subject_model_warm_starts_provider: Optional callable that provides warm-start parameter values for a given model and subject.
+        data: Complete long-format IGT trial table.
+        models: Models to fit to each selected participant.
+        optimizer_options: Optional optimizer options forwarded to every model fit.
+        show_progress: Whether to display participant-level progress.
+        n_workers: Number of worker processes. Use `1` for serial execution and
+            `None` for the process-pool default.
+        n_subjects: Optional maximum number of participants to fit.
+        subject_model_warm_starts_provider: Optional callback supplying additional
+            starting points for a model and participant key.
 
     Returns:
-        A list of model-fit results, one for each model and subject.
+        Flattened per-participant, per-model fit results.
+
+    Raises:
+        TypeError: If `n_workers` is neither an integer nor `None`.
+        ValueError: If `n_workers` is not positive, model validation fails, or the
+            selected dataset cannot be converted into valid participant tasks.
+        RuntimeError: If parallel fitting fails for any participant.
     """
 
     if n_workers is not None:

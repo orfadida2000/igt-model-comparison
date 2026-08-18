@@ -1,4 +1,9 @@
-"""Population-level inference for paired model-comparison results."""
+"""Population-level inference for paired model-comparison results.
+
+The functions in this module summarize subject-level AIC and BIC differences with
+BCa bootstrap confidence intervals and Wilcoxon signed-rank tests, and quantify
+model-win proportions with exact binomial inference.
+"""
 
 from typing import Literal, Protocol, cast
 
@@ -12,6 +17,16 @@ from .config import AnalysisConfig
 
 
 class _WilcoxonResult(Protocol):
+    """Structural interface for the fields returned by SciPy's Wilcoxon test.
+
+    This protocol isolates the two result attributes used by the analysis layer and
+    provides a stable static-typing surface for SciPy versions whose return type is
+    not fully exposed to Pylance.
+
+    Attributes:
+        statistic: Wilcoxon signed-rank test statistic.
+        pvalue: P-value associated with the configured alternative hypothesis.
+    """
     statistic: float
     pvalue: float
 
@@ -28,7 +43,21 @@ def _bootstrap_confidence_interval(
     statistic_name: Literal["mean", "median"],
     config: AnalysisConfig,
 ) -> tuple[float, float]:
-    """Return a reproducible BCa bootstrap confidence interval."""
+    """Compute a reproducible BCa bootstrap confidence interval.
+
+    Args:
+        values: One-dimensional sample of subject-level values.
+        statistic_name: Summary statistic for which the interval is computed.
+        config: Analysis configuration supplying the confidence level, number
+            of resamples, and bootstrap seed.
+
+    Returns:
+        Lower and upper BCa confidence limits.
+
+    Raises:
+        ValueError: If fewer than two observations are available or SciPy
+            returns non-finite interval limits.
+    """
 
     if values.ndim != 1:
         raise ValueError("Bootstrap values must be one-dimensional.")
@@ -71,13 +100,29 @@ def build_criterion_inference_table(
     subject_comparison: DataFrame,
     config: AnalysisConfig,
 ) -> DataFrame:
-    """Infer population-level AIC and BIC differences between the models.
+    """Build population-level inference for paired AIC and BIC differences.
 
-    Criterion differences are defined as Q-learning minus PVL-Delta, so
-    positive values favor PVL-Delta. Bootstrap confidence intervals quantify
-    uncertainty in the mean and median differences. The Wilcoxon signed-rank
-    test evaluates whether the paired difference distribution is centered at
-    zero under its symmetry assumption.
+    Differences are defined as Q-learning minus PVL-Delta, so positive values favor
+    PVL-Delta. For each criterion the function reports the mean and median with BCa
+    bootstrap confidence intervals and a two-sided Wilcoxon signed-rank test against
+    zero. A sample containing only zero differences receives the exact neutral
+    Wilcoxon result without calling SciPy.
+
+    Args:
+        subject_comparison: One-row-per-participant paired comparison table.
+        config: Confidence-level, resampling, and bootstrap-seed configuration.
+
+    Returns:
+        Two-row table containing AIC and BIC effect estimates, confidence intervals,
+        bootstrap metadata, and Wilcoxon statistics.
+
+    Raises:
+        ValueError: If a criterion has no observations, contains non-finite values,
+            or bootstrap confidence-interval calculation fails.
+
+    Notes:
+        Subjects are the inferential units. The Wilcoxon signed-rank interpretation
+        relies on the usual symmetry assumption for paired differences.
     """
 
     records: list[dict[str, float | int | str]] = []
@@ -153,11 +198,25 @@ def build_model_win_inference_table(
     subject_comparison: DataFrame,
     config: AnalysisConfig,
 ) -> DataFrame:
-    """Infer whether PVL-Delta wins more often than a 50/50 null expectation.
+    """Build exact binomial inference for AIC and BIC model-win proportions.
 
-    Exact ties are excluded from the binomial test and from the reported
-    non-tied PVL-Delta win rate. The confidence interval is the exact binomial
-    interval returned by SciPy.
+    For each criterion, exclusive PVL-Delta wins and Q-learning wins are counted and
+    exact ties are excluded from the win-rate denominator. The exact two-sided
+    binomial test evaluates a null PVL-Delta win probability of 0.5 among non-tied
+    participants, and its exact confidence interval is reported at the configured
+    confidence level.
+
+    Args:
+        subject_comparison: One-row-per-participant paired comparison table.
+        config: Analysis configuration supplying the confidence level.
+
+    Returns:
+        Two-row AIC/BIC table containing win counts, tie counts, non-tied PVL-Delta
+        win rates, exact confidence intervals, and binomial-test results.
+
+    Raises:
+        ValueError: If no eligible participant is available or any participant is
+            neither marked as a winner nor an exact tie for a criterion.
     """
 
     records: list[dict[str, float | int | str]] = []
