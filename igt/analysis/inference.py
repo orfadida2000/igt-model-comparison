@@ -27,6 +27,7 @@ class _WilcoxonResult(Protocol):
         statistic: Wilcoxon signed-rank test statistic.
         pvalue: P-value associated with the configured alternative hypothesis.
     """
+
     statistic: float
     pvalue: float
 

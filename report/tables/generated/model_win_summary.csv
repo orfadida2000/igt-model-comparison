@@ -1,0 +1,5 @@
+criterion,model,n_subjects,wins,win_rate
+AIC,q_learning,617,107,0.17341977309562398
+AIC,pvl_delta,617,510,0.826580226904376
+BIC,q_learning,617,190,0.3079416531604538
+BIC,pvl_delta,617,427,0.6920583468395461

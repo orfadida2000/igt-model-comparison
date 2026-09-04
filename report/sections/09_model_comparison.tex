@@ -1,0 +1,19 @@
+\section{Model-Comparison Methodology}
+
+Because \PVL{} has four fitted parameters whereas \QL{} has two, raw likelihood alone is not the primary model-selection criterion. The analysis uses AIC and BIC to balance fit quality against model complexity~\cite{akaike1974,schwarz1978}:
+\begin{equation}
+    \AIC=2k+2\NLL,
+\end{equation}
+\begin{equation}
+    \BIC=k\ln(n)+2\NLL,
+\end{equation}
+where \(k\) is the number of fitted parameters and \(n\) is the number of observed trials. Lower values indicate the preferred model. In the present dataset, \(n\) ranges from 95 to 150, so \(\ln(n)>2\); BIC therefore imposes a larger per-parameter complexity penalty than AIC\@. Reporting both criteria provides a stricter check that \PVL{}'s improved likelihood is sufficient to offset its two additional fitted parameters.
+
+Participant-level signed differences were defined as
+\begin{equation}
+    \Delta\AIC_i=\AIC_{Q,i}-\AIC_{PVL,i},
+\end{equation}
+\begin{equation}
+    \Delta\BIC_i=\BIC_{Q,i}-\BIC_{PVL,i}.
+\end{equation}
+Positive differences therefore favor \PVL{}.

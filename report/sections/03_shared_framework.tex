@@ -1,0 +1,13 @@
+\section{Shared Computational Framework and Connection to TD Learning}
+
+Both models instantiate the delta-learning idea emphasized in temporal-difference learning~\cite{suttonbarto2018}:
+\begin{equation}
+    \text{new value}=\text{old value}+\text{learning rate}\times\text{prediction error}.
+\end{equation}
+The prediction error compares the experienced teaching signal with the current expectation. In this IGT application, the repeated decision situation is treated as a common state, the four decks are the available actions, and the model maintains one learned value per deck. Only the chosen deck is updated after a trial.
+
+The models therefore share the computational sequence
+\begin{equation}
+    \text{prediction error}\rightarrow\text{value update}\rightarrow\text{future choice},
+\end{equation}
+but differ in how the experienced monetary outcome is represented before the prediction error is computed.

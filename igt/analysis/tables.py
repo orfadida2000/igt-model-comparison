@@ -356,7 +356,9 @@ def build_parameter_summary_table(
                 atol=config.boundary_tolerance,
             )
             standard_deviation = (
-                float(np.std(numeric_values, ddof=1)) if numeric_values.size > 1 else float("nan")
+                float(np.std(numeric_values, ddof=1))
+                if numeric_values.size > 1
+                else float("nan")
             )
 
             records.append(

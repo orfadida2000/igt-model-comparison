@@ -1,19 +1,43 @@
 # Project structure
 
-The repository separates reusable implementation code from executable research workflows.
+The repository separates reusable implementation code, executable research workflows, generated research artifacts, documentation, presentation material, and the final written report.
+
+```text
+igt-model-comparison/
+├── assets/
+│   ├── data/                     # Original RData and processed trial-level data
+│   ├── presentations/            # Project presentation material
+│   └── results/                  # Fitting, correction, sensitivity, and analysis outputs
+├── docs/                         # MkDocs documentation source
+├── igt/                          # Main reusable Python package
+├── report/                       # Final written-report source and compiled PDF
+│   ├── report.tex                # Main LaTeX entry point
+│   ├── preamble.tex              # Shared LaTeX packages and formatting
+│   ├── references.bib            # Bibliography database
+│   ├── sections/                 # Main-body and appendix source files
+│   ├── figures/                  # Report-ready figures
+│   ├── tables/                   # Report-ready LaTeX tables
+│   └── report.pdf                # Compiled final-project deliverable
+├── scripts/                      # Executable secondary research workflows
+├── mkdocs.yml                    # Documentation-site configuration
+├── pyproject.toml                # Python project and dependency configuration
+└── uv.lock                       # Locked Python dependency set
+```
+
+The reusable package is organized as:
 
 ```text
 igt/
-├── analysis/        # Final-result validation, derived tables, inference, plots, report
-├── cli_parsing/     # Shared declarative CLI specification and type-filter system
-├── constants/       # Configuration, model, path, fitting, and schema constants
-├── execution/       # Subject task construction, optimization, multiprocessing, pipeline
-├── models/          # Base model interface, Q-learning, PVL-Delta, subject data
-├── notify/          # Optional FormSubmit notifications
-├── comparison.py    # AIC/BIC comparison and model-level summary
+├── analysis/         # Final-result validation, derived tables, inference, plots, analysis text report
+├── cli_parsing/      # Shared declarative CLI specification and type-filter system
+├── constants/        # Configuration, model, path, fitting, and schema constants
+├── execution/        # Subject task construction, optimization, multiprocessing, pipeline
+├── models/           # Base model interface, Q-learning, PVL-Delta, subject data
+├── notify/           # Optional FormSubmit notifications
+├── comparison.py     # AIC/BIC comparison and model-level summary
 ├── initialization.py # Grid/Sobol start generation and local-minimum selection
-├── logging.py       # Application logging configuration
-├── main.py          # Primary fitting/comparison command-line workflow
+├── logging.py        # Application logging configuration
+├── main.py           # Primary fitting/comparison command-line workflow
 ├── rdata_preprocessing.py
 ├── subject_selection.py
 ├── typing.py
@@ -32,6 +56,10 @@ scripts/
 Because `scripts/` is used as an implicit namespace package, these are invoked with `python -m scripts.<module>` from the repository root.
 
 See [Scripts](scripts/index.md) for the user-facing CLI reference for each secondary workflow.
+
+### `report/`
+
+Contains the final academic deliverable. It is intentionally separate from `igt.analysis`: the analysis package produces validated result artifacts, while the LaTeX project assembles selected results, figures, tables, methodological explanations, references, and appendices into the final report.
 
 ## Architectural boundaries
 

@@ -1,7 +1,8 @@
 """End-to-end orchestration for post-fit result analysis.
 
 The pipeline loads and validates result tables, derives descriptive and inferential
-summaries, writes CSV outputs, generates figures, and emits the analysis report.
+summaries, writes CSV and LaTeX table outputs, generates figures, and emits the
+analysis report.
 See [`generate_results_analysis`][igt.analysis.pipeline.generate_results_analysis].
 """
 
@@ -9,8 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from igt.typing import StrPathLike
-from igt.utils.io import normalize_path, write_csv
+from igt.utils.io import normalize_path, write_csv, write_latex_table
 
+from .artifacts import GeneratedFigure, GeneratedTable
 from .config import AnalysisConfig
 from .inference import (
     build_criterion_inference_table,
@@ -31,19 +33,31 @@ from .validation import validate_result_tables
 
 @dataclass(frozen=True, slots=True)
 class AnalysisOutputs:
-    """Paths produced by one complete result-analysis run.
+    """Artifacts produced by one complete result-analysis run.
 
     Attributes:
         output_directory: Root directory for the run.
         report_path: Generated plain-text analysis report.
-        figure_paths: Paths to all generated figures.
-        table_paths: Paths to all generated derived CSV tables.
+        figures: Logical generated figures, each grouping all physical formats.
+        tables: Logical generated tables, each grouping CSV and LaTeX outputs.
     """
 
     output_directory: Path
     report_path: Path
-    figure_paths: tuple[Path, ...]
-    table_paths: tuple[Path, ...]
+    figures: tuple[GeneratedFigure, ...]
+    tables: tuple[GeneratedTable, ...]
+
+    @property
+    def figure_paths(self) -> tuple[Path, ...]:
+        """Return every physical figure path across all logical figures."""
+
+        return tuple(path for figure in self.figures for path in figure.paths)
+
+    @property
+    def table_paths(self) -> tuple[Path, ...]:
+        """Return every physical table path across all logical tables."""
+
+        return tuple(path for table in self.tables for path in table.paths)
 
 
 def generate_results_analysis(
@@ -57,25 +71,24 @@ def generate_results_analysis(
     """Validate final result CSVs and generate the complete analysis artifact set.
 
     The pipeline loads and cross-validates the fitting, comparison, and summary
-    tables; derives descriptive and inferential tables; generates all standard
-    figures; and writes a compact text report.
+    tables; derives descriptive and inferential tables; writes every derived table as
+    both CSV and LaTeX; generates all standard figures in every configured format; and
+    writes a compact text report.
 
     Args:
         fits_path: Complete per-subject, per-model fit-results CSV.
         comparison_path: Model-comparison CSV generated from the same fit table.
-        summary_path: Aggregate model-summary CSV generated from the same fit
-            table.
-        output_directory: Root directory in which analysis artifacts are
-            written.
+        summary_path: Aggregate model-summary CSV generated from the same fit table.
+        output_directory: Root directory in which analysis artifacts are written.
         config: Optional analysis configuration. Defaults to
             [AnalysisConfig][igt.analysis.config.AnalysisConfig].
 
     Returns:
-        Paths to the generated report, figures, and tables.
+        Logical generated figures and tables plus the report and root output paths.
 
     Raises:
-        ValueError: If the result tables are inconsistent or contain values
-            that violate the expected final-result schema.
+        ValueError: If the result tables are inconsistent or contain values that
+            violate the expected final-result schema.
     """
 
     analysis_config = config if config is not None else AnalysisConfig()
@@ -112,22 +125,30 @@ def generate_results_analysis(
     )
 
     table_outputs = {
-        "subject_level_model_comparison.csv": subject_comparison,
-        "study_model_preference.csv": study_preference,
-        "boundary_summary.csv": boundary_summary,
-        "parameter_summary.csv": parameter_summary,
-        "model_win_summary.csv": model_win_table,
-        "criterion_difference_inference.csv": criterion_inference,
-        "model_win_inference.csv": model_win_inference,
+        "subject_level_model_comparison": subject_comparison,
+        "study_model_preference": study_preference,
+        "boundary_summary": boundary_summary,
+        "parameter_summary": parameter_summary,
+        "model_win_summary": model_win_table,
+        "criterion_difference_inference": criterion_inference,
+        "model_win_inference": model_win_inference,
     }
-    table_paths: list[Path] = []
+    generated_tables: list[GeneratedTable] = []
 
-    for filename, data in table_outputs.items():
-        output_path = tables_directory / filename
-        write_csv(data, output_path)
-        table_paths.append(output_path)
+    for table_name, data in table_outputs.items():
+        output_stem = tables_directory / table_name
+        csv_path = output_stem.with_suffix(".csv")
+        latex_path = output_stem.with_suffix(".tex")
+        write_csv(data, csv_path)
+        write_latex_table(data, latex_path)
+        generated_tables.append(
+            GeneratedTable(
+                output_stem=output_stem,
+                paths=(csv_path, latex_path),
+            )
+        )
 
-    figure_paths = generate_all_figures(
+    generated_figures = generate_all_figures(
         tables.fits,
         subject_comparison,
         study_preference,
@@ -147,14 +168,14 @@ def generate_results_analysis(
         parameter_summary,
         criterion_inference,
         model_win_inference,
-        figure_paths,
-        tuple(table_paths),
+        generated_figures,
+        tuple(generated_tables),
         report_path=report_path,
     )
 
     return AnalysisOutputs(
         output_directory=normalized_output_directory,
         report_path=report_path,
-        figure_paths=figure_paths,
-        table_paths=tuple(table_paths),
+        figures=generated_figures,
+        tables=tuple(generated_tables),
     )

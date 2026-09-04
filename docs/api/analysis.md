@@ -28,7 +28,7 @@
 
 ::: igt.analysis.plots
 
-## Reporting
+## Analysis text reporting
 
 ::: igt.analysis.report
 

@@ -1,0 +1,28 @@
+\section{Results}
+\subsection{Final fit validity}
+
+Paired valid fits were available for all \(N=617\) participants. Mean NLL was 133.62 for \QL{} and 117.99 for \PVL{}. The corresponding mean AIC values were 271.24 and 243.99, and mean BIC values were 276.58 and 254.66, respectively.
+
+\subsection{Individual-level model preference}
+
+\PVL{} was preferred for 510 of 617 participants by AIC (82.66\%) and for 427 of 617 participants by BIC (69.21\%). \QL{} was preferred for 107 participants by AIC and 190 by BIC\@. There were no exact AIC or BIC ties.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{model_win_counts.pdf}
+    \caption{Number of participants for whom each model achieved the lower AIC or BIC.}\label{fig:model-wins}
+\end{figure}
+
+\subsection{Magnitude of the model advantage}
+
+The signed differences were positive on average and at the median for both criteria. For AIC, the mean difference was 27.25 (95\% BCa CI [24.74, 30.44]) and the median was 16.25 (95\% BCa CI [13.50, 18.88]). For BIC, the mean difference was 21.91 (95\% BCa CI [19.40, 25.09]) and the median was 11.04 (95\% BCa CI [8.29, 13.56]). Because differences are defined as Q-learning minus PVL-Delta, all four positive summaries favor \PVL{}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{criterion_difference_confidence_intervals.pdf}
+    \caption{Mean and median Q-learning minus PVL-Delta criterion differences with 95\% BCa bootstrap confidence intervals. Positive values favor PVL-Delta.}\label{fig:criterion-ci}
+\end{figure}
+
+\subsection{Inferential tests}
+
+The paired criterion differences were strongly shifted toward \PVL{}. For AIC, the two-sided Wilcoxon signed-rank statistic was \(W=9504\) (\(p=1.26\times10^{-83}\)); for BIC, \(W=30440\) (\(p=1.38\times10^{-48}\)). Exact binomial tests likewise showed \PVL{} win rates above 50\%: AIC win rate 82.66\%, 95\% exact CI [79.44\%, 85.56\%], \(p=7.86\times10^{-64}\); BIC win rate 69.21\%, 95\% exact CI [65.40\%, 72.83\%], \mbox{\(p=6.45\times10^{-22}\).}

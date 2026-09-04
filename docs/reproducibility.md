@@ -33,3 +33,20 @@ The MkDocs configuration uses Google-style docstrings through `mkdocstrings`. Bu
 ```bash
 uv run mkdocs build --strict
 ```
+
+## Final written report
+
+The repository keeps the final LaTeX source and compiled PDF under `report/`. The report is based on the corrected 617-participant result set and the final downstream analysis documented in [Final results](final-results.md).
+
+There are two distinct levels of reproducibility:
+
+1. **Document build** — compile the checked-in LaTeX source, figures, and tables to reproduce `report/report.pdf`:
+
+   ```bash
+   cd report
+   latexmk -pdf -interaction=nonstopmode -halt-on-error report.tex
+   ```
+
+2. **Scientific regeneration** — rerun the primary fits, targeted PVL-Delta correction, and final analysis from the project data to regenerate the numerical and graphical evidence underlying the report. Those workflows are documented in [Getting started](getting-started.md), [PVL-Delta correction](workflow/correction.md), and [Final result analysis](workflow/analysis.md).
+
+The compiled PDF is kept in the repository because it is a final project deliverable, not merely an intermediate LaTeX build artifact. Auxiliary LaTeX build files are not part of the scientific record.

@@ -39,7 +39,7 @@ from igt.constants.config import (
     USE_FIXED_SEED,
 )
 from igt.constants.path import LOGS_DIR, RESULTS_DIR
-from igt.logging import application_logging_cleanup, configure_application_logging
+from igt.logging import LoggingState, application_logging_cleanup, configure_application_logging
 from igt.notify.formsubmit import (
     error_email_notifier,
     send_formsubmit_email_script_success_notification,
@@ -153,56 +153,6 @@ def _histogram_bins(value: str) -> int | str:
     return parsed
 
 
-def build_argument_parser() -> argparse.ArgumentParser:
-    """Build the command-line parser.
-
-    Returns:
-        The constructed argument parser.
-    """
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "Validate IGT model-result CSVs and generate standard analysis tables and figures."
-        )
-    )
-    parser.add_argument("--fits", type=Path, required=True)
-    parser.add_argument("--comparison", type=Path, required=True)
-    parser.add_argument("--summary", type=Path, required=True)
-    parser.add_argument("--output-directory", type=Path, required=True)
-    parser.add_argument(
-        "--figure-formats",
-        nargs="+",
-        default=["png"],
-        help="One or more Matplotlib output formats, for example: png svg.",
-    )
-    parser.add_argument("--figure-dpi", type=_positive_int, default=300)
-    parser.add_argument(
-        "--histogram-bins",
-        type=_histogram_bins,
-        default="auto",
-        help="A positive integer or a NumPy histogram strategy such as auto.",
-    )
-    parser.add_argument(
-        "--confidence-level",
-        type=_confidence_level,
-        default=0.95,
-        help="Confidence level for bootstrap and exact binomial intervals.",
-    )
-    parser.add_argument(
-        "--bootstrap-resamples",
-        type=_positive_int,
-        default=10_000,
-        help="Number of BCa bootstrap resamples for criterion differences.",
-    )
-    parser.add_argument(
-        "--bootstrap-seed",
-        type=_nonnegative_int,
-        default=42,
-        help="Random seed used for reproducible bootstrap confidence intervals.",
-    )
-    return parser
-
-
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Create the argument parser, parse the command-line arguments and return the namespace.
 
@@ -269,7 +219,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ArgSpec(
             name_or_flags=("--figure-formats",),
             type_filters=(StringArgTypeProvider.NON_WHITESPACE_STRING,),
-            default=["png"],
+            default=["png", "pdf"],
             help="One or more Matplotlib output formats, for example: png svg (default: %(default)s)",
             extra_options={
                 "metavar": "FORMATS",
@@ -410,15 +360,18 @@ def _normalize_args(
 
 def _setup(
     argv: Sequence[str] | None = None,
-) -> tuple[argparse.Namespace, argparse.Namespace, str, Path | None]:
+    additional_logger_levels: dict[str | logging.Logger, int] | None = None,
+) -> tuple[argparse.Namespace, argparse.Namespace, str, LoggingState, Path | None]:
     """Prepare one timestamped result-analysis run.
 
     Args:
         argv: Optional argument sequence. When omitted, arguments are read from
             the process command line.
+        additional_logger_levels: Optional mapping of logger names to levels used to
+            configure additional loggers.
 
     Returns:
-        Parsed arguments, normalized arguments, run timestamp, and optional
+        Parsed arguments, normalized arguments, run timestamp, original logging state, and optional
         log-file path.
     """
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
@@ -427,14 +380,23 @@ def _setup(
 
     normalized_args.output_dir = Path(normalized_args.output_dir) / start_datetime_str
 
+    original_logger_state = LoggingState(additional_logger_levels)
+
     logging_path = configure_application_logging(
         disabled=normalized_args.logging_disabled,
         root_logger_level=normalized_args.log_level,
         log_file_path=(
             normalized_args.logging_dir / (f"results_analysis_{start_datetime_str}.log")
         ),
+        additional_logger_levels=additional_logger_levels,
     )
-    return args, normalized_args, start_datetime_str, logging_path
+    return (
+        args,
+        normalized_args,
+        start_datetime_str,
+        original_logger_state,
+        logging_path,
+    )
 
 
 def _run(
@@ -490,21 +452,24 @@ def _run(
 
 def _cleanup(
     *,
+    logging_state: LoggingState | None = None,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Release application logging resources after the result-analysis workflow.
 
     Args:
+        logging_state: Optional logging state to restore.
         logger: Logger instance or logger name used to record cleanup progress.
 
     Notes:
         The function delegates handler teardown and root-logger reset to the shared
         application logging cleanup helper.
     """
+
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     logger.info("Cleaning up application logging...")
-    application_logging_cleanup()
+    application_logging_cleanup(logging_state)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -520,8 +485,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         args,
         normalized_args,
         start_datetime_str,
+        original_logging_state,
         logging_path,
-    ) = _setup(argv)
+    ) = _setup(argv, additional_logger_levels={"fontTools": logging.WARNING})
 
     notify_formsubmit_id: str | None = normalized_args.notify_formsubmit_id
     logger = logging.getLogger(LOGGER_NAME)
@@ -586,7 +552,7 @@ The following results files have been generated and are attached in a zip file n
                 )
     finally:
         logger.info("Performing cleanup...")
-        _cleanup(logger=logger)
+        _cleanup(logging_state=original_logging_state, logger=logger)
 
 
 if __name__ == "__main__":

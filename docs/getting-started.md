@@ -73,3 +73,24 @@ For local browsing with live reload:
 ```bash
 uv run mkdocs serve
 ```
+
+## Build the final written report
+
+The final course report is a separate LaTeX project under `report/`. Building the PDF requires a TeX distribution that provides `latexmk`, `pdflatex`, and BibTeX.
+
+From the repository root:
+
+```bash
+cd report
+latexmk -pdf -interaction=nonstopmode -halt-on-error report.tex
+```
+
+The compiled deliverable is written to:
+
+```text
+report/report.pdf
+```
+
+The report directory already contains the report-specific figure and table files used by the LaTeX source. Rebuilding the PDF therefore does not require rerunning the Python analysis first. Reproducing the underlying numerical results from raw data is a separate workflow described in [Reproducibility](reproducibility.md).
+
+See [Final report](report.md) for the report layout, repository links, and the exact relationship between the document and the final analysis.

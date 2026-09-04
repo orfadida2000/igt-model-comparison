@@ -5,8 +5,12 @@ fit metrics, source-study preferences, boundary diagnostics, uniform-choice
 improvement, parameter distributions, and inferential confidence intervals.
 """
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Final
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -22,35 +26,78 @@ from igt.constants.schema import MODEL_COLUMN, NLL_COLUMN, SOURCE_STUDY_COLUMN
 from igt.typing import Float1DArray, StrPathLike
 from igt.utils.io import normalize_path
 
+from .artifacts import GeneratedFigure
 from .config import AnalysisConfig
+
+DISPLAY_CONFIGS: Final[dict[str, dict[str, str]]] = {
+    "q_learning": {
+        "name": "Q-learning",
+        "learning_rate": "η",
+        "inverse_temperature": "β",
+    },
+    "pvl_delta": {
+        "name": "PVL-Delta",
+        "learning_rate": "φ",
+        "outcome_sensitivity": "α",
+        "loss_aversion": "λ",
+        "response_consistency": "c",
+    },
+}
+
+
+@contextmanager
+def analysis_plot_context(config: AnalysisConfig) -> Iterator[None]:
+    """Temporarily apply the analysis-wide Matplotlib configuration.
+
+    Figure font sizes are derived from `config.figure_style` and then combined with
+    `config.matplotlib_rc`. The latter includes PDF Type 42 font embedding by default.
+    Matplotlib's previous rc state is restored automatically when the context exits.
+
+    Args:
+        config: Analysis plotting configuration.
+
+    Yields:
+        Nothing. Plotting code inside the context inherits the temporary Matplotlib
+        configuration through Matplotlib's rc state.
+    """
+
+    rc_parameters = dict(config.figure_style.matplotlib_font_rc())
+    rc_parameters.update(config.matplotlib_rc)
+
+    with mpl.rc_context(rc=rc_parameters):
+        yield
 
 
 def _save_figure(
     figure: Figure,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
-    """Save and close one Matplotlib figure in every configured format.
+) -> GeneratedFigure:
+    """Save and close one logical Matplotlib figure in every configured format.
 
     The parent directory of `output_stem` is created when needed. Each configured
-    format is written with the configured DPI and a tight bounding box before the
-    figure is closed.
+    format is written from the same in-memory `Figure` with the configured DPI and a
+    tight bounding box before the figure is closed. The explicit DPI controls raster
+    formats and rasterized components; ordinary PDF vector elements remain vectors.
 
     Args:
         figure: Figure to persist.
         output_stem: Destination path without a suffix.
-        config: Figure formats and raster DPI settings.
+        config: Figure formats and save-DPI settings.
 
     Returns:
-        Paths of all figure files written, in configured format order.
+        One logical generated-figure record containing all physical output paths.
     """
 
-    output_stem = normalize_path(output_stem, parameter_name="output_stem")
-    output_stem.parent.mkdir(parents=True, exist_ok=True)
+    normalized_output_stem = normalize_path(
+        output_stem,
+        parameter_name="output_stem",
+    )
+    normalized_output_stem.parent.mkdir(parents=True, exist_ok=True)
     output_paths: list[Path] = []
 
     for figure_format in config.figure_formats:
-        output_path = output_stem.with_suffix(f".{figure_format}")
+        output_path = normalized_output_stem.with_suffix(f".{figure_format}")
         figure.savefig(
             output_path,
             dpi=config.figure_dpi,
@@ -59,7 +106,10 @@ def _save_figure(
         output_paths.append(output_path)
 
     plt.close(figure)
-    return tuple(output_paths)
+    return GeneratedFigure(
+        output_stem=normalized_output_stem,
+        paths=tuple(output_paths),
+    )
 
 
 def _finite_values(series: Series, *, name: str) -> Float1DArray:
@@ -121,13 +171,13 @@ def _single_integer_value(
     return int(values[0])
 
 
-def plot_signed_difference_distribution(
+def _plot_signed_difference_distribution(
     subject_comparison: DataFrame,
     *,
     criterion: str,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot the distribution of signed Q-minus-PVL AIC or BIC differences.
 
     The zero reference line separates values favoring PVL-Delta (positive) from values
@@ -140,7 +190,7 @@ def plot_signed_difference_distribution(
         config: Plotting and output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If the criterion is unsupported or no finite criterion differences
@@ -154,7 +204,9 @@ def plot_signed_difference_distribution(
 
     column_name = f"{normalized_criterion}_q_minus_pvl"
     values = _finite_values(subject_comparison[column_name], name=column_name)
-    figure, axis = plt.subplots(figsize=(8.0, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("wide"),
+    )
     axis.hist(values, bins=config.histogram_bins)
     axis.axvline(0.0, linestyle="--", linewidth=1.5)
     axis.set_title(f"Distribution of signed {normalized_criterion.upper()} differences")
@@ -167,13 +219,13 @@ def plot_signed_difference_distribution(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_paired_metric_scatter(
+def _plot_paired_metric_scatter(
     subject_comparison: DataFrame,
     *,
     metric: str,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot paired Q-learning and PVL-Delta values against the identity line.
 
     Args:
@@ -183,7 +235,7 @@ def plot_paired_metric_scatter(
         config: Plotting and output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If `metric` is unsupported, either model has no finite values, or
@@ -218,7 +270,9 @@ def plot_paired_metric_scatter(
     padding = max((upper_limit - lower_limit) * 0.04, 1e-9)
     plot_limits = (lower_limit - padding, upper_limit + padding)
 
-    figure, axis = plt.subplots(figsize=(6.5, 6.5))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("square"),
+    )
     axis.scatter(q_values, pvl_values, alpha=0.65, s=24)
     axis.plot(plot_limits, plot_limits, linestyle="--", linewidth=1.5)
     axis.set_xlim(plot_limits)
@@ -232,12 +286,12 @@ def plot_paired_metric_scatter(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_model_win_counts(
+def _plot_model_win_counts(
     model_win_table: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot Q-learning and PVL-Delta AIC/BIC win counts side by side.
 
     Args:
@@ -246,7 +300,7 @@ def plot_model_win_counts(
         config: Figure-output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If any criterion/model combination does not have exactly one win
@@ -277,7 +331,9 @@ def plot_model_win_counts(
 
     x_positions = np.arange(len(criteria), dtype=np.float64)
     bar_width = 0.36
-    figure, axis = plt.subplots(figsize=(7.0, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("normal"),
+    )
     axis.bar(
         x_positions - bar_width / 2,
         q_wins,
@@ -300,24 +356,25 @@ def plot_model_win_counts(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_study_preference_rates(
+def _plot_study_preference_rates(
     study_preference: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot PVL-Delta AIC and BIC win rates by source study.
 
     Studies are ordered by AIC PVL-Delta win rate and labels include the number of
-    eligible participants contributing to each study.
+    eligible participants contributing to each study. The figure height grows with the
+    number of studies according to the central figure-style configuration.
 
     Args:
         study_preference: Per-study preference counts, rates, and signed differences.
         output_stem: Destination path without a figure suffix.
-        config: Figure-output configuration.
+        config: Figure-output and dynamic-size configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
     """
 
     sorted_data = study_preference.sort_values(
@@ -339,8 +396,9 @@ def plot_study_preference_rates(
     ]
     y_positions = np.arange(len(sorted_data), dtype=np.float64)
     bar_height = 0.36
-    figure_height = max(5.0, 0.48 * len(sorted_data) + 1.5)
-    figure, axis = plt.subplots(figsize=(9.0, figure_height))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.categorical_figure_size(len(sorted_data)),
+    )
     axis.barh(
         y_positions - bar_height / 2,
         aic_rates,
@@ -365,14 +423,14 @@ def plot_study_preference_rates(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_parameter_distribution(
+def _plot_parameter_distribution(
     fits: DataFrame,
     *,
     model_name: str,
     parameter_name: str,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot the fitted distribution of one configured model parameter.
 
     Configured lower and upper parameter bounds are drawn as reference lines when
@@ -386,7 +444,7 @@ def plot_parameter_distribution(
         config: Parameter-bound and plotting configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
     """
 
     model_rows = fits.loc[fits[MODEL_COLUMN].eq(model_name)]
@@ -394,7 +452,9 @@ def plot_parameter_distribution(
         model_rows[parameter_name],
         name=f"{model_name}.{parameter_name}",
     )
-    figure, axis = plt.subplots(figsize=(7.5, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("normal"),
+    )
     axis.hist(values, bins=config.histogram_bins)
 
     parameter_bounds = config.parameter_bounds.get(model_name, {}).get(parameter_name)
@@ -415,7 +475,10 @@ def plot_parameter_distribution(
         )
         axis.legend()
 
-    axis.set_title(f"{model_name.replace('_', ' ').title()}: {parameter_name.replace('_', ' ')}")
+    model_key = model_name.strip().replace("  ", " ").replace(" ", "_").lower()
+    axis.set_title(
+        f"{DISPLAY_CONFIGS[model_key]['name']}: {parameter_name.replace('_', ' ')} ({DISPLAY_CONFIGS[model_key][parameter_name.strip().replace('  ', ' ').replace(' ', '_').lower()]})"
+    )
     axis.set_xlabel("Fitted value")
     axis.set_ylabel("Subjects")
     axis.grid(axis="y", alpha=0.25)
@@ -423,12 +486,12 @@ def plot_parameter_distribution(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_boundary_rates(
+def _plot_boundary_rates(
     boundary_summary: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot the proportion of fits with at least one parameter on a bound.
 
     Args:
@@ -437,7 +500,7 @@ def plot_boundary_rates(
         config: Plotting and output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If a supported model does not have exactly one
@@ -456,7 +519,9 @@ def plot_boundary_rates(
     ]
     x_positions = np.arange(len(categories), dtype=np.float64)
     bar_width = 0.36
-    figure, axis = plt.subplots(figsize=(8.0, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("wide"),
+    )
 
     for offset, model_name, display_name in (
         (-bar_width / 2, Q_LEARNING_MODEL_NAME, "Q-learning"),
@@ -502,12 +567,12 @@ def plot_boundary_rates(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_uniform_improvement_distribution(
+def _plot_uniform_improvement_distribution(
     fits: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot each model's NLL improvement over the uniform-choice baseline.
 
     Args:
@@ -516,14 +581,16 @@ def plot_uniform_improvement_distribution(
         config: Histogram and figure-output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If either supported model has no finite uniform-choice improvement
             values to plot.
     """
 
-    figure, axis = plt.subplots(figsize=(8.0, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("wide"),
+    )
 
     for model_name, display_name in (
         (Q_LEARNING_MODEL_NAME, "Q-learning"),
@@ -553,12 +620,12 @@ def plot_uniform_improvement_distribution(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_uniform_improvement_scatter(
+def _plot_uniform_improvement_scatter(
     subject_comparison: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot paired model improvement over the uniform-choice negative log-likelihood.
 
     Args:
@@ -567,7 +634,7 @@ def plot_uniform_improvement_scatter(
         config: Plotting and output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If either model lacks finite values or the paired arrays have
@@ -590,7 +657,9 @@ def plot_uniform_improvement_scatter(
     upper_limit = float(max(np.max(q_values), np.max(pvl_values)))
     padding = max((upper_limit - lower_limit) * 0.04, 1e-9)
     plot_limits = (lower_limit - padding, upper_limit + padding)
-    figure, axis = plt.subplots(figsize=(6.5, 6.5))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("square"),
+    )
     axis.scatter(q_values, pvl_values, alpha=0.65, s=24)
     axis.plot(plot_limits, plot_limits, linestyle="--", linewidth=1.5)
     axis.set_xlim(plot_limits)
@@ -604,13 +673,12 @@ def plot_uniform_improvement_scatter(
     return _save_figure(figure, output_stem, config)
 
 
-
-def plot_criterion_difference_confidence_intervals(
+def _plot_criterion_difference_confidence_intervals(
     criterion_inference: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot mean and median AIC/BIC differences with BCa bootstrap intervals.
 
     Point estimates and interval limits are read from the criterion-inference table;
@@ -622,7 +690,7 @@ def plot_criterion_difference_confidence_intervals(
         config: Confidence-level and figure-output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If a criterion does not have exactly one inference row, an estimate
@@ -636,9 +704,7 @@ def plot_criterion_difference_confidence_intervals(
         rows = criterion_inference.loc[criterion_inference["criterion"].eq(criterion)]
 
         if len(rows) != 1:
-            raise ValueError(
-                f"Expected exactly one {criterion} inference row, found {len(rows)}."
-            )
+            raise ValueError(f"Expected exactly one {criterion} inference row, found {len(rows)}.")
 
         mean = rows["mean_difference"].to_numpy(dtype=np.float64)[0]
         mean_lower = rows["mean_ci_lower"].to_numpy(dtype=np.float64)[0]
@@ -673,7 +739,9 @@ def plot_criterion_difference_confidence_intervals(
 
     y_positions = np.arange(len(records), dtype=np.float64)
     confidence_percent = config.confidence_level * 100.0
-    figure, axis = plt.subplots(figsize=(8.0, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("wide"),
+    )
     axis.errorbar(
         estimates,
         y_positions,
@@ -685,7 +753,7 @@ def plot_criterion_difference_confidence_intervals(
     axis.set_yticks(y_positions, labels)
     axis.invert_yaxis()
     axis.set_title(
-        f"Criterion differences with {confidence_percent:g}% bootstrap confidence intervals"
+        f"Criterion differences with {confidence_percent:g}% BCa bootstrap confidence intervals"
     )
     axis.set_xlabel("Q-learning − PVL-Delta (positive favors PVL-Delta)")
     axis.set_ylabel("Estimate")
@@ -694,12 +762,12 @@ def plot_criterion_difference_confidence_intervals(
     return _save_figure(figure, output_stem, config)
 
 
-def plot_pvl_win_rate_confidence_intervals(
+def _plot_pvl_win_rate_confidence_intervals(
     model_win_inference: DataFrame,
     *,
     output_stem: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> GeneratedFigure:
     """Plot PVL-Delta non-tied AIC/BIC win rates with exact confidence intervals.
 
     The 50% reference line corresponds to the null win probability used by the exact
@@ -711,7 +779,7 @@ def plot_pvl_win_rate_confidence_intervals(
         config: Confidence-level and figure-output configuration.
 
     Returns:
-        Paths of the saved figure files.
+        Logical generated figure containing every configured output format.
 
     Raises:
         ValueError: If required confidence-interval values are non-finite or an
@@ -747,7 +815,9 @@ def plot_pvl_win_rate_confidence_intervals(
 
     x_positions = np.arange(2, dtype=np.float64)
     confidence_percent = config.confidence_level * 100.0
-    figure, axis = plt.subplots(figsize=(7.0, 5.0))
+    figure, axis = plt.subplots(
+        figsize=config.figure_style.figure_size("normal"),
+    )
     axis.errorbar(
         x_positions,
         rates,
@@ -759,14 +829,183 @@ def plot_pvl_win_rate_confidence_intervals(
     axis.set_xticks(x_positions, ["AIC", "BIC"])
     axis.set_ylim(0.0, 1.0)
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    axis.set_title(
-        f"PVL-Delta win rates with {confidence_percent:g}% exact confidence intervals"
-    )
+    axis.set_title(f"PVL-Delta win rates with {confidence_percent:g}% exact confidence intervals")
     axis.set_xlabel("Model-selection criterion")
     axis.set_ylabel("PVL-Delta win rate among non-tied subjects")
     axis.grid(axis="y", alpha=0.25)
     figure.tight_layout()
     return _save_figure(figure, output_stem, config)
+
+
+# Public individual figure generators establish the plotting context themselves so
+# they behave consistently when called independently. `generate_all_figures` enters
+# the context once and delegates to the private implementations directly.
+def plot_signed_difference_distribution(
+    subject_comparison: DataFrame,
+    *,
+    criterion: str,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the signed AIC/BIC difference distribution figure."""
+
+    with analysis_plot_context(config):
+        return _plot_signed_difference_distribution(
+            subject_comparison,
+            criterion=criterion,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_paired_metric_scatter(
+    subject_comparison: DataFrame,
+    *,
+    metric: str,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate one paired Q-learning-versus-PVL metric scatter figure."""
+
+    with analysis_plot_context(config):
+        return _plot_paired_metric_scatter(
+            subject_comparison,
+            metric=metric,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_model_win_counts(
+    model_win_table: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the subject-level model-win count figure."""
+
+    with analysis_plot_context(config):
+        return _plot_model_win_counts(
+            model_win_table,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_study_preference_rates(
+    study_preference: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the source-study PVL-Delta preference-rate figure."""
+
+    with analysis_plot_context(config):
+        return _plot_study_preference_rates(
+            study_preference,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_parameter_distribution(
+    fits: DataFrame,
+    *,
+    model_name: str,
+    parameter_name: str,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate one fitted-parameter distribution figure."""
+
+    with analysis_plot_context(config):
+        return _plot_parameter_distribution(
+            fits,
+            model_name=model_name,
+            parameter_name=parameter_name,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_boundary_rates(
+    boundary_summary: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the parameter-boundary-rate figure."""
+
+    with analysis_plot_context(config):
+        return _plot_boundary_rates(
+            boundary_summary,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_uniform_improvement_distribution(
+    fits: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the uniform-choice improvement distribution figure."""
+
+    with analysis_plot_context(config):
+        return _plot_uniform_improvement_distribution(
+            fits,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_uniform_improvement_scatter(
+    subject_comparison: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the paired uniform-choice improvement scatter figure."""
+
+    with analysis_plot_context(config):
+        return _plot_uniform_improvement_scatter(
+            subject_comparison,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_criterion_difference_confidence_intervals(
+    criterion_inference: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the AIC/BIC difference confidence-interval figure."""
+
+    with analysis_plot_context(config):
+        return _plot_criterion_difference_confidence_intervals(
+            criterion_inference,
+            output_stem=output_stem,
+            config=config,
+        )
+
+
+def plot_pvl_win_rate_confidence_intervals(
+    model_win_inference: DataFrame,
+    *,
+    output_stem: StrPathLike,
+    config: AnalysisConfig,
+) -> GeneratedFigure:
+    """Generate the PVL-Delta model-win confidence-interval figure."""
+
+    with analysis_plot_context(config):
+        return _plot_pvl_win_rate_confidence_intervals(
+            model_win_inference,
+            output_stem=output_stem,
+            config=config,
+        )
 
 
 def generate_all_figures(
@@ -780,13 +1019,15 @@ def generate_all_figures(
     *,
     output_directory: StrPathLike,
     config: AnalysisConfig,
-) -> tuple[Path, ...]:
+) -> tuple[GeneratedFigure, ...]:
     """Generate the complete standard figure set for one analysis run.
 
-    The function creates criterion-difference histograms, paired fit-metric scatters,
-    model-win and inference figures, study preference and boundary plots, uniform-choice
-    diagnostics, and one parameter-distribution figure for every configured parameter
-    column present in the fit table.
+    The function establishes one temporary analysis-wide Matplotlib rc context and
+    delegates all individual figure construction inside it. It creates
+    criterion-difference histograms, paired fit-metric scatters, model-win and
+    inference figures, study preference and boundary plots, uniform-choice diagnostics,
+    and one parameter-distribution figure for every configured parameter column present
+    in the fit table.
 
     Args:
         fits: Validated model-fit result table.
@@ -801,112 +1042,123 @@ def generate_all_figures(
         config: Analysis plotting and output configuration.
 
     Returns:
-        Paths of every generated figure file, including all configured formats.
+        One `GeneratedFigure` per logical plot. Each object groups all configured
+        physical formats for that plot.
     """
 
-    output_directory = normalize_path(output_directory, parameter_name="output_directory")
-    generated_paths: list[Path] = []
-
-    for criterion in ("aic", "bic"):
-        generated_paths.extend(
-            plot_signed_difference_distribution(
-                subject_comparison,
-                criterion=criterion,
-                output_stem=(output_directory / f"signed_{criterion}_difference_distribution"),
-                config=config,
-            )
-        )
-
-    for metric, filename in (
-        (NLL_COLUMN, "q_vs_pvl_negative_log_likelihood"),
-        ("aic", "q_vs_pvl_aic"),
-        ("bic", "q_vs_pvl_bic"),
-    ):
-        generated_paths.extend(
-            plot_paired_metric_scatter(
-                subject_comparison,
-                metric=metric,
-                output_stem=output_directory / filename,
-                config=config,
-            )
-        )
-
-    generated_paths.extend(
-        plot_model_win_counts(
-            model_win_table,
-            output_stem=output_directory / "model_win_counts",
-            config=config,
-        )
+    normalized_output_directory = normalize_path(
+        output_directory,
+        parameter_name="output_directory",
     )
-    generated_paths.extend(
-        plot_criterion_difference_confidence_intervals(
-            criterion_inference,
-            output_stem=(output_directory / "criterion_difference_confidence_intervals"),
-            config=config,
-        )
-    )
-    generated_paths.extend(
-        plot_pvl_win_rate_confidence_intervals(
-            model_win_inference,
-            output_stem=(output_directory / "pvl_win_rate_confidence_intervals"),
-            config=config,
-        )
-    )
-    generated_paths.extend(
-        plot_study_preference_rates(
-            study_preference,
-            output_stem=output_directory / "study_pvl_preference_rates",
-            config=config,
-        )
-    )
-    generated_paths.extend(
-        plot_boundary_rates(
-            boundary_summary,
-            output_stem=output_directory / "boundary_fit_rates",
-            config=config,
-        )
-    )
-    generated_paths.extend(
-        plot_uniform_improvement_distribution(
-            fits,
-            output_stem=(output_directory / "uniform_choice_improvement_distribution"),
-            config=config,
-        )
-    )
-    generated_paths.extend(
-        plot_uniform_improvement_scatter(
-            subject_comparison,
-            output_stem=(output_directory / "uniform_choice_improvement_scatter"),
-            config=config,
-        )
-    )
+    generated_figures: list[GeneratedFigure] = []
 
-    for model_name, parameter_bounds in config.parameter_bounds.items():
-        model_rows = fits.loc[fits[MODEL_COLUMN].eq(model_name)]
-
-        if model_rows.empty:
-            continue
-
-        for parameter_name in parameter_bounds:
-            if (
-                parameter_name not in model_rows.columns
-                or not model_rows[parameter_name].notna().any()
-            ):
-                continue
-
-            generated_paths.extend(
-                plot_parameter_distribution(
-                    fits,
-                    model_name=model_name,
-                    parameter_name=parameter_name,
+    with analysis_plot_context(config):
+        for criterion in ("aic", "bic"):
+            generated_figures.append(
+                _plot_signed_difference_distribution(
+                    subject_comparison,
+                    criterion=criterion,
                     output_stem=(
-                        output_directory
-                        / "parameters"
-                        / model_name
-                        / f"{parameter_name}_distribution"
+                        normalized_output_directory / f"signed_{criterion}_difference_distribution"
                     ),
                     config=config,
                 )
             )
 
-    return tuple(generated_paths)
+        for metric, filename in (
+            (NLL_COLUMN, "q_vs_pvl_negative_log_likelihood"),
+            ("aic", "q_vs_pvl_aic"),
+            ("bic", "q_vs_pvl_bic"),
+        ):
+            generated_figures.append(
+                _plot_paired_metric_scatter(
+                    subject_comparison,
+                    metric=metric,
+                    output_stem=normalized_output_directory / filename,
+                    config=config,
+                )
+            )
+
+        generated_figures.append(
+            _plot_model_win_counts(
+                model_win_table,
+                output_stem=normalized_output_directory / "model_win_counts",
+                config=config,
+            )
+        )
+        generated_figures.append(
+            _plot_criterion_difference_confidence_intervals(
+                criterion_inference,
+                output_stem=(
+                    normalized_output_directory / "criterion_difference_confidence_intervals"
+                ),
+                config=config,
+            )
+        )
+        generated_figures.append(
+            _plot_pvl_win_rate_confidence_intervals(
+                model_win_inference,
+                output_stem=(normalized_output_directory / "pvl_win_rate_confidence_intervals"),
+                config=config,
+            )
+        )
+        generated_figures.append(
+            _plot_study_preference_rates(
+                study_preference,
+                output_stem=normalized_output_directory / "study_pvl_preference_rates",
+                config=config,
+            )
+        )
+        generated_figures.append(
+            _plot_boundary_rates(
+                boundary_summary,
+                output_stem=normalized_output_directory / "boundary_fit_rates",
+                config=config,
+            )
+        )
+        generated_figures.append(
+            _plot_uniform_improvement_distribution(
+                fits,
+                output_stem=(
+                    normalized_output_directory / "uniform_choice_improvement_distribution"
+                ),
+                config=config,
+            )
+        )
+        generated_figures.append(
+            _plot_uniform_improvement_scatter(
+                subject_comparison,
+                output_stem=(normalized_output_directory / "uniform_choice_improvement_scatter"),
+                config=config,
+            )
+        )
+
+        for model_name, parameter_bounds in config.parameter_bounds.items():
+            model_rows = fits.loc[fits[MODEL_COLUMN].eq(model_name)]
+
+            if model_rows.empty:
+                continue
+
+            for parameter_name in parameter_bounds:
+                if (
+                    parameter_name not in model_rows.columns
+                    or not model_rows[parameter_name].notna().any()
+                ):
+                    continue
+
+                generated_figures.append(
+                    _plot_parameter_distribution(
+                        fits,
+                        model_name=model_name,
+                        parameter_name=parameter_name,
+                        output_stem=(
+                            normalized_output_directory
+                            / "parameters"
+                            / model_name
+                            / f"{parameter_name}_distribution"
+                        ),
+                        config=config,
+                    )
+                )
+
+    return tuple(generated_figures)

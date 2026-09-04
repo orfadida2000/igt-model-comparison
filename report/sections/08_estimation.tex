@@ -1,0 +1,48 @@
+\section{Parameter Estimation and Optimization}
+\subsection{Individual-level maximum likelihood}
+
+Each participant was fitted independently. For model parameters \(\vartheta\), estimation solves
+\begin{equation}
+    \hat{\vartheta}=\arg\min_{\vartheta}\NLL(\vartheta).
+\end{equation}
+The fitted parameters are therefore those that make that participant's observed sequence of choices most probable under the model.
+
+\subsection{Bounded optimization with L-BFGS-B}
+
+The fitting problems contain continuous parameters, a smooth likelihood objective, explicit parameter bounds, and relatively few dimensions. L-BFGS-B was used because it is an efficient gradient-based optimizer designed for continuous optimization with box constraints~\cite{byrd1995}. Because it is a local optimizer, however, its solution can depend on the starting point.
+
+\subsection{Multiple starting points}
+
+To reduce sensitivity to local minima, each participant/model fit used multiple starts. Every start was optimized independently and the valid solution with the lowest NLL was retained. This is methodologically important because a poor local optimum can change the apparent model comparison.
+
+For \QL{}, only two parameters, \((\eta,\beta)\), are fitted. The objective was evaluated on a structured two-dimensional grid, distinct promising local-minimum regions were identified, and up to 10 grid-local minima were used as L-BFGS-B starting points. Because the parameter space is only two-dimensional, this provides a relatively systematic search rather than relying on arbitrary random starts.
+
+For \PVL{}, the four-dimensional parameter space \((\phi,\alpha,\lambda,c)\) makes a dense Cartesian grid less practical. The analysis therefore used 32 scrambled Sobol points with fixed seed 42. Sobol sequences provide space-filling, low-discrepancy coverage of a bounded multidimensional region~\cite{sobol1967}.
+
+\subsection{Parameter bounds and fixed settings}
+
+\begin{table}[H]
+    \centering
+    \caption{Primary fitting settings used in the final analysis.}\label{tab:fitting-settings}
+    \small
+    \begin{tabular}{@{}
+        >{\RaggedRight\arraybackslash}p{0.30\textwidth}
+        >{\RaggedRight\arraybackslash}p{0.24\textwidth}
+        >{\RaggedRight\arraybackslash}p{0.38\textwidth}
+        @{}}
+        \toprule
+        Quantity                        & Final setting              & Rationale                                              \\
+        \midrule
+        Q learning rate \(\eta\)        & \([0,1]\)                  & Standard delta-rule range                              \\
+        Q inverse temperature \(\beta\) & \([0,100]\)                & Upper cap selected after sensitivity analysis          \\
+        Payoff scale                    & 100                        & Outcome rescaling for the fitted value scale           \\
+        PVL learning rate \(\phi\)      & \([10^{-6},1-10^{-6}]\)    & Numerical approximation to the open interval \((0,1)\) \\
+        Outcome sensitivity \(\alpha\)  & \([10^{-6},2]\)            & Expanded IGT/PVL range used in later modeling~\cite{haines2018} \\
+        Loss aversion \(\lambda\)       & \([10^{-6},10]\)           & Expanded IGT/PVL range used in later modeling~\cite{haines2018} \\
+        Response consistency \(c\)      & \([0,5]\)                  & PVL response-consistency range~\cite{ahn2008}          \\
+        Q initialization                & Up to 10 \mbox{grid-local minima} & Structured search in two dimensions                    \\
+        PVL initialization              & 32 scrambled Sobol points  & Space-filling search in four dimensions                \\
+        Sobol seed                      & 42                         & Reproducibility                                        \\
+        \bottomrule
+    \end{tabular}
+\end{table}

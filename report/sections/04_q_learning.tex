@@ -1,0 +1,23 @@
+\section{Q-learning Model}
+
+Let \(a_t\) denote the deck chosen on trial \(t\). The net monetary outcome recorded for the trial is scaled by the project's payoff scale of 100:
+\begin{equation}
+    r_t=\frac{\mathrm{win}_t+\mathrm{loss}_t}{100},
+\end{equation}
+where losses are already represented as negative values in the processed data. The scaling changes numerical units; it is not an additional psychological mechanism.
+
+The prediction error for the chosen deck is
+\begin{equation}
+    \delta_t=r_t-Q_{a_t}(t),
+\end{equation}
+and the chosen deck is updated according to
+\begin{equation}
+    Q_{a_t}(t+1)=Q_{a_t}(t)+\eta\delta_t.
+\end{equation}
+Unchosen deck values remain unchanged.
+
+Choice probabilities are generated with a softmax rule:
+\begin{equation}
+    P(a_t=d)=\frac{\exp\left[\beta Q_d(t)\right]}{\sum_{j=1}^{4}\exp\left[\beta Q_j(t)\right]}.
+\end{equation}
+Here \(\eta\) is the learning rate and \(\beta\) is the inverse temperature. Larger \(\eta\) values make recent outcomes change the chosen deck value more strongly. Larger \(\beta\) values make choice more strongly determined by differences among learned deck values.

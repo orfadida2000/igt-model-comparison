@@ -32,6 +32,16 @@ The input fit-results CSV is positional.
 
 Some CLI options are conditionally exposed by shared configuration constants. Use `--help` to inspect the exact interface for the current configuration.
 
+## Current predefined conditions
+
+With the current repository configuration, the script selects fits at or above the default threshold of 19.5 unless another threshold is provided. It reruns the selected participants with:
+
+- maximum inverse temperature `100`;
+- 10 Q-learning starts;
+- 20 Q-learning starts.
+
+These are the current reusable diagnostic settings. They are distinct from the historical staged `20 -> 50 -> 100` sensitivity analysis that was used during model development to choose the final primary bound. That historical analysis is summarized in [Final results](../final-results.md) and [Q-learning inverse-temperature sensitivity](../workflow/sensitivity.md).
+
 ## Default output location
 
 With the current configuration, sensitivity artifacts are written beneath:

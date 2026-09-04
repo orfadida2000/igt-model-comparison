@@ -1,0 +1,10 @@
+\section{Iowa Gambling Task and Dataset}
+\subsection{The task}
+
+The IGT is a repeated four-option decision task. Participants repeatedly choose from decks A–D and receive monetary gains and losses without initially knowing the long-term payoff structure. In the traditional task, decks A and B are disadvantageous in the long run, whereas decks C and D are advantageous; the decks also differ in loss frequency. Because the payoff structure must be learned from experience, the task is suitable for trial-level reinforcement-learning models~\cite{bechara1994}.
+
+\subsection{Dataset}
+
+The analysis uses the public dataset of Steingroever et al.~\cite{steingroever2015}, containing \textbf{617 healthy participants} from \textbf{10 source studies}, with \textbf{95–150 trials per participant}. For each trial, the project uses the chosen deck, monetary outcome information, trial number, participant identifier, and source-study identifier. The original RData objects were converted to a validated long-format dataset for fitting.
+
+Both candidate models receive the same observed trial history for each participant. Before every observed choice, each model assigns probabilities to all four decks; the likelihood of the actual choice sequence then provides the basis for parameter estimation.

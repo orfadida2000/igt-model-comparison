@@ -30,6 +30,14 @@ igt-model-comparison/
 │   ├── models/                   # Computational model implementations
 │   ├── notify/                   # Optional FormSubmit notifications
 │   └── utils/                    # Generic I/O and tabular helpers
+├── report/                       # Final LaTeX report source and compiled PDF
+│   ├── report.tex
+│   ├── preamble.tex
+│   ├── references.bib
+│   ├── sections/
+│   ├── figures/
+│   ├── tables/
+│   └── report.pdf
 ├── scripts/
 │   ├── correct_pvl_delta_fits.py
 │   ├── q_inverse_temperature_sensitivity.py
@@ -181,9 +189,26 @@ The repository includes the final corrected 617-subject result set and a corresp
 
 See [Final results](docs/final-results.md) for the complete interpretation and the exact included output paths.
 
+## Final written report
+
+The completed course report is a primary project deliverable and is kept under `report/` together with its LaTeX source, bibliography, report-ready figures and tables, and compiled PDF.
+
+- [Read the final report](report/report.pdf)
+- [Browse the report source](report/)
+- [Report documentation](docs/report.md)
+
+To rebuild the checked-in PDF with a TeX distribution that provides `latexmk`, `pdflatex`, and BibTeX:
+
+```bash
+cd report
+latexmk -pdf -interaction=nonstopmode -halt-on-error report.tex
+```
+
+Rebuilding the PDF and regenerating the underlying scientific results are separate reproducibility tasks; see [Reproducibility](docs/reproducibility.md).
+
 ## Documentation
 
-The MkDocs site is the canonical project documentation. It covers model equations, initialization, fitting, correction, sensitivity analysis, statistical inference, outputs, project architecture, and the Python API.
+The MkDocs site is the canonical project documentation. It covers model equations, initialization, fitting, correction, sensitivity analysis, statistical inference, outputs, the final written report, project architecture, and the Python API.
 
 Serve it locally:
 

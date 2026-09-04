@@ -216,7 +216,7 @@ def _validate_positive_finite_float(
         parameter_name=parameter_name,
     )
 
-    if parsed_value == 0:
+    if parsed_value <= 0:
         raise ValueError(f"{parameter_name} must be positive.")
 
     return parsed_value

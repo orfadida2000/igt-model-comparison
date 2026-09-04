@@ -10,6 +10,7 @@ import argparse
 import logging
 import time
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
@@ -68,10 +69,7 @@ from igt.execution.pipeline import (
     run_fitting_pipeline,
 )
 from igt.execution.typing import SubjectModelWarmStartsProvider
-from igt.logging import (
-    application_logging_cleanup,
-    configure_application_logging,
-)
+from igt.logging import LoggingState, application_logging_cleanup, configure_application_logging
 from igt.models import PVLDeltaModel, QLearningModel
 from igt.notify.formsubmit import (
     error_email_notifier,
@@ -94,12 +92,15 @@ PVL_LOSS_AVERSION: Final[float] = 1.0
 LOGGER_NAME: Final[str] = "scripts.correct_pvl_delta_fits"
 
 
-def _parse_args() -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line options for targeted PVL-Delta fit correction.
 
     The parser uses the project's declarative argument/type-filter infrastructure and
     conditionally exposes seed and FormSubmit options according to the corresponding
     fixed-value configuration flags.
+
+    Args:
+        argv: Optional argument vector to parse instead of process command-line arguments.
 
     Returns:
         Raw argparse namespace containing the correction-workflow options.
@@ -227,7 +228,7 @@ def _parse_args() -> argparse.Namespace:
         extra_options={},
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _normalize_args(
@@ -795,7 +796,10 @@ def _replace_model_fit_rows(
     return corrected.loc[:, original_fit_results.columns]
 
 
-def _setup() -> tuple[
+def _setup(
+    argv: Sequence[str] | None = None,
+    additional_logger_levels: dict[str | logging.Logger, int] | None = None,
+) -> tuple[
     argparse.Namespace,
     argparse.Namespace,
     str,
@@ -803,6 +807,7 @@ def _setup() -> tuple[
     DataFrame,
     PVLDeltaModel,
     SubjectModelWarmStartsProvider,
+    LoggingState,
     Path | None,
 ]:
     """Prepare one timestamped targeted PVL-Delta correction run.
@@ -812,17 +817,25 @@ def _setup() -> tuple[
     model and Q-equivalent warm-start provider, creates the output/logging context, and
     returns the objects required by the execution stage.
 
+    Args:
+        argv: Optional argument sequence. When omitted, arguments are read from
+            the process command line.
+        additional_logger_levels: Optional mapping of logger names to levels used to
+            configure additional loggers.
+
     Returns:
         Raw and normalized arguments, run timestamp, original fit table, selected
         participant keys, configured PVL-Delta model, subject-specific warm-start
-        provider, and optional log-file path.
+        provider, original logging state, and optional log-file path.
     """
 
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
-    args = _parse_args()
+    args = _parse_args(argv)
     normalized_args = _normalize_args(args)
 
     normalized_args.output_dir = Path(normalized_args.output_dir) / start_datetime_str
+
+    original_logger_state = LoggingState(additional_logger_levels)
 
     original_fit_results = read_csv(
         normalized_args.fit_results_path,
@@ -854,6 +867,7 @@ def _setup() -> tuple[
             normalized_args.logging_dir
             / (f"correct_pvl_delta_fits_{len(subject_keys)}_subjects_{start_datetime_str}.log")
         ),
+        additional_logger_levels=additional_logger_levels,
     )
 
     return (
@@ -864,6 +878,7 @@ def _setup() -> tuple[
         subject_keys,
         pvl_delta_model,
         warm_starts_provider,
+        original_logger_state,
         logging_path,
     )
 
@@ -1677,12 +1692,14 @@ def _run(
 
 def _cleanup(
     *,
+    logging_state: LoggingState | None = None,
     logger: logging.Logger | str = LOGGER_NAME,
     output_dir: Path | None = None,
 ) -> None:
     """Clean up application logging after the correction workflow.
 
     Args:
+        logging_state: Optional logging state to restore.
         logger: Logger instance or logger name.
         output_dir: Optional run-output directory to remove when it is empty.
     """
@@ -1707,7 +1724,7 @@ def _cleanup(
             logger.info("Output directory is not empty, skipping cleanup: %s", output_dir)
 
     logger.info("Cleaning up application logging...")
-    application_logging_cleanup()
+    application_logging_cleanup(logging_state)
 
 
 def main() -> None:
@@ -1733,8 +1750,9 @@ def main() -> None:
         subject_keys,
         pvl_delta_model,
         warm_starts_provider,
+        original_logger_state,
         logging_path,
-    ) = _setup()
+    ) = _setup(additional_logger_levels={"fontTools": logging.WARNING})
 
     notify_formsubmit_id: str | None = normalized_args.notify_formsubmit_id
     logger = logging.getLogger(LOGGER_NAME)
@@ -1821,6 +1839,7 @@ The following files are attached in a zip file named {zip_filename!r}:
     finally:
         logger.info("Performing cleanup...")
         _cleanup(
+            logging_state=original_logger_state,
             logger=logger,
             output_dir=normalized_args.output_dir,
         )

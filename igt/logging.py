@@ -6,7 +6,10 @@ matching cleanup operation for scripts and the main fitting workflow.
 """
 
 import logging
+from collections.abc import Iterable, Mapping
+from dataclasses import InitVar, dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 
 from igt.constants.config import (
     DATETIME_FORMAT,
@@ -23,6 +26,43 @@ from igt.typing import (
     TerminalLogHandlerConfig,
 )
 from igt.utils.io import normalize_path
+
+
+@dataclass(slots=True, frozen=True)
+class LoggingState:
+    """Encapsulates the current state of the root logger and any additional loggers.
+
+    Attributes:
+        root_logger_level: The root logger's level when the instance was created.
+        additional_logger_level_map: Mapping of additional logger names to their respective levels when the instance was created.
+    """
+
+    root_logger_level: int = field(init=False)
+    additional_logger_level_map: Mapping[str, int] = field(init=False, default_factory=dict)
+    additional_loggers: InitVar[Iterable[str | logging.Logger] | None] = None
+
+    def __post_init__(self, additional_loggers: Iterable[str | logging.Logger] | None) -> None:
+        additional_loggers = additional_loggers or []
+
+        try:
+            additional_loggers = tuple(additional_loggers)
+        except TypeError as e:
+            raise ValueError(
+                "additional_loggers could not be converted to a tuple; ensure it is an iterable of logger names or Logger instances."
+            ) from e
+
+        additional_logger_level_map = {
+            logger.name if isinstance(logger, logging.Logger) else logger: logger.level
+            if isinstance(logger, logging.Logger)
+            else logging.getLogger(logger).level
+            for logger in additional_loggers
+        }
+
+        object.__setattr__(
+            self, "additional_logger_level_map", MappingProxyType(additional_logger_level_map)
+        )
+
+        object.__setattr__(self, "root_logger_level", logging.getLogger().level)
 
 
 def configure_root_logger(
@@ -76,6 +116,7 @@ def configure_application_logging(
     datetime_format: str = DATETIME_FORMAT,
     terminal_stream: StandardOutput = StandardOutput.STDERR,
     log_file_path: StrPathLike | None = None,
+    additional_logger_levels: Mapping[str | logging.Logger, int] | None = None,
 ) -> Path | None:
     """Configure terminal and optional file logging for a top-level workflow.
 
@@ -92,21 +133,25 @@ def configure_application_logging(
         datetime_format: Datetime format used by configured handlers.
         terminal_stream: Standard stream targeted by the terminal handler.
         log_file_path: Optional destination of the file handler.
+        additional_logger_levels: Optional mapping of logger names or logger instances to levels used to
+            configure additional loggers.
 
     Returns:
         The normalized log-file path when file logging is enabled; otherwise `None`.
 
     Raises:
-        ValueError: If logging is enabled without a root logger level or if the log
-            path cannot be normalized.
+        ValueError: If the log path cannot be normalized.
     """
+
+    additional_logger_levels = additional_logger_levels or {}
+
+    for logger, new_level in additional_logger_levels.items():
+        logger = logging.getLogger(logger) if isinstance(logger, str) else logger
+        logger.setLevel(new_level)
 
     if disabled:
         configure_root_logger()
         return None
-
-    if root_logger_level is None:
-        raise ValueError("root_logger_level must be provided when logging is enabled.")
 
     handler_configs: list[BaseLogHandlerConfig] = [
         TerminalLogHandlerConfig(
@@ -137,13 +182,29 @@ def configure_application_logging(
     return log_file_path
 
 
-def application_logging_cleanup() -> None:
-    """Reset application logging to a minimal default state.
+def application_logging_cleanup(
+    restore_logging_state: LoggingState | None = None,
+) -> None:
+    """Reset application logging state.
 
-    The root logger is restored to the standard warning level with a null handler,
-    which closes any terminal or file handlers created for the completed workflow.
+    The function restores the logging state either to the state captured in a `LoggingState` instance or to a default state when `restore_logging_state` isn't provided.
+    In addition, it remove and closes any handlers that were added to the root logger and add a single null handler instead.
+
+    Args:
+        restore_logging_state: Optional logging state to restore.
     """
 
-    default_root_logger_level = logging.WARNING
+    original_root_logger_level = (
+        logging.WARNING
+        if restore_logging_state is None
+        else restore_logging_state.root_logger_level
+    )
+    original_additional_logger_levels = (
+        {} if restore_logging_state is None else restore_logging_state.additional_logger_level_map
+    )
 
-    configure_root_logger(level=default_root_logger_level)
+    for logger_name, original_level in original_additional_logger_levels.items():
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(original_level)
+
+    configure_root_logger(level=original_root_logger_level)

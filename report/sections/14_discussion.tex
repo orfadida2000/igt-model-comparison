@@ -1,0 +1,13 @@
+\section{Discussion}
+
+The primary result is that \PVL{} provided a better population-level account of healthy participants' IGT choices than the simpler objective-outcome \QL{} model. This conclusion holds under both AIC and BIC, so the advantage persists after penalizing \PVL{} for its two additional fitted parameters. It is also supported by both the magnitude of paired criterion differences and the proportion of participants for whom \PVL{} was preferred.
+
+The cognitive interpretation should remain narrower than a claim that the fitted PVL parameters reveal literal psychological mechanisms. Relative to the tested Q-learning baseline, allowing nonlinear sensitivity to outcome magnitude and asymmetric weighting of losses adds useful explanatory information. In other words, the results suggest that the representation of outcomes entering learning matters.
+
+This interpretation connects directly to the delta-learning framework. Both models retain the sequence
+\begin{equation}
+\text{prediction error}\rightarrow\text{value update}\rightarrow\text{future choice}.
+\end{equation}
+The central change is the teaching signal: \QL{} learns from \(r_t\), whereas \PVL{} learns from \(u(r_t)\). The improvement therefore does not require abandoning delta learning; it suggests that subjective outcome representation improves the tested account of IGT behavior.
+
+At the same time, the substantial frequency of boundary solutions limits strong interpretation of individual fitted parameters. The model-comparison conclusion is considerably stronger than any claim that a participant's fitted \(\lambda\), \(\alpha\), or other parameter can be read straightforwardly as a stable psychological trait.

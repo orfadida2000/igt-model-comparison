@@ -64,7 +64,44 @@ The standalone analysis creates:
 <timestamp>/
 ├── analysis_report.txt
 ├── figures/
+│   ├── signed_aic_difference_distribution.png
+│   ├── signed_aic_difference_distribution.pdf
+│   ├── ...
+│   └── parameters/
+│       ├── q_learning/
+│       │   ├── <parameter>_distribution.png
+│       │   └── <parameter>_distribution.pdf
+│       └── pvl_delta/
+│           ├── <parameter>_distribution.png
+│           └── <parameter>_distribution.pdf
 └── tables/
+    ├── subject_level_model_comparison.csv
+    ├── subject_level_model_comparison.tex
+    ├── study_model_preference.csv
+    ├── study_model_preference.tex
+    ├── ...
+    ├── model_win_inference.csv
+    └── model_win_inference.tex
 ```
 
-See [Final result analysis](workflow/analysis.md) for the seven derived tables and 18 default figures.
+The analysis produces seven logical derived tables and 18 logical figures with the default two-model configuration.
+
+Each logical table is exported as:
+
+- `.csv` for canonical machine-readable analysis output;
+- `.tex` for direct reuse in LaTeX documents.
+
+Each logical figure is exported by default as:
+
+- `.png` for inspection and general-purpose use;
+- `.pdf` for vector report-quality use.
+
+Different representations of the same artifact are stored side by side in the same semantic directory rather than in separate format-specific directory trees.
+
+See [Final result analysis](workflow/analysis.md) for the complete analysis methodology and artifact list.
+
+## Relationship to the final written report
+
+The analysis outputs above are research artifacts produced by Python. They are distinct from the final academic report under `report/`. The LaTeX report incorporates selected tables and figures derived from the final corrected analysis, while `analysis_report.txt` remains a machine/workflow-oriented text summary rather than the course deliverable.
+
+The compiled course report is `report/report.pdf`. See [Final results](final-results.md) for the exact result set represented in that document.

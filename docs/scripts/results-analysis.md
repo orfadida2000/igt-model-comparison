@@ -33,7 +33,7 @@ The three result-table arguments are required and must belong to the same comple
 |---|---|---:|
 | `--output-dir` | Root directory for timestamped analysis output. | `assets/results/analysis` |
 | `--logging-dir` | Root directory for analysis log files. | `assets/logs/analysis` |
-| `--figure-formats` | One or more Matplotlib output formats. | `png` |
+| `--figure-formats` | One or more Matplotlib output formats. | `png pdf` |
 | `--figure-dpi` | Figure resolution in dots per inch. | `300` |
 | `--histogram-bins` | Positive integer or NumPy histogram strategy such as `auto`. | `auto` |
 | `--confidence-level` | Confidence level used for bootstrap and exact binomial intervals. | `0.95` |
@@ -42,14 +42,18 @@ The three result-table arguments are required and must belong to the same comple
 
 The project currently uses a fixed shared seed, so the bootstrap seed is taken from project configuration rather than exposed as a CLI argument.
 
+The default figure formats are PNG and PDF. PNG is retained for convenient inspection and general use, while PDF provides vector report-quality output. Both are generated from the same Matplotlib figure object.
+
 ## Outputs
 
 A standard run creates a timestamped directory containing:
 
-- seven derived CSV tables;
-- 18 figures with the default two-model PNG configuration;
+- seven logical derived tables, each exported as both `.csv` and `.tex`;
+- 18 logical figures with the default two-model configuration, each exported as both `.png` and `.pdf`;
 - `analysis_report.txt`;
 - logging artifacts when logging is enabled.
+
+`analysis_report.txt` and the runtime logs count logical figures and logical tables, not each individual format file.
 
 See [Final result analysis](../workflow/analysis.md) for the full artifact list and [Result files](../results.md) for output organization.
 

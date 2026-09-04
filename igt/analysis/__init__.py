@@ -6,13 +6,17 @@ report. The complete workflow is orchestrated by
 [`generate_results_analysis`][igt.analysis.pipeline.generate_results_analysis].
 """
 
-from .config import AnalysisConfig
+from typing import Final
+
+from .artifacts import GeneratedFigure, GeneratedTable
+from .config import AnalysisConfig, FigureStyleConfig
 from .inference import (
     build_criterion_inference_table,
     build_model_win_inference_table,
 )
 from .io import ResultTables, load_result_tables
 from .pipeline import AnalysisOutputs, generate_results_analysis
+from .plots import analysis_plot_context
 from .tables import (
     build_boundary_summary_table,
     build_model_win_table,
@@ -25,7 +29,11 @@ from .validation import validate_result_tables
 __all__ = [
     "AnalysisConfig",
     "AnalysisOutputs",
+    "FigureStyleConfig",
+    "GeneratedFigure",
+    "GeneratedTable",
     "ResultTables",
+    "analysis_plot_context",
     "build_criterion_inference_table",
     "build_boundary_summary_table",
     "build_model_win_inference_table",

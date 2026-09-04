@@ -1,0 +1,16 @@
+\section{Fitting Validation and Robustness Analyses}
+\subsection{Convergence and uniform-choice reference}
+
+The final analysis contained valid, converged fits for all 617 participants under both models. As an additional reference, model fit was compared with uniform choice over the four decks, \(P(d)=0.25\). Fits that provide little improvement over this baseline should not be treated as strong evidence for psychologically interpretable parameter values.
+
+\subsection{Parameter-boundary diagnostics}
+
+Parameter estimates were checked for accumulation at lower or upper optimization bounds. Boundary solutions can indicate either that the chosen numerical bound constrains the optimum or that the data weakly identify a parameter because of flat likelihood regions or parameter trade-offs.
+
+\subsection{Q-learning inverse-temperature sensitivity}
+
+The initial Q-learning upper bound \(\beta_{\max}=20\) showed substantial upper-bound pressure. Because the numerical scale of inverse temperature depends on the scale of learned values, progressively wider caps of 20, 50, and 100 were examined. The final primary analysis used \(\beta_{\max}=100\) to reduce artificial constraint by the original cap.
+
+\subsection{PVL nested-model optimization check}
+
+A further optimization check exploited the fact that \PVL{} can reproduce a Q-learning-like solution within the relevant parameter space. Eight participants initially had an optimized \PVL{} NLL worse than the corresponding \QL{} NLL, indicating likely local-optimization failure. These participants were refitted with an additional Q-equivalent warm start. All eight improved, none remained worse than \QL{} in raw NLL, and non-targeted rows were verified unchanged. This correction was applied before the final model-comparison analysis.

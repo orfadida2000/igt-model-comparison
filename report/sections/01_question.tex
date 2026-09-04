@@ -1,0 +1,14 @@
+\section{Research Question and Project Rationale}
+
+The Iowa Gambling Task (IGT) provides a trial-by-trial record of how people adapt choices after gains and losses. This project asks whether healthy participants' choices are adequately explained by learning from objective monetary outcomes, or whether a model that transforms those outcomes according to subjective outcome sensitivity and loss aversion provides a better account.
+
+The comparison is between a simple \QL{} model and the \PVL{} model. Both use a delta-learning structure and a probabilistic choice rule. Their central psychological difference is the teaching signal that enters learning. In \QL{}, the prediction error is computed from the scaled objective monetary outcome. In \PVL{}, the objective outcome is first transformed into subjective utility.
+
+\begin{equation}
+    \text{\QL: objective outcome} \rightarrow \text{prediction error} \rightarrow \text{learned value},
+\end{equation}
+\begin{equation}
+    \text{\PVL: objective outcome} \rightarrow \text{subjective utility} \rightarrow \text{prediction error} \rightarrow \text{learned value}.
+\end{equation}
+
+The additional flexibility of \PVL{} must earn its complexity. The main question is therefore whether it explains observed choices better even after penalizing its two additional fitted parameters using AIC and BIC\@.

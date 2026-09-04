@@ -1,0 +1,21 @@
+\section{What Exactly Differs Between the Models?}
+
+\begin{table}[H]
+    \centering
+    \caption{Conceptual comparison of the two candidate models.}\label{tab:model-comparison}
+    \begin{tabular}{lll}
+        \toprule
+        Feature                & \QL{}                     & \PVL{}                    \\
+        \midrule
+        Objective input        & Scaled net payoff         & Scaled net payoff         \\
+        Outcome transformation & None                      & Subjective utility        \\
+        Loss weighting         & Symmetric apart from sign & Controlled by \(\lambda\) \\
+        Magnitude sensitivity  & Linear                    & Controlled by \(\alpha\)  \\
+        Learning rule          & Delta rule                & Delta rule                \\
+        Choice rule            & Softmax                   & Softmax                   \\
+        Fitted parameters      & 2                         & 4                         \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The comparison therefore asks whether nonlinear outcome sensitivity and asymmetric loss weighting improve the explanation of human choices enough to justify two additional fitted parameters.

@@ -1,0 +1,67 @@
+\documentclass[11pt,a4paper]{article}
+
+\input{preamble}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{3.2cm}
+    {\LARGE\bfseries Modeling Iowa Gambling Task Behavior\par}
+    \vspace{0.5cm}
+    {\Large A Comparison of Q-learning and PVL-Delta\par}
+
+    \vspace{2.2cm}
+
+    {\large Or Fadida\par}
+    \vspace{0.35cm}
+    {\large Computational Models of Learning\par}
+    \vspace{0.15cm}
+    {\large Course 1071-8712\par} % chktex 8
+    \vspace{0.35cm}
+    {\large Final Project\par}
+
+    \vfill
+
+    {\large September 2026\par}
+\end{titlepage}
+
+\setcounter{tocdepth}{1}
+\tableofcontents
+\clearpage
+
+\input{sections/01_question}
+\input{sections/02_task_dataset}
+\input{sections/03_shared_framework}
+\input{sections/04_q_learning}
+\input{sections/05_pvl_delta}
+\input{sections/06_model_difference}
+\input{sections/07_softmax_likelihood}
+\input{sections/08_estimation}
+\input{sections/09_model_comparison}
+\input{sections/10_statistics}
+\input{sections/11_robustness}
+\input{sections/12_results}
+\input{sections/13_diagnostics}
+\input{sections/14_discussion}
+\input{sections/15_limitations}
+\input{sections/16_conclusion}
+
+\clearpage
+\phantomsection % chktex 1
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\clearpage
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+
+\addtocontents{toc}{%
+    \protect\setlength{\protect\cftsecindent}{1.5em}%
+}
+
+\input{sections/appendices}
+
+\end{document}

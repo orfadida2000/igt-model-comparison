@@ -13,7 +13,17 @@ The implementation covers the complete workflow:
 5. correct rare PVL-Delta local-optimization failures using Q-learning-equivalent warm starts;
 6. test Q-learning inverse-temperature sensitivity for capped solutions;
 7. validate final result tables and generate descriptive and inferential analyses;
-8. export timestamped CSV, text, log, and figure artifacts.
+8. export timestamped CSV, LaTeX-table, text, log, PNG, and PDF figure artifacts.
+
+## Final written report
+
+The completed course report is maintained separately from the MkDocs site under `report/`. The LaTeX source, report-specific figures and tables, bibliography, and compiled PDF are kept together so the academic deliverable can be read or rebuilt without changing the Python package.
+
+- Repository source directory: `report/`
+- Compiled deliverable: `report/report.pdf`
+- [Open the final PDF on GitHub](https://github.com/orfadida2000/igt-model-comparison/blob/main/report/report.pdf)
+
+The Python analysis pipeline does **not** generate the written report itself. It generates the validated numerical, tabular, graphical, and text artifacts that support the report.
 
 ## Main entry points
 
@@ -34,7 +44,8 @@ The implementation covers the complete workflow:
 - [Fitting and comparison](workflow/fitting.md) — primary optimization pipeline.
 - [PVL-Delta correction](workflow/correction.md) — nested-model warm-start correction.
 - [Sensitivity analysis](workflow/sensitivity.md) — inverse-temperature ceiling checks.
-- [Result analysis](workflow/analysis.md) — validation, tables, figures, and report generation.
+- [Result analysis](workflow/analysis.md) — validation, derived tables, figures, inference, and the analysis text report.
 - [Statistical inference](statistical-inference.md) — bootstrap, Wilcoxon, and exact binomial analyses.
-- [Final results](final-results.md) — results included in the repository.
+- [Final results](final-results.md) — results included in the repository and their relation to the final written report.
+- [Final report](report.md) — final PDF, LaTeX source layout, build instructions, and relation to the final analysis.
 - [API reference](api/index.md) — generated documentation for implementation modules.

@@ -6,6 +6,18 @@ Q-learning inverse temperature can accumulate at an imposed upper bound. The sen
 
 This provides a diagnostic check on whether a finite inverse-temperature ceiling is materially influencing those fits.
 
+## Historical sensitivity used for the final project
+
+The final report's Q-learning bound choice was informed by an earlier staged sensitivity analysis. The original primary configuration used an inverse-temperature ceiling of 20. Using the selection threshold 19.5 identified 154 converged participants near that ceiling. Those participants were then refit with wider ceilings of 50 and 100. The final primary analysis consequently adopted an upper bound of 100.
+
+This historical 20 -> 50 -> 100 analysis answers a specific model-development question: whether the original ceiling of 20 was constraining fitted solutions. It is documented as part of the final methodology and should not be confused with the current reusable script preset.
+
+## Current script preset
+
+In the current repository version, the sensitivity script uses a default selection threshold of 19.5 and predefined reruns at an inverse-temperature maximum of 100 with 10 and 20 Q-learning starts. These settings provide a follow-up check on high-inverse-temperature fits under the finalized bound and on sensitivity to the number of starts.
+
+The predefined conditions live in `scripts/q_inverse_temperature_sensitivity.py`; use the current source together with `--help` when reproducing a new sensitivity run.
+
 ## Command
 
 ```bash

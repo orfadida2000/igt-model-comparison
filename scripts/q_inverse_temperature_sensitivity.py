@@ -42,7 +42,7 @@ from igt.constants.config import (
 from igt.constants.fitting import DEFAULT_MAX_ITERATIONS
 from igt.constants.path import IGT_DATASET_PATH, LOGS_DIR, RESULTS_DIR
 from igt.execution.pipeline import FittingPipelineConfig, run_fitting_pipeline
-from igt.logging import application_logging_cleanup, configure_application_logging
+from igt.logging import LoggingState, application_logging_cleanup, configure_application_logging
 from igt.models import QLearningModel
 from igt.notify.formsubmit import (
     error_email_notifier,
@@ -95,11 +95,14 @@ def _directory_path(value: str) -> Path:
     return path
 
 
-def _parse_args() -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line options for Q-learning inverse-temperature sensitivity fitting.
 
     The parser uses shared project type filters and conditionally exposes seed and
     FormSubmit options when those values are not fixed by configuration.
+
+    Args:
+        argv: Optional argument vector to parse instead of process command-line arguments.
 
     Returns:
         Raw argparse namespace containing the sensitivity-workflow options.
@@ -221,7 +224,7 @@ def _parse_args() -> argparse.Namespace:
         extra_options={},
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _normalize_args(
@@ -280,22 +283,33 @@ def _format_numeric_filename_value(value: float) -> str:
     return f"{value:g}".replace(".", "p")
 
 
-def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, DataFrame, Path | None]:
+def _setup(
+    argv: Sequence[str] | None = None,
+    additional_logger_levels: dict[str | logging.Logger, int] | None = None,
+) -> tuple[argparse.Namespace, argparse.Namespace, str, DataFrame, LoggingState, Path | None]:
     """Prepare one sensitivity-analysis run.
 
     Parses and normalizes CLI arguments, creates the timestamped output
     directory path, selects qualifying subjects from the previous fit table,
     and configures application logging.
 
+    Args:
+        argv: Optional argument sequence. When omitted, arguments are read from
+            the process command line.
+        additional_logger_levels: Optional mapping of logger names to levels used to
+            configure additional loggers.
+
     Returns:
         Parsed arguments, normalized arguments, run timestamp, selected subject
-        keys, and the optional log-file path.
+        keys, original logging state, and the optional log-file path.
     """
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
     args = _parse_args()
     normalized_args = _normalize_args(args)
 
     normalized_args.output_dir = Path(normalized_args.output_dir) / start_datetime_str
+
+    original_logger_state = LoggingState(additional_logger_levels)
 
     subject_keys = select_q_inverse_temperature_subject_keys_from_csv(
         normalized_args.fit_results_path,
@@ -312,8 +326,17 @@ def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, DataFrame, Pa
                 f"q_inverse_temperature_sensitivity_{len(subject_keys)}_subjects_{start_datetime_str}.log"
             )
         ),
+        additional_logger_levels=additional_logger_levels,
     )
-    return args, normalized_args, start_datetime_str, subject_keys, logging_path
+
+    return (
+        args,
+        normalized_args,
+        start_datetime_str,
+        subject_keys,
+        original_logger_state,
+        logging_path,
+    )
 
 
 def _run(
@@ -401,11 +424,13 @@ def _run(
 
 def _cleanup(
     *,
+    logging_state: LoggingState | None = None,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Release application logging resources after the sensitivity workflow.
 
     Args:
+        logging_state: Optional logging state to restore.
         logger: Logger instance or logger name used to record cleanup progress.
 
     Notes:
@@ -415,7 +440,7 @@ def _cleanup(
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     logger.info("Cleaning up application logging...")
-    application_logging_cleanup()
+    application_logging_cleanup(logging_state)
 
 
 def main() -> None:
@@ -432,8 +457,9 @@ def main() -> None:
         normalized_args,
         start_datetime_str,
         subject_keys,
+        original_logger_state,
         logging_path,
-    ) = _setup()
+    ) = _setup(additional_logger_levels={"fontTools": logging.WARNING})
 
     notify_formsubmit_id: str | None = normalized_args.notify_formsubmit_id
     logger = logging.getLogger(LOGGER_NAME)
@@ -520,7 +546,7 @@ The following results files have been generated and are attached in a zip file n
                 )
     finally:
         logger.info("Performing cleanup...")
-        _cleanup(logger=logger)
+        _cleanup(logging_state=original_logger_state, logger=logger)
 
 
 if __name__ == "__main__":

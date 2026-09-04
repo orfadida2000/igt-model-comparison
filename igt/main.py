@@ -52,7 +52,7 @@ from igt.constants.models import DEFAULT_MAX_INVERSE_TEMPERATURE
 from igt.constants.path import IGT_DATASET_PATH, LOGS_DIR, RESULTS_DIR
 from igt.constants.schema import PARTICIPANT_KEY_COLUMNS
 from igt.execution.pipeline import FittingPipelineConfig, run_fitting_pipeline
-from igt.logging import application_logging_cleanup, configure_application_logging
+from igt.logging import LoggingState, application_logging_cleanup, configure_application_logging
 from igt.models import PVLDeltaModel, QLearningModel
 from igt.notify.formsubmit import (
     error_email_notifier,
@@ -83,12 +83,15 @@ def _n_pvl_starts_power_of_two(n_starts: int) -> int:
     return n_starts
 
 
-def _parse_args() -> argparse.Namespace:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line options for the primary fitting workflow.
 
     Options exposed conditionally by project constants, such as random seed or
     FormSubmit configuration, are added only when their values are not fixed by
     configuration.
+
+    Args:
+        argv: Optional argument vector to parse instead of process command-line arguments.
 
     Returns:
         Parsed command-line arguments.
@@ -270,7 +273,7 @@ def _parse_args() -> argparse.Namespace:
         extra_options={},
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _normalize_args(
@@ -326,12 +329,21 @@ def _normalize_args(
     return argparse.Namespace(**normalized_args)
 
 
-def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, Path | None]:
+def _setup(
+    argv: Sequence[str] | None = None,
+    additional_logger_levels: dict[str | logging.Logger, int] | None = None,
+) -> tuple[argparse.Namespace, argparse.Namespace, str, LoggingState, Path | None]:
     """Prepare a timestamped fitting run and configure application logging.
 
+    Args:
+        argv: Optional argument sequence. When omitted, arguments are read from
+            the process command line.
+        additional_logger_levels: Optional mapping of logger names to levels used to
+            configure additional loggers.
+
     Returns:
-        Parsed arguments, normalized runtime arguments, run timestamp, and the
-        optional log-file path.
+        Parsed arguments, normalized runtime arguments, run timestamp, original
+        logging state, and the optional log-file path.
     """
 
     start_datetime_str = datetime.now().strftime(FILENAME_DATETIME_FMT)
@@ -340,6 +352,8 @@ def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, Path | None]:
     normalized_args = _normalize_args(args)
 
     normalized_args.output_dir = Path(normalized_args.output_dir) / start_datetime_str
+
+    original_logger_state = LoggingState(additional_logger_levels)
 
     logging_path = configure_application_logging(
         disabled=normalized_args.logging_disabled,
@@ -352,9 +366,10 @@ def _setup() -> tuple[argparse.Namespace, argparse.Namespace, str, Path | None]:
                 f"{start_datetime_str}.log"
             )
         ),
+        additional_logger_levels=additional_logger_levels,
     )
 
-    return args, normalized_args, start_datetime_str, logging_path
+    return args, normalized_args, start_datetime_str, original_logger_state, logging_path
 
 
 def _run(
@@ -448,8 +463,8 @@ def _run(
         )
         logger.info("Result analysis completed successfully.")
         logger.info(f"Report: {outputs.report_path}")
-        logger.info(f"Figures: {len(outputs.figure_paths)}")
-        logger.info(f"Tables: {len(outputs.table_paths)}")
+        logger.info(f"Figures: {len(outputs.figures)}")
+        logger.info(f"Tables: {len(outputs.tables)}")
 
         output_paths.append(outputs.report_path)
         output_paths.extend(outputs.figure_paths)
@@ -460,11 +475,13 @@ def _run(
 
 def _cleanup(
     *,
+    logging_state: LoggingState | None = None,
     logger: logging.Logger | str = LOGGER_NAME,
 ) -> None:
     """Release application logging resources after the primary fitting workflow.
 
     Args:
+        logging_state: Optional logging state to restore.
         logger: Logger instance or logger name used to record cleanup progress.
 
     Notes:
@@ -475,7 +492,7 @@ def _cleanup(
     logger = logging.getLogger(logger) if isinstance(logger, str) else logger
 
     logger.info("Cleaning up application logging...")
-    application_logging_cleanup()
+    application_logging_cleanup(logging_state)
 
 
 def main() -> None:
@@ -492,8 +509,9 @@ def main() -> None:
         args,
         normalized_args,
         start_datetime_str,
+        original_logger_state,
         logging_path,
-    ) = _setup()
+    ) = _setup(additional_logger_levels={"fontTools": logging.WARNING})
 
     notify_formsubmit_id: str | None = normalized_args.notify_formsubmit_id
     logger = logging.getLogger(LOGGER_NAME)
@@ -553,7 +571,7 @@ The following results files have been generated and are attached in a zip file n
                 )
     finally:
         logger.info("Performing cleanup...")
-        _cleanup(logger=logger)
+        _cleanup(logging_state=original_logger_state, logger=logger)
 
 
 if __name__ == "__main__":

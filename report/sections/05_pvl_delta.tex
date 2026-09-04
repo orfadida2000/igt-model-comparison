@@ -1,0 +1,34 @@
+\section{PVL-Delta Model}
+
+\PVL{} first scales the objective net outcome in the same way:
+\begin{equation}
+    x_t=\frac{\mathrm{win}_t+\mathrm{loss}_t}{100}.
+\end{equation}
+It then transforms that outcome into subjective utility:
+\begin{equation}
+    u(x_t)=
+    \begin{cases}
+        x_t^{\alpha},            & x_t\ge 0, \\
+        -\lambda(-x_t)^{\alpha}, & x_t<0.
+    \end{cases}
+\end{equation}
+The outcome-sensitivity parameter \(\alpha\) controls the nonlinear effect of outcome magnitude, while the loss-aversion parameter \(\lambda\) controls the relative weighting of negative outcomes.
+
+The subjective utility becomes the teaching signal in the delta update:
+\begin{equation}
+    \delta_t=u(x_t)-E_{a_t}(t),
+\end{equation}
+\begin{equation}
+    E_{a_t}(t+1)=E_{a_t}(t)+\phi\delta_t,
+\end{equation}
+where \(\phi\) is the learning rate and only the chosen deck expectancy is updated.
+
+The fitted response-consistency parameter \(c\) is transformed into choice sensitivity as
+\begin{equation}
+    \theta=3^c-1.
+\end{equation}
+Thus \(c\) is fitted, whereas \(\theta\) is derived. Choice probabilities are
+\begin{equation}
+    P(a_t=d)=\frac{\exp\left[\theta E_d(t)\right]}{\sum_{j=1}^{4}\exp\left[\theta E_j(t)\right]}.
+\end{equation}
+The four fitted parameters are therefore \(\phi\), \(\alpha\), \(\lambda\), and \(c\)~\cite{ahn2008}.

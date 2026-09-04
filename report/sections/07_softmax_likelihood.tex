@@ -1,0 +1,18 @@
+\section{From Learned Values to Observed Behavior: Softmax and Likelihood}
+\subsection{Why softmax?}
+
+The models require a rule that converts learned values into observable choices. A deterministic rule that always selects the currently highest-valued deck would imply unrealistically perfect consistency. Softmax instead assumes that higher-valued decks become more likely to be selected without requiring certainty. Its sensitivity parameter controls how strongly value differences affect choice probabilities~\cite{daw2011}.
+
+Softmax is used here as a descriptive probabilistic choice rule. It does not imply that the brain literally computes exponentials, nor does it distinguish whether stochasticity reflects exploration, lapses, omitted variables, or other processes.
+
+\subsection{From choice probabilities to likelihood}
+
+For parameter vector \(\vartheta\), the model assigns the observed choice on trial \(t\) probability \(P(a_t^{\mathrm{obs}}\mid\vartheta)\). The likelihood of the complete observed sequence is
+\begin{equation}
+L(\vartheta)=\prod_t P(a_t^{\mathrm{obs}}\mid\vartheta).
+\end{equation}
+For numerical stability and convenient minimization, fitting uses the negative log-likelihood:
+\begin{equation}
+\NLL(\vartheta)=-\sum_t\log P(a_t^{\mathrm{obs}}\mid\vartheta).
+\end{equation}
+Minimizing NLL is equivalent to maximum-likelihood estimation~\cite{daw2011}. Softmax is therefore the behavioral choice assumption, whereas NLL is the statistical fitting objective implied by those probabilistic predictions.

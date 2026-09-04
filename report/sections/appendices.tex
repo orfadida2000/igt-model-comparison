@@ -1,0 +1,113 @@
+\section{Full Parameter and Fitting Configuration}
+The main text reports the settings that materially affect the scientific analysis. The implementation used a payoff scale of 100, Q-learning bounds \(\eta\in[0,1]\) and \(\beta\in[0,100]\), and PVL-Delta bounds \(\phi\in[10^{-6},1-10^{-6}]\), \(\alpha\in[10^{-6},2]\), \(\lambda\in[10^{-6},10]\), and \(c\in[0,5]\). Q-learning used up to 10 grid-local starts; PVL-Delta used 32 scrambled Sobol starts with seed 42. The final population-level bootstrap analysis used 10,000 resamples with seed 42.
+
+\section{Q-learning Inverse-Temperature Sensitivity}
+The original Q-learning analysis used an inverse-temperature upper bound of \(\beta_{\max}=20\). Because fitted values accumulated near that cap, subjects with an original fitted inverse temperature of at least 19.5 were selected for a targeted sensitivity analysis. This produced a cohort of 154 participants. The same cohort was fitted under progressively wider upper bounds of 20, 50, and 100.
+
+\begin{table}[H]
+    \centering
+    \caption{Design of the Q-learning inverse-temperature sensitivity analysis.}\label{tab:beta-sensitivity}
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        Fit                & \(\beta_{\max}\) & Participants          \\
+        \midrule
+        Original-cap refit & 20               & 154 selected subjects \\
+        Expanded-cap refit & 50               & Same 154 subjects     \\
+        Final-cap refit    & 100              & Same 154 subjects     \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The purpose of this analysis was to determine whether the original upper bound was artificially constraining the likelihood optimum. The wider-bound fits showed that the cap of 20 was too restrictive for a substantial subset of the selected subjects, motivating the final primary-analysis bound of \(\beta_{\max}=100\). The targeted cohort represented 154 of 617 participants (24.96\% of the full sample). In the final analysis with the wider cap, 149 of 617 Q-learning fits (24.15\%) still reached \(\beta=100\), showing that substantial upper-bound accumulation remained even after the sensitivity analysis. The value 100 should therefore be interpreted as a tested numerical search bound, not as a psychological maximum or evidence that inverse temperature is precisely identified for every participant. Its numerical meaning depends on the scale of the learned values.
+
+\section{PVL Optimization Correction}
+PVL-Delta can reproduce a Q-learning-like solution within the relevant parameter space. Consequently, an optimized PVL-Delta fit with an NLL worse than the corresponding Q-learning fit is evidence that the local optimizer has failed to find an adequate PVL solution rather than evidence that the more flexible model is intrinsically unable to match Q-learning.
+
+Eight participants met this diagnostic condition in the initial run. They were refitted with one additional Q-equivalent warm start, increasing the number of PVL starts from 32 to 33 for those participants only. All eight improved, every corrected fit satisfied the nesting check, no targeted participant remained worse than Q-learning in raw NLL, and all non-targeted rows were verified unchanged. The corrected fits were used in all final model-comparison results.
+
+\begin{table}[H]
+    \centering
+    \caption{Participant-level NLL values for the eight PVL-Delta correction targets. ``Original'' is the initial 32-start PVL fit and ``Corrected'' is the fit after adding the Q-equivalent warm start.}\label{tab:pvl-correction}
+    \small
+    \begin{tabular}{@{}rrrrr@{}}
+        \toprule
+        Trials & Subject & Q-learning & PVL original & PVL corrected \\
+        \midrule
+        100    & 51      & 136.763    & 138.629      & 127.722       \\
+        100    & 64      & 118.674    & 129.457      & 111.968       \\
+        100    & 246     & 116.275    & 116.750      & 114.698       \\
+        100    & 372     & 136.664    & 136.763      & 132.552       \\
+        100    & 431     & 131.525    & 133.936      & 130.932       \\
+        150    & 63      & 179.249    & 188.376      & 175.475       \\
+        150    & 67      & 206.337    & 207.944      & 202.018       \\
+        150    & 93      & 185.258    & 186.378      & 175.307       \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Complete Diagnostics}
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{q_vs_pvl_negative_log_likelihood.pdf}
+        \caption{Participant-level negative log-likelihood comparison.}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{uniform_choice_improvement_distribution.pdf}
+        \caption{Distribution of improvement over uniform choice.}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[H]\centering\includegraphics[width=0.72\textwidth]{uniform_choice_improvement_scatter.pdf}\caption{Participant-level model improvement over uniform choice.}\end{figure}
+
+\section{Parameter Distributions}
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{q_learning_learning_rate_distribution.pdf}
+        \caption{Q-learning learning-rate distribution.}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{q_learning_inverse_temperature_distribution.pdf}
+        \caption{Q-learning inverse-temperature distribution.}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{pvl_delta_learning_rate_distribution.pdf}
+        \caption{PVL-Delta learning-rate distribution.}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{pvl_delta_outcome_sensitivity_distribution.pdf}
+        \caption{PVL-Delta outcome-sensitivity distribution.}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{pvl_delta_loss_aversion_distribution.pdf}
+        \caption{PVL-Delta loss-aversion distribution.}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{pvl_delta_response_consistency_distribution.pdf}
+        \caption{PVL-Delta response-consistency distribution.}
+    \end{minipage}
+\end{figure}
+
+\section{Additional Model-Comparison Figures}
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{q_vs_pvl_aic.pdf}
+        \caption{Participant-level AIC comparison.}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.49\textwidth}\centering
+        \includegraphics[width=\linewidth]{q_vs_pvl_bic.pdf}
+        \caption{Participant-level BIC comparison.}
+    \end{minipage}
+\end{figure}
+
+\begin{figure}[H]\centering\includegraphics[width=0.72\textwidth]{pvl_win_rate_confidence_intervals.pdf}\caption{PVL-Delta model-win rates with exact confidence intervals.}\end{figure}
