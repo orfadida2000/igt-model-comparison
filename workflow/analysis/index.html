@@ -982,10 +982,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#text-report" class="md-nav__link">
+  <a href="#generated-artifact-representation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Text report
+        Generated artifact representation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analysis-text-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysis text report
       
     </span>
   </a>
@@ -1096,6 +1107,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reproducibility/" class="md-nav__link">
         
   
@@ -1160,7 +1198,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1182,14 +1220,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1581,10 +1619,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#text-report" class="md-nav__link">
+  <a href="#generated-artifact-representation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Text report
+        Generated artifact representation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analysis-text-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysis text report
       
     </span>
   </a>
@@ -1695,7 +1744,7 @@
 <tbody>
 <tr>
 <td>figure formats</td>
-<td style="text-align: right;"><code>png</code></td>
+<td style="text-align: right;"><code>png</code>, <code>pdf</code></td>
 </tr>
 <tr>
 <td>figure DPI</td>
@@ -1728,16 +1777,32 @@
 </tbody>
 </table>
 <p>The CLI exposes figure format/DPI, histogram bins, confidence level, and bootstrap resample settings. With the current fixed-seed project configuration, the bootstrap seed is taken from the shared fixed seed rather than exposed as a CLI option.</p>
+<p>The plotting configuration is applied temporarily through a Matplotlib RC context. PDF output uses TrueType/Type 42 font embedding, while the same Matplotlib <code>Figure</code> object is saved to every configured format so PNG and PDF versions have identical visual content.</p>
+<p>Figure size and typography are centralized in the analysis plotting-style configuration rather than hard-coded independently in each plotting function. This keeps report-oriented dimensions and font sizes centralized and consistent with the finalized LaTeX layout.</p>
 <h2 id="derived-tables">Derived tables<a class="headerlink" href="#derived-tables" title="Permanent link">&para;</a></h2>
-<p>The analysis writes seven CSV tables:</p>
+<p>The analysis writes seven logical derived tables. Each table is exported in both machine-readable CSV and LaTeX formats:</p>
 <div class="highlight"><pre><span></span><code>subject_level_model_comparison.csv
+subject_level_model_comparison.tex
+
 study_model_preference.csv
+study_model_preference.tex
+
 boundary_summary.csv
+boundary_summary.tex
+
 parameter_summary.csv
+parameter_summary.tex
+
 model_win_summary.csv
+model_win_summary.tex
+
 criterion_difference_inference.csv
+criterion_difference_inference.tex
+
 model_win_inference.csv
+model_win_inference.tex
 </code></pre></div>
+<p>The CSV files remain the canonical machine-readable outputs. The <code>.tex</code> files provide directly reusable LaTeX table representations for the written report.</p>
 <h3 id="subject-level-comparison">Subject-level comparison<a class="headerlink" href="#subject-level-comparison" title="Permanent link">&para;</a></h3>
 <p>The paired table places both models on one row per eligible subject and defines signed criterion differences as:</p>
 <div class="arithmatex">\[
@@ -1748,11 +1813,12 @@ model_win_inference.csv
 \]</div>
 <p>Positive values favor PVL-Delta.</p>
 <h3 id="study-preference">Study preference<a class="headerlink" href="#study-preference" title="Permanent link">&para;</a></h3>
-<p><code>study_model_preference.csv</code> summarizes AIC/BIC win counts, win rates, and signed criterion-difference summaries separately by <code>source_study</code>.</p>
+<p><code>study_model_preference.csv</code> and <code>study_model_preference.tex</code> summarize AIC/BIC win counts, win rates, and signed criterion-difference summaries separately by <code>source_study</code>.</p>
 <h3 id="boundary-and-parameter-summaries">Boundary and parameter summaries<a class="headerlink" href="#boundary-and-parameter-summaries" title="Permanent link">&para;</a></h3>
 <p>Boundary tables quantify lower/upper/any-bound solutions. Parameter summaries report count, mean, standard deviation, quartiles, extrema, configured bounds, and boundary frequencies.</p>
 <h2 id="figures">Figures<a class="headerlink" href="#figures" title="Permanent link">&para;</a></h2>
-<p>With the default two models and PNG output, the standard run produces 18 figures:</p>
+<p>With the default two models, the standard run produces 18 logical figures. By default, each logical figure is saved in both PNG and PDF form, side by side in the same semantic output directory.</p>
+<p>The standard figure set includes:</p>
 <ul>
 <li>signed AIC and BIC difference distributions;</li>
 <li>Q-vs-PVL NLL, AIC, and BIC scatterplots;</li>
@@ -1764,8 +1830,19 @@ model_win_inference.csv
 <li>uniform-choice improvement distribution and paired scatter;</li>
 <li>one fitted-parameter distribution for each of the six model parameters.</li>
 </ul>
-<h2 id="text-report">Text report<a class="headerlink" href="#text-report" title="Permanent link">&para;</a></h2>
-<p><code>analysis_report.txt</code> records validation success, aggregate fit statistics, model-win rates, inferential results, source-study coverage, boundary diagnostics, parameter summaries, and generated artifact paths.</p>
+<p>PNG output is convenient for inspection and general-purpose use. PDF output is vector-based and intended for report-quality inclusion in LaTeX. The configured 300 DPI remains relevant for PNG output and for any rasterized elements that may appear inside a PDF; vector text, axes, and line work in PDF are resolution-independent.</p>
+<h2 id="generated-artifact-representation">Generated artifact representation<a class="headerlink" href="#generated-artifact-representation" title="Permanent link">&para;</a></h2>
+<p>The analysis represents each logical figure and table as one artifact with one or more concrete file paths. This keeps artifact counts tied to logical outputs rather than counting each format as a separate figure or table.</p>
+<p>For example, one logical figure may correspond to:</p>
+<div class="highlight"><pre><span></span><code>model_win_counts.png
+model_win_counts.pdf
+</code></pre></div>
+<p>and one logical table may correspond to:</p>
+<div class="highlight"><pre><span></span><code>model_win_summary.csv
+model_win_summary.tex
+</code></pre></div>
+<h2 id="analysis-text-report">Analysis text report<a class="headerlink" href="#analysis-text-report" title="Permanent link">&para;</a></h2>
+<p><code>analysis_report.txt</code> records validation success, aggregate fit statistics, model-win rates, inferential results, source-study coverage, boundary diagnostics, parameter summaries, and generated artifact paths. Figure and table counts refer to logical artifacts rather than individual format files.</p>
 
 
 

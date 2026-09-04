@@ -940,6 +940,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reproducibility/" class="md-nav__link">
         
   
@@ -1006,7 +1033,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -1028,14 +1055,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1775,17 +1802,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scripts.results_analysis.build_argument_parser" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        build_argument_parser
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#scripts.results_analysis._parse_args" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2336,17 +2352,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scripts.results_analysis.build_argument_parser" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        build_argument_parser
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#scripts.results_analysis._parse_args" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2672,7 +2677,7 @@ summary CSV files, and performs cleanup after successful or failed runs.</p>
 
 
 <a href="#igt.main._parse_args" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2681,6 +2686,37 @@ summary CSV files, and performs cleanup after successful or failed runs.</p>
 <p>Options exposed conditionally by project constants, such as random seed or
 FormSubmit configuration, are added only when their values are not fixed by
 configuration.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>argv</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional argument vector to parse instead of process command-line arguments.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -2895,12 +2931,18 @@ configuration.</p>
 <span class="normal">270</span>
 <span class="normal">271</span>
 <span class="normal">272</span>
-<span class="normal">273</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse command-line options for the primary fitting workflow.</span>
 
 <span class="sd">    Options exposed conditionally by project constants, such as random seed or</span>
 <span class="sd">    FormSubmit configuration, are added only when their values are not fixed by</span>
 <span class="sd">    configuration.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        argv: Optional argument vector to parse instead of process command-line arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Parsed command-line arguments.</span>
@@ -3082,7 +3124,7 @@ configuration.</p>
         <span class="n">extra_options</span><span class="o">=</span><span class="p">{},</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3171,10 +3213,7 @@ configuration.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>igt\main.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">276</span>
-<span class="normal">277</span>
-<span class="normal">278</span>
-<span class="normal">279</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">279</span>
 <span class="normal">280</span>
 <span class="normal">281</span>
 <span class="normal">282</span>
@@ -3221,7 +3260,10 @@ configuration.</p>
 <span class="normal">323</span>
 <span class="normal">324</span>
 <span class="normal">325</span>
-<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
     <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize parsed fitting arguments into runtime values.</span>
@@ -3286,12 +3328,72 @@ configuration.</p>
 
 
 <a href="#igt.main._setup" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="logging.Logger">Logger</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span>
+    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span>
+    <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Prepare a timestamped fitting run and configure application logging.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>argv</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional argument sequence. When omitted, arguments are read from
+the process command line.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>additional_logger_levels</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span> | <span title="logging.Logger">Logger</span>, <span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional mapping of logger names to levels used to
+configure additional loggers.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -3309,7 +3411,7 @@ configuration.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Parsed arguments, normalized runtime arguments, run timestamp, and the</p>
+                <p>Parsed arguments, normalized runtime arguments, run timestamp, original</p>
               </div>
             </td>
           </tr>
@@ -3319,7 +3421,7 @@ configuration.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>optional log-file path.</p>
+                <p>logging state, and the optional log-file path.</p>
               </div>
             </td>
           </tr>
@@ -3329,10 +3431,7 @@ configuration.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>igt\main.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">332</span>
 <span class="normal">333</span>
 <span class="normal">334</span>
 <span class="normal">335</span>
@@ -3357,12 +3456,36 @@ configuration.</p>
 <span class="normal">354</span>
 <span class="normal">355</span>
 <span class="normal">356</span>
-<span class="normal">357</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">LoggingState</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare a timestamped fitting run and configure application logging.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        argv: Optional argument sequence. When omitted, arguments are read from</span>
+<span class="sd">            the process command line.</span>
+<span class="sd">        additional_logger_levels: Optional mapping of logger names to levels used to</span>
+<span class="sd">            configure additional loggers.</span>
+
 <span class="sd">    Returns:</span>
-<span class="sd">        Parsed arguments, normalized runtime arguments, run timestamp, and the</span>
-<span class="sd">        optional log-file path.</span>
+<span class="sd">        Parsed arguments, normalized runtime arguments, run timestamp, original</span>
+<span class="sd">        logging state, and the optional log-file path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">start_datetime_str</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">FILENAME_DATETIME_FMT</span><span class="p">)</span>
@@ -3371,6 +3494,8 @@ configuration.</p>
     <span class="n">normalized_args</span> <span class="o">=</span> <span class="n">_normalize_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
     <span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="n">start_datetime_str</span>
+
+    <span class="n">original_logger_state</span> <span class="o">=</span> <span class="n">LoggingState</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="p">)</span>
 
     <span class="n">logging_path</span> <span class="o">=</span> <span class="n">configure_application_logging</span><span class="p">(</span>
         <span class="n">disabled</span><span class="o">=</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">logging_disabled</span><span class="p">,</span>
@@ -3383,9 +3508,10 @@ configuration.</p>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">start_datetime_str</span><span class="si">}</span><span class="s2">.log&quot;</span>
             <span class="p">)</span>
         <span class="p">),</span>
+        <span class="n">additional_logger_levels</span><span class="o">=</span><span class="n">additional_logger_levels</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">normalized_args</span><span class="p">,</span> <span class="n">start_datetime_str</span><span class="p">,</span> <span class="n">logging_path</span>
+    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">normalized_args</span><span class="p">,</span> <span class="n">start_datetime_str</span><span class="p">,</span> <span class="n">original_logger_state</span><span class="p">,</span> <span class="n">logging_path</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3511,22 +3637,7 @@ configuration.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>igt\main.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">360</span>
-<span class="normal">361</span>
-<span class="normal">362</span>
-<span class="normal">363</span>
-<span class="normal">364</span>
-<span class="normal">365</span>
-<span class="normal">366</span>
-<span class="normal">367</span>
-<span class="normal">368</span>
-<span class="normal">369</span>
-<span class="normal">370</span>
-<span class="normal">371</span>
-<span class="normal">372</span>
-<span class="normal">373</span>
-<span class="normal">374</span>
-<span class="normal">375</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">375</span>
 <span class="normal">376</span>
 <span class="normal">377</span>
 <span class="normal">378</span>
@@ -3609,7 +3720,22 @@ configuration.</p>
 <span class="normal">455</span>
 <span class="normal">456</span>
 <span class="normal">457</span>
-<span class="normal">458</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span>
+<span class="normal">473</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">normalized_args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
     <span class="n">start_datetime_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3700,8 +3826,8 @@ configuration.</p>
         <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Result analysis completed successfully.&quot;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Report: </span><span class="si">{</span><span class="n">outputs</span><span class="o">.</span><span class="n">report_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Figures: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">figure_paths</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tables: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">table_paths</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Figures: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">figures</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tables: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="n">output_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">report_path</span><span class="p">)</span>
         <span class="n">output_paths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">figure_paths</span><span class="p">)</span>
@@ -3722,7 +3848,16 @@ configuration.</p>
 
 
 <a href="#igt.main._cleanup" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="igt.main.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="igt.main.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3741,6 +3876,27 @@ configuration.</p>
         </tr>
       </thead>
       <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>logging_state</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional logging state to restore.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
           <tr class="doc-section-item">
             <td>
                 <code>logger</code>
@@ -3770,30 +3926,34 @@ closes configured handlers and restores the minimal root-logger state.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>igt\main.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
-<span class="normal">471</span>
-<span class="normal">472</span>
-<span class="normal">473</span>
-<span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">476</span>
 <span class="normal">477</span>
-<span class="normal">478</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n">LoggingState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">LOGGER_NAME</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Release application logging resources after the primary fitting workflow.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        logging_state: Optional logging state to restore.</span>
 <span class="sd">        logger: Logger instance or logger name used to record cleanup progress.</span>
 
 <span class="sd">    Notes:</span>
@@ -3804,7 +3964,7 @@ closes configured handlers and restores the minimal root-logger state.</p>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">logger</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cleaning up application logging...&quot;</span><span class="p">)</span>
-    <span class="n">application_logging_cleanup</span><span class="p">()</span>
+    <span class="n">application_logging_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3832,24 +3992,7 @@ comparison, and summary result tables, and performs final cleanup.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>igt\main.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">498</span>
 <span class="normal">499</span>
 <span class="normal">500</span>
 <span class="normal">501</span>
@@ -3907,7 +4050,25 @@ comparison, and summary result tables, and performs final cleanup.</p>
 <span class="normal">553</span>
 <span class="normal">554</span>
 <span class="normal">555</span>
-<span class="normal">556</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the primary IGT model-fitting and comparison workflow.</span>
 
 <span class="sd">    The entry point parses and normalizes command-line arguments, configures</span>
@@ -3921,8 +4082,9 @@ comparison, and summary result tables, and performs final cleanup.</p>
         <span class="n">args</span><span class="p">,</span>
         <span class="n">normalized_args</span><span class="p">,</span>
         <span class="n">start_datetime_str</span><span class="p">,</span>
+        <span class="n">original_logger_state</span><span class="p">,</span>
         <span class="n">logging_path</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">()</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fontTools&quot;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">})</span>
 
     <span class="n">notify_formsubmit_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">normalized_args</span><span class="o">.</span><span class="n">notify_formsubmit_id</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
@@ -3982,7 +4144,7 @@ comparison, and summary result tables, and performs final cleanup.</p>
                 <span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Performing cleanup...&quot;</span><span class="p">)</span>
-        <span class="n">_cleanup</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+        <span class="n">_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="o">=</span><span class="n">original_logger_state</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4044,7 +4206,7 @@ audit report plus corrected fit/comparison/summary tables.</p>
 
 
 <a href="#scripts.correct_pvl_delta_fits._parse_args" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4053,6 +4215,37 @@ audit report plus corrected fit/comparison/summary tables.</p>
 <p>The parser uses the project's declarative argument/type-filter infrastructure and
 conditionally exposes seed and FormSubmit options according to the corresponding
 fixed-value configuration flags.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>argv</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional argument vector to parse instead of process command-line arguments.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -4080,7 +4273,9 @@ fixed-value configuration flags.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 97</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
 <span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
@@ -4213,12 +4408,16 @@ fixed-value configuration flags.</p>
 <span class="normal">227</span>
 <span class="normal">228</span>
 <span class="normal">229</span>
-<span class="normal">230</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
+<span class="normal">230</span>
+<span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse command-line options for targeted PVL-Delta fit correction.</span>
 
 <span class="sd">    The parser uses the project&#39;s declarative argument/type-filter infrastructure and</span>
 <span class="sd">    conditionally exposes seed and FormSubmit options according to the corresponding</span>
 <span class="sd">    fixed-value configuration flags.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        argv: Optional argument vector to parse instead of process command-line arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Raw argparse namespace containing the correction-workflow options.</span>
@@ -4346,7 +4545,7 @@ fixed-value configuration flags.</p>
         <span class="n">extra_options</span><span class="o">=</span><span class="p">{},</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4437,8 +4636,7 @@ and the resulting values are copied into a fresh namespace used by the workflow.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">233</span>
-<span class="normal">234</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">234</span>
 <span class="normal">235</span>
 <span class="normal">236</span>
 <span class="normal">237</span>
@@ -4478,7 +4676,8 @@ and the resulting values are copied into a fresh namespace used by the workflow.
 <span class="normal">271</span>
 <span class="normal">272</span>
 <span class="normal">273</span>
-<span class="normal">274</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
+<span class="normal">274</span>
+<span class="normal">275</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
     <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve raw correction-script arguments into normalized runtime values.</span>
@@ -4683,8 +4882,7 @@ mapped warm start lies outside the PVL-Delta bounds.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">277</span>
-<span class="normal">278</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">278</span>
 <span class="normal">279</span>
 <span class="normal">280</span>
 <span class="normal">281</span>
@@ -4912,7 +5110,8 @@ mapped warm start lies outside the PVL-Delta bounds.</p>
 <span class="normal">503</span>
 <span class="normal">504</span>
 <span class="normal">505</span>
-<span class="normal">506</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_build_q_equivalent_pvl_warm_starts_provider</span><span class="p">(</span>
+<span class="normal">506</span>
+<span class="normal">507</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_build_q_equivalent_pvl_warm_starts_provider</span><span class="p">(</span>
     <span class="n">fit_results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">subject_keys</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -5269,8 +5468,7 @@ differ from the requested keys.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">509</span>
-<span class="normal">510</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">510</span>
 <span class="normal">511</span>
 <span class="normal">512</span>
 <span class="normal">513</span>
@@ -5345,7 +5543,8 @@ differ from the requested keys.</p>
 <span class="normal">582</span>
 <span class="normal">583</span>
 <span class="normal">584</span>
-<span class="normal">585</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_validate_targeted_pvl_results</span><span class="p">(</span>
+<span class="normal">585</span>
+<span class="normal">586</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_validate_targeted_pvl_results</span><span class="p">(</span>
     <span class="n">targeted_results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">subject_keys</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -5572,8 +5771,7 @@ exist in the original table.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">588</span>
-<span class="normal">589</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">589</span>
 <span class="normal">590</span>
 <span class="normal">591</span>
 <span class="normal">592</span>
@@ -5779,7 +5977,8 @@ exist in the original table.</p>
 <span class="normal">792</span>
 <span class="normal">793</span>
 <span class="normal">794</span>
-<span class="normal">795</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_replace_model_fit_rows</span><span class="p">(</span>
+<span class="normal">795</span>
+<span class="normal">796</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_replace_model_fit_rows</span><span class="p">(</span>
     <span class="n">original_fit_results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">replacement_fit_results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
@@ -6001,7 +6200,11 @@ exist in the original table.</p>
 
 
 <a href="#scripts.correct_pvl_delta_fits._setup" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="logging.Logger">Logger</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span>
+    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span>
     <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span>
     <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span>
     <span class="n"><span title="str">str</span></span><span class="p">,</span>
@@ -6009,6 +6212,12 @@ exist in the original table.</p>
     <span class="n"><span title="pandas.DataFrame">DataFrame</span></span><span class="p">,</span>
     <span class="n"><a class="autorefs autorefs-internal" title="PVLDeltaModel (igt.models.PVLDeltaModel)" href="../models/#igt.models.PVLDeltaModel">PVLDeltaModel</a></span><span class="p">,</span>
     <span class="n"><span title="igt.execution.typing.SubjectModelWarmStartsProvider">SubjectModelWarmStartsProvider</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span><span class="p">,</span>
     <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">]</span>
 </code></pre></div>
@@ -6020,6 +6229,55 @@ exist in the original table.</p>
 selects participants exhibiting the target NLL relation, constructs the PVL-Delta
 model and Q-equivalent warm-start provider, creates the output/logging context, and
 returns the objects required by the execution stage.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>argv</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional argument sequence. When omitted, arguments are read from
+the process command line.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>additional_logger_levels</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span> | <span title="logging.Logger">Logger</span>, <span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional mapping of logger names to levels used to
+configure additional loggers.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -6057,7 +6315,7 @@ returns the objects required by the execution stage.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>provider, and optional log-file path.</p>
+                <p>provider, original logging state, and optional log-file path.</p>
               </div>
             </td>
           </tr>
@@ -6067,8 +6325,7 @@ returns the objects required by the execution stage.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">798</span>
-<span class="normal">799</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">799</span>
 <span class="normal">800</span>
 <span class="normal">801</span>
 <span class="normal">802</span>
@@ -6137,7 +6394,25 @@ returns the objects required by the execution stage.</p>
 <span class="normal">865</span>
 <span class="normal">866</span>
 <span class="normal">867</span>
-<span class="normal">868</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
+<span class="normal">868</span>
+<span class="normal">869</span>
+<span class="normal">870</span>
+<span class="normal">871</span>
+<span class="normal">872</span>
+<span class="normal">873</span>
+<span class="normal">874</span>
+<span class="normal">875</span>
+<span class="normal">876</span>
+<span class="normal">877</span>
+<span class="normal">878</span>
+<span class="normal">879</span>
+<span class="normal">880</span>
+<span class="normal">881</span>
+<span class="normal">882</span>
+<span class="normal">883</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
     <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
     <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
     <span class="nb">str</span><span class="p">,</span>
@@ -6145,6 +6420,7 @@ returns the objects required by the execution stage.</p>
     <span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">PVLDeltaModel</span><span class="p">,</span>
     <span class="n">SubjectModelWarmStartsProvider</span><span class="p">,</span>
+    <span class="n">LoggingState</span><span class="p">,</span>
     <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare one timestamped targeted PVL-Delta correction run.</span>
@@ -6154,17 +6430,25 @@ returns the objects required by the execution stage.</p>
 <span class="sd">    model and Q-equivalent warm-start provider, creates the output/logging context, and</span>
 <span class="sd">    returns the objects required by the execution stage.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        argv: Optional argument sequence. When omitted, arguments are read from</span>
+<span class="sd">            the process command line.</span>
+<span class="sd">        additional_logger_levels: Optional mapping of logger names to levels used to</span>
+<span class="sd">            configure additional loggers.</span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Raw and normalized arguments, run timestamp, original fit table, selected</span>
 <span class="sd">        participant keys, configured PVL-Delta model, subject-specific warm-start</span>
-<span class="sd">        provider, and optional log-file path.</span>
+<span class="sd">        provider, original logging state, and optional log-file path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">start_datetime_str</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">FILENAME_DATETIME_FMT</span><span class="p">)</span>
-    <span class="n">args</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
     <span class="n">normalized_args</span> <span class="o">=</span> <span class="n">_normalize_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
     <span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="n">start_datetime_str</span>
+
+    <span class="n">original_logger_state</span> <span class="o">=</span> <span class="n">LoggingState</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="p">)</span>
 
     <span class="n">original_fit_results</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span>
         <span class="n">normalized_args</span><span class="o">.</span><span class="n">fit_results_path</span><span class="p">,</span>
@@ -6196,6 +6480,7 @@ returns the objects required by the execution stage.</p>
             <span class="n">normalized_args</span><span class="o">.</span><span class="n">logging_dir</span>
             <span class="o">/</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;correct_pvl_delta_fits_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">subject_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">_subjects_</span><span class="si">{</span><span class="n">start_datetime_str</span><span class="si">}</span><span class="s2">.log&quot;</span><span class="p">)</span>
         <span class="p">),</span>
+        <span class="n">additional_logger_levels</span><span class="o">=</span><span class="n">additional_logger_levels</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span>
@@ -6206,6 +6491,7 @@ returns the objects required by the execution stage.</p>
         <span class="n">subject_keys</span><span class="p">,</span>
         <span class="n">pvl_delta_model</span><span class="p">,</span>
         <span class="n">warm_starts_provider</span><span class="p">,</span>
+        <span class="n">original_logger_state</span><span class="p">,</span>
         <span class="n">logging_path</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -6401,22 +6687,7 @@ rows fail validation, or if required values are invalid (e.g. <code>selection_at
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 871</span>
-<span class="normal"> 872</span>
-<span class="normal"> 873</span>
-<span class="normal"> 874</span>
-<span class="normal"> 875</span>
-<span class="normal"> 876</span>
-<span class="normal"> 877</span>
-<span class="normal"> 878</span>
-<span class="normal"> 879</span>
-<span class="normal"> 880</span>
-<span class="normal"> 881</span>
-<span class="normal"> 882</span>
-<span class="normal"> 883</span>
-<span class="normal"> 884</span>
-<span class="normal"> 885</span>
-<span class="normal"> 886</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 886</span>
 <span class="normal"> 887</span>
 <span class="normal"> 888</span>
 <span class="normal"> 889</span>
@@ -7078,7 +7349,22 @@ rows fail validation, or if required values are invalid (e.g. <code>selection_at
 <span class="normal">1545</span>
 <span class="normal">1546</span>
 <span class="normal">1547</span>
-<span class="normal">1548</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_compare_original_and_corrected_fit_results</span><span class="p">(</span>
+<span class="normal">1548</span>
+<span class="normal">1549</span>
+<span class="normal">1550</span>
+<span class="normal">1551</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span>
+<span class="normal">1555</span>
+<span class="normal">1556</span>
+<span class="normal">1557</span>
+<span class="normal">1558</span>
+<span class="normal">1559</span>
+<span class="normal">1560</span>
+<span class="normal">1561</span>
+<span class="normal">1562</span>
+<span class="normal">1563</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_compare_original_and_corrected_fit_results</span><span class="p">(</span>
     <span class="n">original_fit_results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">corrected_fit_results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">subject_keys</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
@@ -7950,22 +8236,7 @@ starting points.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1551</span>
-<span class="normal">1552</span>
-<span class="normal">1553</span>
-<span class="normal">1554</span>
-<span class="normal">1555</span>
-<span class="normal">1556</span>
-<span class="normal">1557</span>
-<span class="normal">1558</span>
-<span class="normal">1559</span>
-<span class="normal">1560</span>
-<span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
-<span class="normal">1564</span>
-<span class="normal">1565</span>
-<span class="normal">1566</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1566</span>
 <span class="normal">1567</span>
 <span class="normal">1568</span>
 <span class="normal">1569</span>
@@ -8074,7 +8345,22 @@ starting points.</p>
 <span class="normal">1672</span>
 <span class="normal">1673</span>
 <span class="normal">1674</span>
-<span class="normal">1675</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
+<span class="normal">1675</span>
+<span class="normal">1676</span>
+<span class="normal">1677</span>
+<span class="normal">1678</span>
+<span class="normal">1679</span>
+<span class="normal">1680</span>
+<span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
+<span class="normal">1689</span>
+<span class="normal">1690</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">normalized_args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
     <span class="n">start_datetime_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -8215,6 +8501,12 @@ starting points.</p>
 <a href="#scripts.correct_pvl_delta_fits._cleanup" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="scripts.correct_pvl_delta_fits.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">,</span>
     <span class="n">output_dir</span><span class="p">:</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
@@ -8236,6 +8528,27 @@ starting points.</p>
         </tr>
       </thead>
       <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>logging_state</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional logging state to restore.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
           <tr class="doc-section-item">
             <td>
                 <code>logger</code>
@@ -8274,22 +8587,7 @@ starting points.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1678</span>
-<span class="normal">1679</span>
-<span class="normal">1680</span>
-<span class="normal">1681</span>
-<span class="normal">1682</span>
-<span class="normal">1683</span>
-<span class="normal">1684</span>
-<span class="normal">1685</span>
-<span class="normal">1686</span>
-<span class="normal">1687</span>
-<span class="normal">1688</span>
-<span class="normal">1689</span>
-<span class="normal">1690</span>
-<span class="normal">1691</span>
-<span class="normal">1692</span>
-<span class="normal">1693</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1693</span>
 <span class="normal">1694</span>
 <span class="normal">1695</span>
 <span class="normal">1696</span>
@@ -8306,14 +8604,33 @@ starting points.</p>
 <span class="normal">1707</span>
 <span class="normal">1708</span>
 <span class="normal">1709</span>
-<span class="normal">1710</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
+<span class="normal">1710</span>
+<span class="normal">1711</span>
+<span class="normal">1712</span>
+<span class="normal">1713</span>
+<span class="normal">1714</span>
+<span class="normal">1715</span>
+<span class="normal">1716</span>
+<span class="normal">1717</span>
+<span class="normal">1718</span>
+<span class="normal">1719</span>
+<span class="normal">1720</span>
+<span class="normal">1721</span>
+<span class="normal">1722</span>
+<span class="normal">1723</span>
+<span class="normal">1724</span>
+<span class="normal">1725</span>
+<span class="normal">1726</span>
+<span class="normal">1727</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n">LoggingState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">LOGGER_NAME</span><span class="p">,</span>
     <span class="n">output_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean up application logging after the correction workflow.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        logging_state: Optional logging state to restore.</span>
 <span class="sd">        logger: Logger instance or logger name.</span>
 <span class="sd">        output_dir: Optional run-output directory to remove when it is empty.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -8338,7 +8655,7 @@ starting points.</p>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Output directory is not empty, skipping cleanup: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">)</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cleaning up application logging...&quot;</span><span class="p">)</span>
-    <span class="n">application_logging_cleanup</span><span class="p">()</span>
+    <span class="n">application_logging_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8391,24 +8708,7 @@ after the failure-notification context has had an opportunity to report them.</p
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\correct_pvl_delta_fits.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1713</span>
-<span class="normal">1714</span>
-<span class="normal">1715</span>
-<span class="normal">1716</span>
-<span class="normal">1717</span>
-<span class="normal">1718</span>
-<span class="normal">1719</span>
-<span class="normal">1720</span>
-<span class="normal">1721</span>
-<span class="normal">1722</span>
-<span class="normal">1723</span>
-<span class="normal">1724</span>
-<span class="normal">1725</span>
-<span class="normal">1726</span>
-<span class="normal">1727</span>
-<span class="normal">1728</span>
-<span class="normal">1729</span>
-<span class="normal">1730</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1730</span>
 <span class="normal">1731</span>
 <span class="normal">1732</span>
 <span class="normal">1733</span>
@@ -8504,7 +8804,26 @@ after the failure-notification context has had an opportunity to report them.</p
 <span class="normal">1823</span>
 <span class="normal">1824</span>
 <span class="normal">1825</span>
-<span class="normal">1826</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">1826</span>
+<span class="normal">1827</span>
+<span class="normal">1828</span>
+<span class="normal">1829</span>
+<span class="normal">1830</span>
+<span class="normal">1831</span>
+<span class="normal">1832</span>
+<span class="normal">1833</span>
+<span class="normal">1834</span>
+<span class="normal">1835</span>
+<span class="normal">1836</span>
+<span class="normal">1837</span>
+<span class="normal">1838</span>
+<span class="normal">1839</span>
+<span class="normal">1840</span>
+<span class="normal">1841</span>
+<span class="normal">1842</span>
+<span class="normal">1843</span>
+<span class="normal">1844</span>
+<span class="normal">1845</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the complete targeted PVL-Delta correction workflow.</span>
 
 <span class="sd">    The entry point resolves command-line inputs, selects apparent nesting violations,</span>
@@ -8527,8 +8846,9 @@ after the failure-notification context has had an opportunity to report them.</p
         <span class="n">subject_keys</span><span class="p">,</span>
         <span class="n">pvl_delta_model</span><span class="p">,</span>
         <span class="n">warm_starts_provider</span><span class="p">,</span>
+        <span class="n">original_logger_state</span><span class="p">,</span>
         <span class="n">logging_path</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">()</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fontTools&quot;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">})</span>
 
     <span class="n">notify_formsubmit_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">normalized_args</span><span class="o">.</span><span class="n">notify_formsubmit_id</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
@@ -8615,6 +8935,7 @@ after the failure-notification context has had an opportunity to report them.</p
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Performing cleanup...&quot;</span><span class="p">)</span>
         <span class="n">_cleanup</span><span class="p">(</span>
+            <span class="n">logging_state</span><span class="o">=</span><span class="n">original_logger_state</span><span class="p">,</span>
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="n">output_dir</span><span class="o">=</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
         <span class="p">)</span>
@@ -8943,7 +9264,7 @@ the fitted solutions.</p>
 
 
 <a href="#scripts.q_inverse_temperature_sensitivity._parse_args" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -8951,6 +9272,37 @@ the fitted solutions.</p>
         <p>Parse command-line options for Q-learning inverse-temperature sensitivity fitting.</p>
 <p>The parser uses shared project type filters and conditionally exposes seed and
 FormSubmit options when those values are not fixed by configuration.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>argv</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional argument vector to parse instead of process command-line arguments.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -9104,11 +9456,17 @@ FormSubmit options when those values are not fixed by configuration.</p>
 <span class="normal">221</span>
 <span class="normal">222</span>
 <span class="normal">223</span>
-<span class="normal">224</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse command-line options for Q-learning inverse-temperature sensitivity fitting.</span>
 
 <span class="sd">    The parser uses shared project type filters and conditionally exposes seed and</span>
 <span class="sd">    FormSubmit options when those values are not fixed by configuration.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        argv: Optional argument vector to parse instead of process command-line arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Raw argparse namespace containing the sensitivity-workflow options.</span>
@@ -9230,7 +9588,7 @@ FormSubmit options when those values are not fixed by configuration.</p>
         <span class="n">extra_options</span><span class="o">=</span><span class="p">{},</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9321,10 +9679,7 @@ before the fitting workflow begins.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\q_inverse_temperature_sensitivity.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">227</span>
-<span class="normal">228</span>
-<span class="normal">229</span>
-<span class="normal">230</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">230</span>
 <span class="normal">231</span>
 <span class="normal">232</span>
 <span class="normal">233</span>
@@ -9362,7 +9717,10 @@ before the fitting workflow begins.</p>
 <span class="normal">265</span>
 <span class="normal">266</span>
 <span class="normal">267</span>
-<span class="normal">268</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
     <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve raw sensitivity-script arguments into normalized runtime values.</span>
@@ -9482,16 +9840,16 @@ before the fitting workflow begins.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\q_inverse_temperature_sensitivity.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">271</span>
-<span class="normal">272</span>
-<span class="normal">273</span>
-<span class="normal">274</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">274</span>
 <span class="normal">275</span>
 <span class="normal">276</span>
 <span class="normal">277</span>
 <span class="normal">278</span>
 <span class="normal">279</span>
-<span class="normal">280</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_format_numeric_filename_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_format_numeric_filename_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Format a numeric value for stable use in an output filename.</span>
 
 <span class="sd">    Args:</span>
@@ -9515,8 +9873,22 @@ before the fitting workflow begins.</p>
 
 
 <a href="#scripts.q_inverse_temperature_sensitivity._setup" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span>
-    <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="pandas.DataFrame">DataFrame</span></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="logging.Logger">Logger</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span>
+    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span>
+    <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span>
+    <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span>
+    <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n"><span title="pandas.DataFrame">DataFrame</span></span><span class="p">,</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span><span class="p">,</span>
+    <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">]</span>
 </code></pre></div>
 
@@ -9526,6 +9898,55 @@ before the fitting workflow begins.</p>
 <p>Parses and normalizes CLI arguments, creates the timestamped output
 directory path, selects qualifying subjects from the previous fit table,
 and configures application logging.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>argv</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional argument sequence. When omitted, arguments are read from
+the process command line.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>additional_logger_levels</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span> | <span title="logging.Logger">Logger</span>, <span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional mapping of logger names to levels used to
+configure additional loggers.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -9553,7 +9974,7 @@ and configures application logging.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>keys, and the optional log-file path.</p>
+                <p>keys, original logging state, and the optional log-file path.</p>
               </div>
             </td>
           </tr>
@@ -9563,10 +9984,7 @@ and configures application logging.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\q_inverse_temperature_sensitivity.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">283</span>
-<span class="normal">284</span>
-<span class="normal">285</span>
-<span class="normal">286</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">286</span>
 <span class="normal">287</span>
 <span class="normal">288</span>
 <span class="normal">289</span>
@@ -9596,22 +10014,56 @@ and configures application logging.</p>
 <span class="normal">313</span>
 <span class="normal">314</span>
 <span class="normal">315</span>
-<span class="normal">316</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">LoggingState</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare one sensitivity-analysis run.</span>
 
 <span class="sd">    Parses and normalizes CLI arguments, creates the timestamped output</span>
 <span class="sd">    directory path, selects qualifying subjects from the previous fit table,</span>
 <span class="sd">    and configures application logging.</span>
 
+<span class="sd">    Args:</span>
+<span class="sd">        argv: Optional argument sequence. When omitted, arguments are read from</span>
+<span class="sd">            the process command line.</span>
+<span class="sd">        additional_logger_levels: Optional mapping of logger names to levels used to</span>
+<span class="sd">            configure additional loggers.</span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        Parsed arguments, normalized arguments, run timestamp, selected subject</span>
-<span class="sd">        keys, and the optional log-file path.</span>
+<span class="sd">        keys, original logging state, and the optional log-file path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">start_datetime_str</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">FILENAME_DATETIME_FMT</span><span class="p">)</span>
     <span class="n">args</span> <span class="o">=</span> <span class="n">_parse_args</span><span class="p">()</span>
     <span class="n">normalized_args</span> <span class="o">=</span> <span class="n">_normalize_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
     <span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="n">start_datetime_str</span>
+
+    <span class="n">original_logger_state</span> <span class="o">=</span> <span class="n">LoggingState</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="p">)</span>
 
     <span class="n">subject_keys</span> <span class="o">=</span> <span class="n">select_q_inverse_temperature_subject_keys_from_csv</span><span class="p">(</span>
         <span class="n">normalized_args</span><span class="o">.</span><span class="n">fit_results_path</span><span class="p">,</span>
@@ -9628,8 +10080,17 @@ and configures application logging.</p>
                 <span class="sa">f</span><span class="s2">&quot;q_inverse_temperature_sensitivity_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">subject_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">_subjects_</span><span class="si">{</span><span class="n">start_datetime_str</span><span class="si">}</span><span class="s2">.log&quot;</span>
             <span class="p">)</span>
         <span class="p">),</span>
+        <span class="n">additional_logger_levels</span><span class="o">=</span><span class="n">additional_logger_levels</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">normalized_args</span><span class="p">,</span> <span class="n">start_datetime_str</span><span class="p">,</span> <span class="n">subject_keys</span><span class="p">,</span> <span class="n">logging_path</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">args</span><span class="p">,</span>
+        <span class="n">normalized_args</span><span class="p">,</span>
+        <span class="n">start_datetime_str</span><span class="p">,</span>
+        <span class="n">subject_keys</span><span class="p">,</span>
+        <span class="n">original_logger_state</span><span class="p">,</span>
+        <span class="n">logging_path</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9762,30 +10223,7 @@ and configures application logging.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\q_inverse_temperature_sensitivity.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">319</span>
-<span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
-<span class="normal">333</span>
-<span class="normal">334</span>
-<span class="normal">335</span>
-<span class="normal">336</span>
-<span class="normal">337</span>
-<span class="normal">338</span>
-<span class="normal">339</span>
-<span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">342</span>
 <span class="normal">343</span>
 <span class="normal">344</span>
 <span class="normal">345</span>
@@ -9842,7 +10280,30 @@ and configures application logging.</p>
 <span class="normal">396</span>
 <span class="normal">397</span>
 <span class="normal">398</span>
-<span class="normal">399</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">normalized_args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
     <span class="n">start_datetime_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -9937,7 +10398,16 @@ and configures application logging.</p>
 
 
 <a href="#scripts.q_inverse_temperature_sensitivity._cleanup" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="scripts.q_inverse_temperature_sensitivity.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="scripts.q_inverse_temperature_sensitivity.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -9956,6 +10426,27 @@ and configures application logging.</p>
         </tr>
       </thead>
       <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>logging_state</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional logging state to restore.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
           <tr class="doc-section-item">
             <td>
                 <code>logger</code>
@@ -9984,29 +10475,33 @@ application logging cleanup helper.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\q_inverse_temperature_sensitivity.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
-<span class="normal">407</span>
-<span class="normal">408</span>
-<span class="normal">409</span>
-<span class="normal">410</span>
-<span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
+<span class="normal">441</span>
+<span class="normal">442</span>
+<span class="normal">443</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n">LoggingState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">LOGGER_NAME</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Release application logging resources after the sensitivity workflow.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        logging_state: Optional logging state to restore.</span>
 <span class="sd">        logger: Logger instance or logger name used to record cleanup progress.</span>
 
 <span class="sd">    Notes:</span>
@@ -10016,7 +10511,7 @@ application logging cleanup helper.</p>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">logger</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cleaning up application logging...&quot;</span><span class="p">)</span>
-    <span class="n">application_logging_cleanup</span><span class="p">()</span>
+    <span class="n">application_logging_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -10044,32 +10539,7 @@ fit tables, and performs notification and logging cleanup.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\q_inverse_temperature_sensitivity.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span>
-<span class="normal">430</span>
-<span class="normal">431</span>
-<span class="normal">432</span>
-<span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span>
-<span class="normal">437</span>
-<span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span>
-<span class="normal">445</span>
-<span class="normal">446</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">446</span>
 <span class="normal">447</span>
 <span class="normal">448</span>
 <span class="normal">449</span>
@@ -10146,7 +10616,33 @@ fit tables, and performs notification and logging cleanup.</p>
 <span class="normal">520</span>
 <span class="normal">521</span>
 <span class="normal">522</span>
-<span class="normal">523</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the targeted Q-learning inverse-temperature sensitivity workflow.</span>
 
 <span class="sd">    The script selects participants whose fitted inverse temperature is near the</span>
@@ -10160,8 +10656,9 @@ fit tables, and performs notification and logging cleanup.</p>
         <span class="n">normalized_args</span><span class="p">,</span>
         <span class="n">start_datetime_str</span><span class="p">,</span>
         <span class="n">subject_keys</span><span class="p">,</span>
+        <span class="n">original_logger_state</span><span class="p">,</span>
         <span class="n">logging_path</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">()</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fontTools&quot;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">})</span>
 
     <span class="n">notify_formsubmit_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">normalized_args</span><span class="o">.</span><span class="n">notify_formsubmit_id</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
@@ -10248,7 +10745,7 @@ fit tables, and performs notification and logging cleanup.</p>
                 <span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Performing cleanup...&quot;</span><span class="p">)</span>
-        <span class="n">_cleanup</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+        <span class="n">_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="o">=</span><span class="n">original_logger_state</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -10911,148 +11408,6 @@ noninteger strategy string is empty.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="scripts.results_analysis.build_argument_parser" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">build_argument_parser</span>
-
-
-<a href="#scripts.results_analysis.build_argument_parser" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">build_argument_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="argparse.ArgumentParser">ArgumentParser</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Build the command-line parser.</p>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="argparse.ArgumentParser">ArgumentParser</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The constructed argument parser.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span>
-<span class="normal">182</span>
-<span class="normal">183</span>
-<span class="normal">184</span>
-<span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
-<span class="normal">198</span>
-<span class="normal">199</span>
-<span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_argument_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the command-line parser.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The constructed argument parser.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
-            <span class="s2">&quot;Validate IGT model-result CSVs and generate standard analysis tables and figures.&quot;</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--fits&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--comparison&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--summary&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output-directory&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">Path</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--figure-formats&quot;</span><span class="p">,</span>
-        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;png&quot;</span><span class="p">],</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;One or more Matplotlib output formats, for example: png svg.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--figure-dpi&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">_positive_int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--histogram-bins&quot;</span><span class="p">,</span>
-        <span class="nb">type</span><span class="o">=</span><span class="n">_histogram_bins</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;A positive integer or a NumPy histogram strategy such as auto.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--confidence-level&quot;</span><span class="p">,</span>
-        <span class="nb">type</span><span class="o">=</span><span class="n">_confidence_level</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Confidence level for bootstrap and exact binomial intervals.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--bootstrap-resamples&quot;</span><span class="p">,</span>
-        <span class="nb">type</span><span class="o">=</span><span class="n">_positive_int</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of BCa bootstrap resamples for criterion differences.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-        <span class="s2">&quot;--bootstrap-seed&quot;</span><span class="p">,</span>
-        <span class="nb">type</span><span class="o">=</span><span class="n">_nonnegative_int</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Random seed used for reproducible bootstrap confidence intervals.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">parser</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h3 id="scripts.results_analysis._parse_args" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">_parse_args</span>
 
@@ -11125,7 +11480,57 @@ with appropriate type filters, default values, and help messages for each argume
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">206</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
 <span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
@@ -11236,57 +11641,7 @@ with appropriate type filters, default values, and help messages for each argume
 <span class="normal">314</span>
 <span class="normal">315</span>
 <span class="normal">316</span>
-<span class="normal">317</span>
-<span class="normal">318</span>
-<span class="normal">319</span>
-<span class="normal">320</span>
-<span class="normal">321</span>
-<span class="normal">322</span>
-<span class="normal">323</span>
-<span class="normal">324</span>
-<span class="normal">325</span>
-<span class="normal">326</span>
-<span class="normal">327</span>
-<span class="normal">328</span>
-<span class="normal">329</span>
-<span class="normal">330</span>
-<span class="normal">331</span>
-<span class="normal">332</span>
-<span class="normal">333</span>
-<span class="normal">334</span>
-<span class="normal">335</span>
-<span class="normal">336</span>
-<span class="normal">337</span>
-<span class="normal">338</span>
-<span class="normal">339</span>
-<span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
-<span class="normal">343</span>
-<span class="normal">344</span>
-<span class="normal">345</span>
-<span class="normal">346</span>
-<span class="normal">347</span>
-<span class="normal">348</span>
-<span class="normal">349</span>
-<span class="normal">350</span>
-<span class="normal">351</span>
-<span class="normal">352</span>
-<span class="normal">353</span>
-<span class="normal">354</span>
-<span class="normal">355</span>
-<span class="normal">356</span>
-<span class="normal">357</span>
-<span class="normal">358</span>
-<span class="normal">359</span>
-<span class="normal">360</span>
-<span class="normal">361</span>
-<span class="normal">362</span>
-<span class="normal">363</span>
-<span class="normal">364</span>
-<span class="normal">365</span>
-<span class="normal">366</span>
-<span class="normal">367</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
+<span class="normal">317</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the argument parser, parse the command-line arguments and return the namespace.</span>
 
 <span class="sd">    Some arguments are only added to the parser if certain conditions are met,</span>
@@ -11352,7 +11707,7 @@ with appropriate type filters, default values, and help messages for each argume
         <span class="n">ArgSpec</span><span class="p">(</span>
             <span class="n">name_or_flags</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;--figure-formats&quot;</span><span class="p">,),</span>
             <span class="n">type_filters</span><span class="o">=</span><span class="p">(</span><span class="n">StringArgTypeProvider</span><span class="o">.</span><span class="n">NON_WHITESPACE_STRING</span><span class="p">,),</span>
-            <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;png&quot;</span><span class="p">],</span>
+            <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;png&quot;</span><span class="p">,</span> <span class="s2">&quot;pdf&quot;</span><span class="p">],</span>
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;One or more Matplotlib output formats, for example: png svg (default: </span><span class="si">%(default)s</span><span class="s2">)&quot;</span><span class="p">,</span>
             <span class="n">extra_options</span><span class="o">=</span><span class="p">{</span>
                 <span class="s2">&quot;metavar&quot;</span><span class="p">:</span> <span class="s2">&quot;FORMATS&quot;</span><span class="p">,</span>
@@ -11539,45 +11894,45 @@ applied when enabled.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">370</span>
-<span class="normal">371</span>
-<span class="normal">372</span>
-<span class="normal">373</span>
-<span class="normal">374</span>
-<span class="normal">375</span>
-<span class="normal">376</span>
-<span class="normal">377</span>
-<span class="normal">378</span>
-<span class="normal">379</span>
-<span class="normal">380</span>
-<span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span>
-<span class="normal">391</span>
-<span class="normal">392</span>
-<span class="normal">393</span>
-<span class="normal">394</span>
-<span class="normal">395</span>
-<span class="normal">396</span>
-<span class="normal">397</span>
-<span class="normal">398</span>
-<span class="normal">399</span>
-<span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span>
-<span class="normal">404</span>
-<span class="normal">405</span>
-<span class="normal">406</span>
-<span class="normal">407</span>
-<span class="normal">408</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_normalize_args</span><span class="p">(</span>
     <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve raw analysis-script arguments into normalized runtime values.</span>
@@ -11632,7 +11987,16 @@ applied when enabled.</p>
 <a href="#scripts.results_analysis._setup" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">_setup</span><span class="p">(</span>
     <span class="n">argv</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="logging.Logger">Logger</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span>
+    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span>
+    <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="argparse.Namespace">Namespace</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span><span class="p">,</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -11668,6 +12032,23 @@ the process command line.</p>
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>additional_logger_levels</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span> | <span title="logging.Logger">Logger</span>, <span title="int">int</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional mapping of logger names to levels used to
+configure additional loggers.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -11687,7 +12068,7 @@ the process command line.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Parsed arguments, normalized arguments, run timestamp, and optional</p>
+                <p>Parsed arguments, normalized arguments, run timestamp, original logging state, and optional</p>
               </div>
             </td>
           </tr>
@@ -11707,43 +12088,58 @@ the process command line.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">411</span>
-<span class="normal">412</span>
-<span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
-<span class="normal">419</span>
-<span class="normal">420</span>
-<span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span>
-<span class="normal">430</span>
-<span class="normal">431</span>
-<span class="normal">432</span>
-<span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span>
-<span class="normal">437</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_setup</span><span class="p">(</span>
     <span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">additional_logger_levels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">LoggingState</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare one timestamped result-analysis run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        argv: Optional argument sequence. When omitted, arguments are read from</span>
 <span class="sd">            the process command line.</span>
+<span class="sd">        additional_logger_levels: Optional mapping of logger names to levels used to</span>
+<span class="sd">            configure additional loggers.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Parsed arguments, normalized arguments, run timestamp, and optional</span>
+<span class="sd">        Parsed arguments, normalized arguments, run timestamp, original logging state, and optional</span>
 <span class="sd">        log-file path.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">start_datetime_str</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">FILENAME_DATETIME_FMT</span><span class="p">)</span>
@@ -11752,14 +12148,23 @@ the process command line.</p>
 
     <span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span> <span class="o">/</span> <span class="n">start_datetime_str</span>
 
+    <span class="n">original_logger_state</span> <span class="o">=</span> <span class="n">LoggingState</span><span class="p">(</span><span class="n">additional_logger_levels</span><span class="p">)</span>
+
     <span class="n">logging_path</span> <span class="o">=</span> <span class="n">configure_application_logging</span><span class="p">(</span>
         <span class="n">disabled</span><span class="o">=</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">logging_disabled</span><span class="p">,</span>
         <span class="n">root_logger_level</span><span class="o">=</span><span class="n">normalized_args</span><span class="o">.</span><span class="n">log_level</span><span class="p">,</span>
         <span class="n">log_file_path</span><span class="o">=</span><span class="p">(</span>
             <span class="n">normalized_args</span><span class="o">.</span><span class="n">logging_dir</span> <span class="o">/</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;results_analysis_</span><span class="si">{</span><span class="n">start_datetime_str</span><span class="si">}</span><span class="s2">.log&quot;</span><span class="p">)</span>
         <span class="p">),</span>
+        <span class="n">additional_logger_levels</span><span class="o">=</span><span class="n">additional_logger_levels</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">normalized_args</span><span class="p">,</span> <span class="n">start_datetime_str</span><span class="p">,</span> <span class="n">logging_path</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">args</span><span class="p">,</span>
+        <span class="n">normalized_args</span><span class="p">,</span>
+        <span class="n">start_datetime_str</span><span class="p">,</span>
+        <span class="n">original_logger_state</span><span class="p">,</span>
+        <span class="n">logging_path</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -11875,7 +12280,45 @@ the process command line.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">440</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span>
+<span class="normal">426</span>
+<span class="normal">427</span>
+<span class="normal">428</span>
+<span class="normal">429</span>
+<span class="normal">430</span>
+<span class="normal">431</span>
+<span class="normal">432</span>
+<span class="normal">433</span>
+<span class="normal">434</span>
+<span class="normal">435</span>
+<span class="normal">436</span>
+<span class="normal">437</span>
+<span class="normal">438</span>
+<span class="normal">439</span>
+<span class="normal">440</span>
 <span class="normal">441</span>
 <span class="normal">442</span>
 <span class="normal">443</span>
@@ -11885,45 +12328,7 @@ the process command line.</p>
 <span class="normal">447</span>
 <span class="normal">448</span>
 <span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
-<span class="normal">471</span>
-<span class="normal">472</span>
-<span class="normal">473</span>
-<span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
-<span class="normal">477</span>
-<span class="normal">478</span>
-<span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
+<span class="normal">450</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">normalized_args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
     <span class="n">start_datetime_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -11986,7 +12391,16 @@ the process command line.</p>
 
 
 <a href="#scripts.results_analysis._cleanup" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="scripts.results_analysis.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">_cleanup</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="scripts.results_analysis.LOGGER_NAME">LOGGER_NAME</span></span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12005,6 +12419,27 @@ the process command line.</p>
         </tr>
       </thead>
       <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>logging_state</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="LoggingState
+
+
+  
+      dataclass
+   (igt.logging.LoggingState)" href="../infrastructure/#igt.logging.LoggingState">LoggingState</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional logging state to restore.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
           <tr class="doc-section-item">
             <td>
                 <code>logger</code>
@@ -12033,39 +12468,45 @@ application logging cleanup helper.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
-<span class="normal">499</span>
-<span class="normal">500</span>
-<span class="normal">501</span>
-<span class="normal">502</span>
-<span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span>
-<span class="normal">506</span>
-<span class="normal">507</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">453</span>
+<span class="normal">454</span>
+<span class="normal">455</span>
+<span class="normal">456</span>
+<span class="normal">457</span>
+<span class="normal">458</span>
+<span class="normal">459</span>
+<span class="normal">460</span>
+<span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
+<span class="normal">468</span>
+<span class="normal">469</span>
+<span class="normal">470</span>
+<span class="normal">471</span>
+<span class="normal">472</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
+    <span class="n">logging_state</span><span class="p">:</span> <span class="n">LoggingState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">LOGGER_NAME</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Release application logging resources after the result-analysis workflow.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        logging_state: Optional logging state to restore.</span>
 <span class="sd">        logger: Logger instance or logger name used to record cleanup progress.</span>
 
 <span class="sd">    Notes:</span>
 <span class="sd">        The function delegates handler teardown and root-logger reset to the shared</span>
 <span class="sd">        application logging cleanup helper.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">logger</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cleaning up application logging...&quot;</span><span class="p">)</span>
-    <span class="n">application_logging_cleanup</span><span class="p">()</span>
+    <span class="n">application_logging_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12122,7 +12563,42 @@ the process command line.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>scripts\results_analysis.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">510</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">475</span>
+<span class="normal">476</span>
+<span class="normal">477</span>
+<span class="normal">478</span>
+<span class="normal">479</span>
+<span class="normal">480</span>
+<span class="normal">481</span>
+<span class="normal">482</span>
+<span class="normal">483</span>
+<span class="normal">484</span>
+<span class="normal">485</span>
+<span class="normal">486</span>
+<span class="normal">487</span>
+<span class="normal">488</span>
+<span class="normal">489</span>
+<span class="normal">490</span>
+<span class="normal">491</span>
+<span class="normal">492</span>
+<span class="normal">493</span>
+<span class="normal">494</span>
+<span class="normal">495</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span>
+<span class="normal">500</span>
+<span class="normal">501</span>
+<span class="normal">502</span>
+<span class="normal">503</span>
+<span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
 <span class="normal">511</span>
 <span class="normal">512</span>
 <span class="normal">513</span>
@@ -12167,41 +12643,7 @@ the process command line.</p>
 <span class="normal">552</span>
 <span class="normal">553</span>
 <span class="normal">554</span>
-<span class="normal">555</span>
-<span class="normal">556</span>
-<span class="normal">557</span>
-<span class="normal">558</span>
-<span class="normal">559</span>
-<span class="normal">560</span>
-<span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
-<span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
-<span class="normal">570</span>
-<span class="normal">571</span>
-<span class="normal">572</span>
-<span class="normal">573</span>
-<span class="normal">574</span>
-<span class="normal">575</span>
-<span class="normal">576</span>
-<span class="normal">577</span>
-<span class="normal">578</span>
-<span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span>
-<span class="normal">582</span>
-<span class="normal">583</span>
-<span class="normal">584</span>
-<span class="normal">585</span>
-<span class="normal">586</span>
-<span class="normal">587</span>
-<span class="normal">588</span>
-<span class="normal">589</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">555</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the result-analysis command-line workflow.</span>
 
 <span class="sd">    Args:</span>
@@ -12214,8 +12656,9 @@ the process command line.</p>
         <span class="n">args</span><span class="p">,</span>
         <span class="n">normalized_args</span><span class="p">,</span>
         <span class="n">start_datetime_str</span><span class="p">,</span>
+        <span class="n">original_logging_state</span><span class="p">,</span>
         <span class="n">logging_path</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">_setup</span><span class="p">(</span><span class="n">argv</span><span class="p">,</span> <span class="n">additional_logger_levels</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fontTools&quot;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">})</span>
 
     <span class="n">notify_formsubmit_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">normalized_args</span><span class="o">.</span><span class="n">notify_formsubmit_id</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
@@ -12280,7 +12723,7 @@ the process command line.</p>
                 <span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Performing cleanup...&quot;</span><span class="p">)</span>
-        <span class="n">_cleanup</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+        <span class="n">_cleanup</span><span class="p">(</span><span class="n">logging_state</span><span class="o">=</span><span class="n">original_logging_state</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

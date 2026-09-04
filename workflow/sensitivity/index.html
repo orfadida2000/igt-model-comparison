@@ -871,6 +871,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#historical-sensitivity-used-for-the-final-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Historical sensitivity used for the final project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-script-preset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current script preset
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1035,6 +1057,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reproducibility/" class="md-nav__link">
         
   
@@ -1099,7 +1148,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1121,14 +1170,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1437,6 +1486,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#historical-sensitivity-used-for-the-final-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Historical sensitivity used for the final project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-script-preset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current script preset
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#command" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1541,6 +1612,12 @@
 <h2 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h2>
 <p>Q-learning inverse temperature can accumulate at an imposed upper bound. The sensitivity workflow isolates converged subjects whose fitted inverse temperature reaches a specified threshold and reruns Q-learning under the project's predefined inverse-temperature-maximum and start-count configurations.</p>
 <p>This provides a diagnostic check on whether a finite inverse-temperature ceiling is materially influencing those fits.</p>
+<h2 id="historical-sensitivity-used-for-the-final-project">Historical sensitivity used for the final project<a class="headerlink" href="#historical-sensitivity-used-for-the-final-project" title="Permanent link">&para;</a></h2>
+<p>The final report's Q-learning bound choice was informed by an earlier staged sensitivity analysis. The original primary configuration used an inverse-temperature ceiling of 20. Using the selection threshold 19.5 identified 154 converged participants near that ceiling. Those participants were then refit with wider ceilings of 50 and 100. The final primary analysis consequently adopted an upper bound of 100.</p>
+<p>This historical 20 -&gt; 50 -&gt; 100 analysis answers a specific model-development question: whether the original ceiling of 20 was constraining fitted solutions. It is documented as part of the final methodology and should not be confused with the current reusable script preset.</p>
+<h2 id="current-script-preset">Current script preset<a class="headerlink" href="#current-script-preset" title="Permanent link">&para;</a></h2>
+<p>In the current repository version, the sensitivity script uses a default selection threshold of 19.5 and predefined reruns at an inverse-temperature maximum of 100 with 10 and 20 Q-learning starts. These settings provide a follow-up check on high-inverse-temperature fits under the finalized bound and on sensitivity to the number of starts.</p>
+<p>The predefined conditions live in <code>scripts/q_inverse_temperature_sensitivity.py</code>; use the current source together with <code>--help</code> when reproducing a new sensitivity run.</p>
 <h2 id="command">Command<a class="headerlink" href="#command" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.q_inverse_temperature_sensitivity<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>path/to/model_fits_617_subjects_&lt;timestamp&gt;.csv

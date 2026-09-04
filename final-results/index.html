@@ -16,7 +16,7 @@
         <link rel="prev" href="../results/">
       
       
-        <link rel="next" href="../reproducibility/">
+        <link rel="next" href="../report/">
       
       
         
@@ -1030,6 +1030,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#q-learning-inverse-temperature-sensitivity-and-final-bound" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q-learning inverse-temperature sensitivity and final bound
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boundary-diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1051,10 +1062,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1130,7 +1179,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1152,14 +1201,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1512,6 +1561,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#q-learning-inverse-temperature-sensitivity-and-final-bound" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q-learning inverse-temperature sensitivity and final bound
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boundary-diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1527,6 +1587,17 @@
     <span class="md-ellipsis">
       
         Interpretation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final written report
       
     </span>
   </a>
@@ -1684,6 +1755,11 @@ PVL-Delta.</p>
 <li>AIC: 82.66%, 95% exact CI [79.44%, 85.56%];</li>
 <li>BIC: 69.21%, 95% exact CI [65.40%, 72.83%].</li>
 </ul>
+<h2 id="q-learning-inverse-temperature-sensitivity-and-final-bound">Q-learning inverse-temperature sensitivity and final bound<a class="headerlink" href="#q-learning-inverse-temperature-sensitivity-and-final-bound" title="Permanent link">&para;</a></h2>
+<p>The final Q-learning inverse-temperature bound was chosen through a targeted sensitivity analysis rather than treated as a psychological constant. The initial fitting configuration used an upper bound of 20. Converged Q-learning fits with <code>inverse_temperature &gt;= 19.5</code> were selected, yielding 154 participants, and that cohort was refit under wider ceilings of 50 and 100.</p>
+<p>The wider-bound fits showed that 20 was restrictive for a substantial subset of participants, so the final primary analysis used <code>beta_max = 100</code>. In the final 617-participant result set, 149 Q-learning fits (24.15%) reached the upper inverse-temperature bound of 100. This is retained as a boundary diagnostic rather than automatically classified as fit failure.</p>
+<p>The numerical size of inverse temperature depends on the scale of the learned values. The value 100 should therefore be interpreted as the final optimization/search ceiling used by this project, not as a universal psychological maximum.</p>
+<p>The current sensitivity script remains available as a reusable diagnostic, but its present predefined rerun conditions are not intended to recreate the historical 20 -&gt; 50 -&gt; 100 sweep verbatim. See <a href="../workflow/sensitivity/">Q-learning inverse-temperature sensitivity</a>.</p>
 <h2 id="boundary-diagnostics">Boundary diagnostics<a class="headerlink" href="#boundary-diagnostics" title="Permanent link">&para;</a></h2>
 <p>Boundary solutions remain common and are treated as diagnostics rather than
 automatic fit failures:</p>
@@ -1701,6 +1777,16 @@ PVL-Delta's additional parameters more strongly.</p>
 <p>The source-study summaries show that preference strength varies across studies.
 The inferential analysis nevertheless treats participants, not studies, as
 independent units and does not fit a hierarchical study model.</p>
+<h2 id="final-written-report">Final written report<a class="headerlink" href="#final-written-report" title="Permanent link">&para;</a></h2>
+<p>The completed academic report corresponding to these results is stored under:</p>
+<div class="highlight"><pre><span></span><code>report/report.pdf
+</code></pre></div>
+<p>The full LaTeX source is kept in the same <code>report/</code> directory. The report uses the corrected result set and final analysis summarized on this page, while moving detailed fitting settings, sensitivity checks, optimization-correction details, and secondary diagnostics into appendices.</p>
+<ul>
+<li><a href="../report/">Final report documentation</a></li>
+<li><a href="https://github.com/orfadida2000/igt-model-comparison/blob/main/report/report.pdf">Open the final PDF on GitHub</a></li>
+<li><a href="https://github.com/orfadida2000/igt-model-comparison/tree/main/report">Browse the report source on GitHub</a></li>
+</ul>
 
 
 
@@ -1755,13 +1841,13 @@ independent units and does not fit a hierarchical study model.</p>
         
         
           
-          <a href="../reproducibility/" class="md-footer__link md-footer__link--next" aria-label="Next: Reproducibility">
+          <a href="../report/" class="md-footer__link md-footer__link--next" aria-label="Next: Final report">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Reproducibility
+                Final report
               </div>
             </div>
             <div class="md-footer__button md-icon">

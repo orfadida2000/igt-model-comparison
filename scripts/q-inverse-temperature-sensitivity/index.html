@@ -701,6 +701,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#current-predefined-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current predefined conditions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#default-output-location" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1035,6 +1046,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reproducibility/" class="md-nav__link">
         
   
@@ -1099,7 +1137,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1121,14 +1159,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1448,6 +1486,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#current-predefined-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current predefined conditions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#default-output-location" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1591,6 +1640,14 @@
 </tbody>
 </table>
 <p>Some CLI options are conditionally exposed by shared configuration constants. Use <code>--help</code> to inspect the exact interface for the current configuration.</p>
+<h2 id="current-predefined-conditions">Current predefined conditions<a class="headerlink" href="#current-predefined-conditions" title="Permanent link">&para;</a></h2>
+<p>With the current repository configuration, the script selects fits at or above the default threshold of 19.5 unless another threshold is provided. It reruns the selected participants with:</p>
+<ul>
+<li>maximum inverse temperature <code>100</code>;</li>
+<li>10 Q-learning starts;</li>
+<li>20 Q-learning starts.</li>
+</ul>
+<p>These are the current reusable diagnostic settings. They are distinct from the historical staged <code>20 -&gt; 50 -&gt; 100</code> sensitivity analysis that was used during model development to choose the final primary bound. That historical analysis is summarized in <a href="../../final-results/">Final results</a> and <a href="../../workflow/sensitivity/">Q-learning inverse-temperature sensitivity</a>.</p>
 <h2 id="default-output-location">Default output location<a class="headerlink" href="#default-output-location" title="Permanent link">&para;</a></h2>
 <p>With the current configuration, sensitivity artifacts are written beneath:</p>
 <div class="highlight"><pre><span></span><code>assets/results/q_inverse_temperature_sensitivity/

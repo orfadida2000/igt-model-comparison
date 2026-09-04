@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://orfadida2000.github.io/igt-model-comparison/reproducibility/">
       
       
-        <link rel="prev" href="../final-results/">
+        <link rel="prev" href="../report/">
       
       
         <link rel="next" href="../api/">
@@ -939,6 +939,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -1056,6 +1083,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1108,7 +1146,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1130,14 +1168,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1489,6 +1527,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1538,6 +1587,19 @@
 <p>The MkDocs configuration uses Google-style docstrings through <code>mkdocstrings</code>. Build with:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict
 </code></pre></div>
+<h2 id="final-written-report">Final written report<a class="headerlink" href="#final-written-report" title="Permanent link">&para;</a></h2>
+<p>The repository keeps the final LaTeX source and compiled PDF under <code>report/</code>. The report is based on the corrected 617-participant result set and the final downstream analysis documented in <a href="../final-results/">Final results</a>.</p>
+<p>There are two distinct levels of reproducibility:</p>
+<ol>
+<li><strong>Document build</strong> — compile the checked-in LaTeX source, figures, and tables to reproduce <code>report/report.pdf</code>:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>report
+latexmk<span class="w"> </span>-pdf<span class="w"> </span>-interaction<span class="o">=</span>nonstopmode<span class="w"> </span>-halt-on-error<span class="w"> </span>report.tex
+</code></pre></div>
+<ol>
+<li><strong>Scientific regeneration</strong> — rerun the primary fits, targeted PVL-Delta correction, and final analysis from the project data to regenerate the numerical and graphical evidence underlying the report. Those workflows are documented in <a href="../getting-started/">Getting started</a>, <a href="../workflow/correction/">PVL-Delta correction</a>, and <a href="../workflow/analysis/">Final result analysis</a>.</li>
+</ol>
+<p>The compiled PDF is kept in the repository because it is a final project deliverable, not merely an intermediate LaTeX build artifact. Auxiliary LaTeX build files are not part of the scientific record.</p>
 
 
 
@@ -1575,7 +1637,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../final-results/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Final results">
+          <a href="../report/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Final report">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1585,7 +1647,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Final results
+                Final report
               </div>
             </div>
           </a>

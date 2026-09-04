@@ -1002,6 +1002,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#relationship-to-the-final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship to the final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1025,6 +1036,33 @@
     
   
     Final results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
   
 
     
@@ -1108,7 +1146,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1130,14 +1168,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1489,6 +1527,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#relationship-to-the-final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship to the final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1566,9 +1615,41 @@ best_bic
 <div class="highlight"><pre><span></span><code>&lt;timestamp&gt;/
 ├── analysis_report.txt
 ├── figures/
+│   ├── signed_aic_difference_distribution.png
+│   ├── signed_aic_difference_distribution.pdf
+│   ├── ...
+│   └── parameters/
+│       ├── q_learning/
+│       │   ├── &lt;parameter&gt;_distribution.png
+│       │   └── &lt;parameter&gt;_distribution.pdf
+│       └── pvl_delta/
+│           ├── &lt;parameter&gt;_distribution.png
+│           └── &lt;parameter&gt;_distribution.pdf
 └── tables/
+    ├── subject_level_model_comparison.csv
+    ├── subject_level_model_comparison.tex
+    ├── study_model_preference.csv
+    ├── study_model_preference.tex
+    ├── ...
+    ├── model_win_inference.csv
+    └── model_win_inference.tex
 </code></pre></div>
-<p>See <a href="../workflow/analysis/">Final result analysis</a> for the seven derived tables and 18 default figures.</p>
+<p>The analysis produces seven logical derived tables and 18 logical figures with the default two-model configuration.</p>
+<p>Each logical table is exported as:</p>
+<ul>
+<li><code>.csv</code> for canonical machine-readable analysis output;</li>
+<li><code>.tex</code> for direct reuse in LaTeX documents.</li>
+</ul>
+<p>Each logical figure is exported by default as:</p>
+<ul>
+<li><code>.png</code> for inspection and general-purpose use;</li>
+<li><code>.pdf</code> for vector report-quality use.</li>
+</ul>
+<p>Different representations of the same artifact are stored side by side in the same semantic directory rather than in separate format-specific directory trees.</p>
+<p>See <a href="../workflow/analysis/">Final result analysis</a> for the complete analysis methodology and artifact list.</p>
+<h2 id="relationship-to-the-final-written-report">Relationship to the final written report<a class="headerlink" href="#relationship-to-the-final-written-report" title="Permanent link">&para;</a></h2>
+<p>The analysis outputs above are research artifacts produced by Python. They are distinct from the final academic report under <code>report/</code>. The LaTeX report incorporates selected tables and figures derived from the final corrected analysis, while <code>analysis_report.txt</code> remains a machine/workflow-oriented text summary rather than the course deliverable.</p>
+<p>The compiled course report is <code>report/report.pdf</code>. See <a href="../final-results/">Final results</a> for the exact result set represented in that document.</p>
 
 
 

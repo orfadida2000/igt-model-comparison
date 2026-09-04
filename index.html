@@ -343,6 +343,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#main-entry-points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1020,6 +1031,33 @@
   
   
     <li class="md-nav__item">
+      <a href="report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="reproducibility/" class="md-nav__link">
         
   
@@ -1084,7 +1122,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1106,14 +1144,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1422,6 +1460,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#main-entry-points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1483,8 +1532,16 @@
 <li>correct rare PVL-Delta local-optimization failures using Q-learning-equivalent warm starts;</li>
 <li>test Q-learning inverse-temperature sensitivity for capped solutions;</li>
 <li>validate final result tables and generate descriptive and inferential analyses;</li>
-<li>export timestamped CSV, text, log, and figure artifacts.</li>
+<li>export timestamped CSV, LaTeX-table, text, log, PNG, and PDF figure artifacts.</li>
 </ol>
+<h2 id="final-written-report">Final written report<a class="headerlink" href="#final-written-report" title="Permanent link">&para;</a></h2>
+<p>The completed course report is maintained separately from the MkDocs site under <code>report/</code>. The LaTeX source, report-specific figures and tables, bibliography, and compiled PDF are kept together so the academic deliverable can be read or rebuilt without changing the Python package.</p>
+<ul>
+<li>Repository source directory: <code>report/</code></li>
+<li>Compiled deliverable: <code>report/report.pdf</code></li>
+<li><a href="https://github.com/orfadida2000/igt-model-comparison/blob/main/report/report.pdf">Open the final PDF on GitHub</a></li>
+</ul>
+<p>The Python analysis pipeline does <strong>not</strong> generate the written report itself. It generates the validated numerical, tabular, graphical, and text artifacts that support the report.</p>
 <h2 id="main-entry-points">Main entry points<a class="headerlink" href="#main-entry-points" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1522,9 +1579,10 @@
 <li><a href="workflow/fitting/">Fitting and comparison</a> — primary optimization pipeline.</li>
 <li><a href="workflow/correction/">PVL-Delta correction</a> — nested-model warm-start correction.</li>
 <li><a href="workflow/sensitivity/">Sensitivity analysis</a> — inverse-temperature ceiling checks.</li>
-<li><a href="workflow/analysis/">Result analysis</a> — validation, tables, figures, and report generation.</li>
+<li><a href="workflow/analysis/">Result analysis</a> — validation, derived tables, figures, inference, and the analysis text report.</li>
 <li><a href="statistical-inference/">Statistical inference</a> — bootstrap, Wilcoxon, and exact binomial analyses.</li>
-<li><a href="final-results/">Final results</a> — results included in the repository.</li>
+<li><a href="final-results/">Final results</a> — results included in the repository and their relation to the final written report.</li>
+<li><a href="report/">Final report</a> — final PDF, LaTeX source layout, build instructions, and relation to the final analysis.</li>
 <li><a href="api/">API reference</a> — generated documentation for implementation modules.</li>
 </ul>
 

@@ -1046,6 +1046,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reproducibility/" class="md-nav__link">
         
   
@@ -1110,7 +1137,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1132,14 +1159,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1617,7 +1644,7 @@
 <tr>
 <td><code>--figure-formats</code></td>
 <td>One or more Matplotlib output formats.</td>
-<td style="text-align: right;"><code>png</code></td>
+<td style="text-align: right;"><code>png pdf</code></td>
 </tr>
 <tr>
 <td><code>--figure-dpi</code></td>
@@ -1647,14 +1674,16 @@
 </tbody>
 </table>
 <p>The project currently uses a fixed shared seed, so the bootstrap seed is taken from project configuration rather than exposed as a CLI argument.</p>
+<p>The default figure formats are PNG and PDF. PNG is retained for convenient inspection and general use, while PDF provides vector report-quality output. Both are generated from the same Matplotlib figure object.</p>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
 <p>A standard run creates a timestamped directory containing:</p>
 <ul>
-<li>seven derived CSV tables;</li>
-<li>18 figures with the default two-model PNG configuration;</li>
+<li>seven logical derived tables, each exported as both <code>.csv</code> and <code>.tex</code>;</li>
+<li>18 logical figures with the default two-model configuration, each exported as both <code>.png</code> and <code>.pdf</code>;</li>
 <li><code>analysis_report.txt</code>;</li>
 <li>logging artifacts when logging is enabled.</li>
 </ul>
+<p><code>analysis_report.txt</code> and the runtime logs count logical figures and logical tables, not each individual format file.</p>
 <p>See <a href="../../workflow/analysis/">Final result analysis</a> for the full artifact list and <a href="../../results/">Result files</a> for output organization.</p>
 <h2 id="related-documentation">Related documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>

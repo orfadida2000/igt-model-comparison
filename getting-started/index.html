@@ -415,6 +415,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#build-the-final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build the final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1044,6 +1055,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reproducibility/" class="md-nav__link">
         
   
@@ -1108,7 +1146,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1130,14 +1168,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_12" id="__nav_12_label" tabindex="">
+              <label class="md-nav__link " for="__nav_13" id="__nav_13_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_12">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1489,6 +1527,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#build-the-final-written-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build the final written report
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1562,6 +1611,17 @@
 <p>For local browsing with live reload:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>serve
 </code></pre></div>
+<h2 id="build-the-final-written-report">Build the final written report<a class="headerlink" href="#build-the-final-written-report" title="Permanent link">&para;</a></h2>
+<p>The final course report is a separate LaTeX project under <code>report/</code>. Building the PDF requires a TeX distribution that provides <code>latexmk</code>, <code>pdflatex</code>, and BibTeX.</p>
+<p>From the repository root:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>report
+latexmk<span class="w"> </span>-pdf<span class="w"> </span>-interaction<span class="o">=</span>nonstopmode<span class="w"> </span>-halt-on-error<span class="w"> </span>report.tex
+</code></pre></div>
+<p>The compiled deliverable is written to:</p>
+<div class="highlight"><pre><span></span><code>report/report.pdf
+</code></pre></div>
+<p>The report directory already contains the report-specific figure and table files used by the LaTeX source. Rebuilding the PDF therefore does not require rerunning the Python analysis first. Reproducing the underlying numerical results from raw data is a separate workflow described in <a href="../reproducibility/">Reproducibility</a>.</p>
+<p>See <a href="../report/">Final report</a> for the report layout, repository links, and the exact relationship between the document and the final analysis.</p>
 
 
 
